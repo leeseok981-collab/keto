@@ -279,18 +279,18 @@ export const launchRealWindowsNotepad = () => {
 const GAME_DETAILS: Record<string, any> = {
     'mystery': {
         id: 'mystery',
-        name: '???',
-        desc: '비밀에 싸인 새로운 게임이 곧 찾아옵니다...',
-        releaseDate: '미정',
-        genre: '미스터리',
+        name: '스피드 키보드 탈출 2',
+        desc: '더욱 강력해진 스피드 키보드 탈출의 후속작이 곧 출시됩니다!',
+        releaseDate: '미정 (Coming Soon)',
+        genre: '타이핑 / 액션',
         platform: 'PC / 모바일 지원',
         isPcOnly: false,
-        banner: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
+        banner: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=1200&q=80',
         images: [
-            'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&q=80'
+            'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=500&q=80'
         ],
-        tags: ['???', 'Coming Soon', '비밀'],
-        icon: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&q=80'
+        tags: ['후속작', 'Coming Soon', '타이핑', '스피드'],
+        icon: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=200&q=80'
     },
 
 
@@ -1614,11 +1614,12 @@ export default function App() {
                                     </div>
                                     <h3 className="font-black text-sm text-white truncate">탕탕특공대</h3>
                                     <p className="text-xs text-slate-400 mt-1">로그라이크 서바이벌</p></div>
-                                <div onMouseEnter={sound.hover} onClick={() => { sound.click(); setSelectedGame('mystery'); }} className="bg-slate-900 rounded-2xl p-4 border border-slate-700 hover:border-pink-500 hover:bg-slate-800 cursor-pointer transition-colors text-center group">
-                                    <div className="bg-gradient-to-br from-slate-800 to-pink-950 aspect-square rounded-xl mb-3 flex items-center justify-center group-hover:scale-105 transition-transform">
-                                        <span className="text-5xl drop-shadow-md group-hover:scale-110 transition-transform">❓</span>
+                                <div onMouseEnter={sound.hover} onClick={() => { sound.click(); setSelectedGame('mystery'); }} className="bg-slate-900 rounded-2xl p-4 border border-slate-700 hover:border-cyan-400 hover:bg-slate-800 cursor-pointer transition-colors text-center group">
+                                    <div className="bg-gradient-to-br from-indigo-900 to-cyan-900 aspect-square rounded-xl mb-3 flex items-center justify-center group-hover:scale-105 transition-transform relative">
+                                        <Keyboard className="w-12 h-12 text-white/50" />
+                                        <span className="absolute bottom-2 right-2 text-2xl font-black text-cyan-300 drop-shadow-lg">2</span>
                                     </div>
-                                    <h3 className="font-black text-sm text-white truncate">???</h3>
+                                    <h3 className="font-black text-sm text-white truncate">스피드 키보드 탈출 2</h3>
                                     <p className="text-xs text-slate-400 mt-1">Coming Soon</p>
                                 </div>
 
