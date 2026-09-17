@@ -1,0 +1,8 @@
+{
+  "name": "\uce90\ud2b8",
+  "description": "\ub2e4\uc591\ud55c \uac8c\uc784\ub4e4\uc744 \ub9cc\ub098\ubcf4\uc138\uc694!",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

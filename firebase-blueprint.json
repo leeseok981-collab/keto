@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "user": {
+      "title": "User Profile & Game State",
+      "description": "Stores user profile and idle game state",
+      "type": "object",
+      "properties": {
+        "nickname": { "type": "string", "maxLength": 20 },
+        "profilePic": { "type": "string", "maxLength": 100 },
+        "level": { "type": "number" },
+        "speed": { "type": "number" },
+        "totalSpeed": { "type": "number" },
+        "trophies": { "type": "number" },
+        "totalTrophies": { "type": "number" },
+        "raceStage": { "type": "number" },
+        "wallIndex": { "type": "number" },
+        "equippedTrail": { "type": "string", "maxLength": 50 },
+        "equippedAura": { "type": "string", "maxLength": 50 },
+        "ownedItems": { "type": "array", "items": { "type": "string" } },
+        "rebirths": { "type": "number" },
+        "lastSaveTime": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "world": { "type": "number" },
+        "cashMultiplier": { "type": "number" },
+        "doubleTrophies": { "type": "boolean" },
+        "fpsLimit": { "type": "number" },
+        "trophyMulti": { "type": "number" },
+        "keyboardSound": { "type": "number" }
+      },
+      "required": ["nickname", "profilePic", "level", "speed", "totalSpeed", "trophies", "totalTrophies", "raceStage", "wallIndex", "equippedTrail", "equippedAura", "ownedItems", "rebirths", "lastSaveTime", "createdAt", "updatedAt", "world", "cashMultiplier", "doubleTrophies", "fpsLimit", "trophyMulti", "keyboardSound"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/user" },
+      "description": "User documents containing their profile and game state."
+    }
+  }
+}
