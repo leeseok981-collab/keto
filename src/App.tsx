@@ -5,10 +5,11 @@ import { AdminEventsOverlay } from './AdminEventsOverlay';
 import { FishingGame } from './FishingGame';
 import { SettingsView } from './SettingsView';
 import { CustomGameList, AIGameMaker } from './CustomGames';
+import { SpeedKeyboard2 } from './SpeedKeyboard2';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Sprout, Terminal, Trophy, Fish, Cat, Pencil, Star, ShieldAlert, Sparkles, Map, Crown, LogOut, Box, ShoppingCart, Activity, Flame, Settings, List, Play, Globe, Edit2, ZapOff, Keyboard, Zap, DoorOpen, Monitor, Smartphone, Award, ArrowUp, User as UserIcon, AlertTriangle, Calendar, Users, Mail, HelpCircle, Youtube, Gift, Coins, Lock, FileText, CheckCircle2, Wifi, Volume2, X } from 'lucide-react';
+import { Sprout, Terminal, Trophy, Fish, Cat, Pencil, Star, ShieldAlert, Sparkles, Map, Crown, LogOut, Box, ShoppingCart, Activity, Flame, Settings, List, Play, Globe, Edit2, ZapOff, Keyboard, Zap, DoorOpen, Monitor, Smartphone, Award, ArrowUp, User as UserIcon, AlertTriangle, Calendar, Users, Mail, HelpCircle, Youtube, Gift, Coins, Lock, FileText, CheckCircle2, Wifi, Volume2, X, Key } from 'lucide-react';
 import { playKeySound, GlobalMessageOverlay, RhythmGame, SpacebarGame, BossFight, DeathScreen, updateGlobalBuffs, MiniGameMaster } from './RaceFeatures';
 import { ChannelView } from './ChannelSystem';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -280,17 +281,18 @@ const GAME_DETAILS: Record<string, any> = {
     'mystery': {
         id: 'mystery',
         name: '스피드 키보드 탈출 2',
-        desc: '더욱 강력해진 스피드 키보드 탈출의 후속작이 곧 출시됩니다!',
-        releaseDate: '미정 (Coming Soon)',
+        desc: '더욱 강력해진 스피드 키보드 탈출의 후속작! 얼리액세스 코드를 입력하여 입장하세요.',
+        releaseDate: '얼리액세스 진행 중',
         genre: '타이핑 / 액션',
         platform: 'PC / 모바일 지원',
         isPcOnly: false,
-        banner: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=1200&q=80',
+        banner: '/assets/gpt2.png',
         images: [
-            'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=500&q=80'
+            '/assets/gpt2.png',
+            '/assets/gpt1아이콘.png'
         ],
-        tags: ['후속작', 'Coming Soon', '타이핑', '스피드'],
-        icon: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=200&q=80'
+        tags: ['후속작', '얼리액세스', '타이핑', '스피드'],
+        icon: '/assets/gpt1아이콘.png'
     },
 
 
@@ -472,7 +474,11 @@ const DesktopOS = ({ user, onLogin, isLoggingIn, onLaunch, onOpenNotepad, onGsiL
             <span className="text-white text-xs text-center drop-shadow-md font-semibold mt-1">캐토<br/>(스피드 훈련소)</span>
           </div>
           
-          <div className="flex flex-col items-center gap-1 cursor-pointer hover:bg-white/20 p-2 rounded w-24 group transition-colors">
+          <div 
+            className="flex flex-col items-center gap-1 cursor-pointer hover:bg-white/20 p-2 rounded w-24 group transition-colors"
+            onClick={handleNotepadClick}
+            onDoubleClick={handleNotepadClick}
+          >
             <svg className="w-11 h-11 text-yellow-300 drop-shadow-md group-hover:drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h20V2H2v20zm2-18h16v12H4V4zm4 4h8v2H8V8zm0 4h8v2H8v-2z"/></svg>
             <span className="text-white text-xs text-center drop-shadow-md font-semibold mt-1">메모장</span>
           </div>
@@ -555,7 +561,7 @@ export default function App() {
   const [state, setState] = useState<GameState>(DEFAULT_STATE);
   const [currentTab, setCurrentTab] = useState<'training' | 'race' | 'collection' | 'shop' | 'inventory' | 'world' | 'treadmill300'>('training');
   const [isTreadmill, setIsTreadmill] = useState(false);
-  const [appMode, setAppMode] = useState<'loading' | 'lobby' | 'game' | 'wardrobe' | 'channel' | 'createGame' | 'fishing' | 'survivor' | 'gardenGame' | 'blue_tower' | 'eat_clicker' | 'patchnotes' | 'blog' | 'notepad'>('loading');
+  const [appMode, setAppMode] = useState<'loading' | 'lobby' | 'game' | 'wardrobe' | 'channel' | 'createGame' | 'fishing' | 'survivor' | 'gardenGame' | 'blue_tower' | 'eat_clicker' | 'patchnotes' | 'blog' | 'notepad' | 'speed_keyboard_2'>('loading');
   const [deviceMode, setDeviceMode] = useState<'pc' | 'mobile'>('pc');
   const [skip300xCutscene, setSkip300xCutscene] = useState(false);
   const [topSpeedUsers, setTopSpeedUsers] = useState<any[]>([]);
@@ -567,6 +573,10 @@ export default function App() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [showGameDetails, setShowGameDetails] = useState(false);
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const [showEarlyAccessModal, setShowEarlyAccessModal] = useState(false);
+  const [earlyAccessCode, setEarlyAccessCode] = useState('');
+  const [earlyAccessError, setEarlyAccessError] = useState('');
+  const [showComingSoonScreen, setShowComingSoonScreen] = useState(false);
   const [newEvent, setNewEvent] = useState({ title: '', desc: '', time: '', image: '' });
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [eventModalTarget, setEventModalTarget] = useState<'events' | 'gardenEvents'>('events');
@@ -1340,6 +1350,10 @@ export default function App() {
     if (appMode === 'blog') {
       return <BlogSystem user={user} onBack={() => setAppMode('lobby')} />;
   }
+
+  if (appMode === 'speed_keyboard_2') {
+      return <SpeedKeyboard2 user={user} onBack={() => setAppMode('lobby')} />;
+  }
   
 
   if (appMode === 'lobby') {
@@ -1350,16 +1364,24 @@ export default function App() {
 {selectedGame && GAME_DETAILS[selectedGame] && (
     <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
         <div className="bg-slate-900 rounded-3xl overflow-hidden border-2 border-slate-700 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="h-64 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative">
-                <button onClick={() => setSelectedGame(null)} className="absolute top-4 right-4 bg-black/50 p-2 rounded-full hover:bg-black/80 z-10">✕</button>
-                <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                                        {selectedGame === 'speed_keyboard' && <Keyboard className="w-48 h-48 text-white" />}
-                    {selectedGame === 'fishing' && <Fish className="w-48 h-48 text-white" />}
-                    {selectedGame === 'garden' && <span className="text-[160px] drop-shadow-xl leading-none">🌱</span>}
-                    {selectedGame === 'blue_tower' && <span className="text-[160px] drop-shadow-xl leading-none">🏰</span>}
-                    {selectedGame === 'eat_clicker' && <span className="text-[160px] drop-shadow-xl leading-none">🍔</span>}
-                    {selectedGame === 'survivor' && <span className="text-[160px] drop-shadow-xl leading-none">🔫</span>}{selectedGame === 'notepad' && <FileText className="w-44 h-44 text-emerald-400 drop-shadow-2xl" />}
-                </div>
+            <div className="h-64 sm:h-80 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+                <button onClick={() => setSelectedGame(null)} className="absolute top-4 right-4 bg-black/60 hover:bg-black/90 p-2 rounded-full z-20 text-white transition-colors">✕</button>
+                {selectedGame === 'mystery' ? (
+                    <img 
+                        src="/assets/gpt2.png" 
+                        alt="스피드 키보드 탈출 2" 
+                        className="w-full h-full object-cover" 
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                        {selectedGame === 'speed_keyboard' && <Keyboard className="w-48 h-48 text-white" />}
+                        {selectedGame === 'fishing' && <Fish className="w-48 h-48 text-white" />}
+                        {selectedGame === 'garden' && <span className="text-[160px] drop-shadow-xl leading-none">🌱</span>}
+                        {selectedGame === 'blue_tower' && <span className="text-[160px] drop-shadow-xl leading-none">🏰</span>}
+                        {selectedGame === 'eat_clicker' && <span className="text-[160px] drop-shadow-xl leading-none">🍔</span>}
+                        {selectedGame === 'survivor' && <span className="text-[160px] drop-shadow-xl leading-none">🔫</span>}{selectedGame === 'notepad' && <FileText className="w-44 h-44 text-emerald-400 drop-shadow-2xl" />}
+                    </div>
+                )}
             </div>
             <div className="p-8 relative">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
@@ -1379,8 +1401,18 @@ export default function App() {
                         <p className="text-slate-400 font-bold">{GAME_DETAILS[selectedGame].desc}</p>
                     </div>
                     {selectedGame === 'mystery' ? (
-                    <button disabled className="bg-slate-700 text-slate-400 font-black text-2xl px-16 py-4 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] cursor-not-allowed flex items-center gap-3">
-                        <Lock className="w-8 h-8" /> 곧 출시
+                    <button 
+                        onMouseEnter={sound.hover} 
+                        onClick={() => { 
+                            sound.click(); 
+                            setEarlyAccessCode('');
+                            setEarlyAccessError('');
+                            setShowEarlyAccessModal(true); 
+                        }} 
+                        className="bg-gradient-to-r from-amber-600 via-orange-500 to-amber-500 hover:from-amber-500 hover:to-orange-400 text-white font-black text-xl sm:text-2xl px-8 sm:px-12 py-3.5 sm:py-4 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-transform active:scale-95 flex items-center justify-center gap-3 cursor-pointer whitespace-nowrap shrink-0"
+                    >
+                        <Key className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" />
+                        <span className="whitespace-nowrap">얼리액세스</span>
                     </button>
 ) : (
                     <button onMouseEnter={sound.hover} onClick={() => { sound.click();  setAppMode(selectedGame === 'garden' ? 'gardenGame' : selectedGame === 'speed_keyboard' ? 'game' : selectedGame as any); ; setSelectedGame(null); }} className="bg-cyan-600 hover:bg-cyan-500 text-white font-black text-2xl px-16 py-4 rounded-2xl shadow-[0_0_30px_rgba(8,145,178,0.5)] transition-transform active:scale-95 flex items-center gap-3">
@@ -1468,6 +1500,164 @@ export default function App() {
                 </div>
             </div>
         </div>
+    </div>
+)}
+
+{showEarlyAccessModal && (
+    <div className="fixed inset-0 bg-black/85 z-[150] flex items-center justify-center p-4">
+        <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-slate-900 border-2 border-amber-500/60 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-[0_0_50px_rgba(245,158,11,0.3)] relative text-white"
+        >
+            <button 
+                onClick={() => setShowEarlyAccessModal(false)}
+                className="absolute top-4 right-4 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white p-2 rounded-full transition-colors cursor-pointer"
+            >
+                <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                    <Key className="w-6 h-6" />
+                </div>
+                <div>
+                    <h2 className="text-xl font-black text-white">얼리액세스 코드 입력</h2>
+                    <p className="text-xs text-amber-400/80 font-bold">스피드 키보드 탈출 2 사전 참여</p>
+                </div>
+            </div>
+
+            <p className="text-sm text-slate-300 mb-5 leading-relaxed">
+                비공개 얼리액세스 코드를 입력하시면 사전 참여 안내 화면으로 이동합니다.
+            </p>
+
+            <form onSubmit={(e) => {
+                e.preventDefault();
+                if (earlyAccessCode.trim() === '얼리321') {
+                    sound.click();
+                    setShowEarlyAccessModal(false);
+                    setEarlyAccessCode('');
+                    setEarlyAccessError('');
+                    setShowComingSoonScreen(true);
+                } else {
+                    setEarlyAccessError('올바른 얼리액세스 코드가 아닙니다.');
+                }
+            }}>
+                <div className="mb-4">
+                    <input 
+                        type="text"
+                        autoFocus
+                        placeholder="얼리액세스 코드 입력"
+                        value={earlyAccessCode}
+                        onChange={(e) => {
+                            setEarlyAccessCode(e.target.value);
+                            setEarlyAccessError('');
+                        }}
+                        className="w-full bg-slate-800 border-2 border-slate-700 focus:border-amber-500 text-white font-bold p-3.5 rounded-xl outline-none text-center text-lg placeholder:text-slate-500 transition-colors"
+                    />
+                    {earlyAccessError && (
+                        <p className="text-rose-400 text-xs font-bold mt-2 text-center flex items-center justify-center gap-1">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                            {earlyAccessError}
+                        </p>
+                    )}
+                </div>
+
+                <div className="flex gap-3">
+                    <button 
+                        type="button"
+                        onClick={() => setShowEarlyAccessModal(false)}
+                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 rounded-xl transition-colors text-sm cursor-pointer"
+                    >
+                        취소
+                    </button>
+                    <button 
+                        type="submit"
+                        className="flex-1 bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white font-black py-3.5 rounded-xl shadow-lg shadow-amber-900/40 transition-transform active:scale-95 text-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        <Key className="w-4 h-4" /> 코드 입력
+                    </button>
+                </div>
+            </form>
+        </motion.div>
+    </div>
+)}
+
+{showComingSoonScreen && (
+    <div className="fixed inset-0 bg-black/90 z-[160] flex items-center justify-center p-4">
+        <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-slate-900 border-2 border-cyan-500/50 rounded-3xl overflow-hidden max-w-lg w-full shadow-[0_0_60px_rgba(6,182,212,0.3)] relative text-white"
+        >
+            <div className="h-44 relative overflow-hidden bg-slate-800">
+                <img 
+                    src="/assets/gpt2.png" 
+                    alt="스피드 키보드 탈출 2" 
+                    className="w-full h-full object-cover" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                <button 
+                    onClick={() => setShowComingSoonScreen(false)}
+                    className="absolute top-4 right-4 bg-black/60 hover:bg-black/90 text-white p-2 rounded-full transition-colors z-10 cursor-pointer"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+                <div className="absolute bottom-3 left-6 flex items-center gap-3">
+                    <img 
+                        src="/assets/gpt1아이콘.png" 
+                        alt="icon" 
+                        className="w-14 h-14 rounded-xl border-2 border-cyan-400 object-cover shadow-lg" 
+                    />
+                    <div>
+                        <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            Early Access Verified
+                        </span>
+                        <h2 className="text-xl font-black text-white">스피드 키보드 탈출 2</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-6 sm:p-8 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 mb-4 shadow-inner">
+                    <Sparkles className="w-8 h-8 animate-pulse text-cyan-300" />
+                </div>
+                
+                <h3 className="text-3xl font-black text-white mb-2 tracking-tight">
+                    곧 정식 출시!
+                </h3>
+                <div className="text-amber-400 font-black text-sm mb-4">
+                    🎉 얼리액세스 코드가 확인되었습니다!
+                </div>
+
+                <p className="text-slate-300 text-sm leading-relaxed mb-6 bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60 text-left">
+                    코드 <strong>[얼리321]</strong> 인증이 완료되었습니다.<br/><br/>
+                    현재 <strong>스피드 키보드 탈출 2</strong>는 정식 릴리즈 전 마무리 튜닝 및 개발 단계에 있으며, 얼리액세스 참가자로 선정되셨습니다. 아래 <strong>얼리 플레이</strong> 버튼을 눌러 바로 키보드를 두드리며 스피드를 훈련해 보세요!
+                </p>
+
+                <div className="space-y-2 mb-6 text-xs text-slate-400 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <div className="flex justify-between font-bold">
+                        <span>개발 진척도</span>
+                        <span className="text-cyan-400 font-black">98% (얼리액세스 플레이 가능)</span>
+                    </div>
+                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div className="bg-gradient-to-r from-cyan-500 to-amber-400 h-full w-[98%] rounded-full" />
+                    </div>
+                </div>
+
+                <button 
+                    onClick={() => {
+                        sound.click();
+                        setShowComingSoonScreen(false);
+                        setSelectedGame(null);
+                        setAppMode('speed_keyboard_2');
+                    }}
+                    className="w-full bg-gradient-to-r from-amber-600 via-orange-500 to-amber-500 hover:from-amber-500 hover:to-orange-400 text-white font-black py-4 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-transform active:scale-95 text-xl flex items-center justify-center gap-3 cursor-pointer whitespace-nowrap"
+                >
+                    <Play className="w-6 h-6 fill-white" /> 얼리 플레이
+                </button>
+            </div>
+        </motion.div>
     </div>
 )}
 
@@ -1615,12 +1805,11 @@ export default function App() {
                                     <h3 className="font-black text-sm text-white truncate">탕탕특공대</h3>
                                     <p className="text-xs text-slate-400 mt-1">로그라이크 서바이벌</p></div>
                                 <div onMouseEnter={sound.hover} onClick={() => { sound.click(); setSelectedGame('mystery'); }} className="bg-slate-900 rounded-2xl p-4 border border-slate-700 hover:border-cyan-400 hover:bg-slate-800 cursor-pointer transition-colors text-center group">
-                                    <div className="bg-gradient-to-br from-indigo-900 to-cyan-900 aspect-square rounded-xl mb-3 flex items-center justify-center group-hover:scale-105 transition-transform relative">
-                                        <Keyboard className="w-12 h-12 text-white/50" />
-                                        <span className="absolute bottom-2 right-2 text-2xl font-black text-cyan-300 drop-shadow-lg">2</span>
+                                    <div className="bg-gradient-to-br from-indigo-900 to-cyan-900 aspect-square rounded-xl mb-3 flex items-center justify-center group-hover:scale-105 transition-transform relative overflow-hidden border border-cyan-500/30">
+                                        <img src="/assets/gpt1아이콘.png" alt="스피드 키보드 탈출 2" className="w-full h-full object-cover rounded-xl" />
                                     </div>
                                     <h3 className="font-black text-sm text-white truncate">스피드 키보드 탈출 2</h3>
-                                    <p className="text-xs text-slate-400 mt-1">Coming Soon</p>
+                                    <p className="text-xs text-amber-400 font-bold mt-1 whitespace-nowrap">얼리액세스</p>
                                 </div>
 
                             </div>

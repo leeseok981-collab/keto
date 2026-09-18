@@ -9,30 +9,24 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-    
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     
     function isValidUser(data) {
-      return data.keys().hasAll(['level', 'speed', 'totalSpeed', 'trophies', 'totalTrophies', 'raceStage', 'wallIndex', 'ownedItems', 'rebirths', 'lastSaveTime'])
-        && (!('nickname' in data) || (data.nickname is string && data.nickname.size() <= 50))
-        && (!('profilePic' in data) || (data.profilePic is string && data.profilePic.size() <= 2048))
-        && data.level is number
-        && data.speed is number
-        && data.totalSpeed is number
-        && data.trophies is number
-        && data.totalTrophies is number
-        && data.raceStage is number
-        && data.wallIndex is number
+      return (!('nickname' in data) || (data.nickname is string && data.nickname.size() <= 100))
+        && (!('profilePic' in data) || (data.profilePic is string && data.profilePic.size() <= 4096))
+        && (!('level' in data) || data.level is number)
+        && (!('speed' in data) || data.speed is number)
+        && (!('totalSpeed' in data) || data.totalSpeed is number)
+        && (!('trophies' in data) || data.trophies is number)
+        && (!('totalTrophies' in data) || data.totalTrophies is number)
+        && (!('raceStage' in data) || data.raceStage is number)
+        && (!('wallIndex' in data) || data.wallIndex is number)
         && (!('equippedTrail' in data) || (data.equippedTrail is string && data.equippedTrail.size() <= 100))
         && (!('equippedAura' in data) || (data.equippedAura is string && data.equippedAura.size() <= 100))
-        && data.ownedItems is list && data.ownedItems.size() <= 200
-        && (data.ownedItems.size() == 0 || data.ownedItems[0] is string)
-        && data.rebirths is number
-        && data.lastSaveTime is number
+        && (!('ownedItems' in data) || (data.ownedItems is list && data.ownedItems.size() <= 500))
+        && (!('rebirths' in data) || data.rebirths is number)
+        && (!('lastSaveTime' in data) || data.lastSaveTime is number)
         && (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt is number)
         && (!('updatedAt' in data) || data.updatedAt is timestamp || data.updatedAt is number)
         && (!('world' in data) || data.world is number)
@@ -65,31 +59,37 @@ service cloud.firestore {
         && (!('gardenToolLevels' in data) || data.gardenToolLevels is map)
         && (!('eatCoins' in data) || data.eatCoins is number)
         && (!('age' in data) || data.age is number || data.age is string)
-        && (!('description' in data) || (data.description is string && data.description.size() <= 500))
+        && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
         && (!('survivor' in data) || data.survivor is map)
-        && (!('survivorStage' in data) || data.survivorStage is number);
+        && (!('survivorStage' in data) || data.survivorStage is number)
+        && (!('survivorCoins' in data) || data.survivorCoins is number)
+        && (!('survivorSkins' in data) || data.survivorSkins is list)
+        && (!('survivorItems' in data) || data.survivorItems is map)
+        && (!('survivorMaxWorld' in data) || data.survivorMaxWorld is number)
+        && (!('survivorEquippedSkin' in data) || (data.survivorEquippedSkin is string && data.survivorEquippedSkin.size() <= 100))
+        && (!('survivorEquippedItems' in data) || data.survivorEquippedItems is list);
+    }
+    
+    match /test/connection {
+      allow read: if true;
     }
     
     match /users/{userId} {
       allow get: if isSignedIn();
-      allow list: if isSignedIn(); // For leaderboards
+      allow list: if isSignedIn();
       
       allow create: if isSignedIn() 
-                    && isValidId(userId) 
                     && (request.auth.uid == userId || request.auth.token.email == 'leeseok981@gmail.com')
                     && isValidUser(incoming());
 
       allow update: if isSignedIn() 
                     && (request.auth.uid == userId || request.auth.token.email == 'leeseok981@gmail.com' || incoming().diff(existing()).affectedKeys().hasOnly(['friends', 'updatedAt']))
                     && isValidUser(incoming())
-                    && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt)
-                    && (!('updatedAt' in incoming()) || incoming().updatedAt == request.time || incoming().updatedAt is number || incoming().updatedAt is timestamp)
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['nickname', 'profilePic', 'level', 'speed', 'totalSpeed', 'trophies', 'totalTrophies', 'raceStage', 'wallIndex', 'equippedTrail', 'equippedAura', 'ownedItems', 'rebirths', 'lastSaveTime', 'createdAt', 'updatedAt', 'world', 'cashMultiplier', 'doubleTrophies', 'fpsLimit', 'trophyMulti', 'keyboardSound', 'naro', 'doubleSpeed', 'friends', 'gardenMoney', 'gardenInventory', 'gardenPlots', 'gardenCrops', 'gardenShopEpoch', 'gardenShopStock', 'gardenVersion', 'gardenEggs', 'gardenPets', 'gardenEquippedPets', 'badges', 'towerStage', 'lotteryTickets', 'lotteryBuffs', 'hardcoreDead', 'settings', 'fishingState', 'gardenTools', 'gardenToolLevels', 'eatCoins', 'age', 'description', 'survivor', 'survivorStage']);
+                    && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt);
 
       allow delete: if isSignedIn() && request.auth.token.email == 'leeseok981@gmail.com';
     }
 
-    
     function isValidPost(data) {
       return data.keys().hasAll(['authorId', 'authorName', 'authorPic', 'type', 'url', 'text', 'likes', 'comments', 'createdAt'])
         && data.authorId is string && data.authorId.size() <= 128
@@ -100,25 +100,20 @@ service cloud.firestore {
         && data.text is string && data.text.size() <= 10000
         && data.likes is list && data.likes.size() <= 10000
         && data.comments is list && data.comments.size() <= 1000
-        && data.createdAt is timestamp;
+        && (data.createdAt is timestamp || data.createdAt is number);
     }
 
     match /posts/{postId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() 
                     && isValidPost(incoming())
-                    && incoming().authorId == request.auth.uid
-                    && incoming().createdAt == request.time;
+                    && incoming().authorId == request.auth.uid;
       allow update: if isSignedIn()
                     && isValidPost(incoming())
                     && incoming().authorId == existing().authorId
-                    && incoming().createdAt == existing().createdAt
                     && incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'comments']);
       allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
     }
-    
-    
-    
     
     function isValidBlog(data) {
       return data.keys().hasAll(['title', 'content', 'authorId', 'authorName', 'likesCount', 'createdAt'])
@@ -127,32 +122,30 @@ service cloud.firestore {
         && data.authorId is string && data.authorId.size() <= 128
         && data.authorName is string && data.authorName.size() <= 100
         && data.likesCount is number
-        && data.createdAt is timestamp;
+        && (data.createdAt is timestamp || data.createdAt is number);
     }
     match /blogs/{blogId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
                     && isValidBlog(incoming())
-                    && incoming().authorId == request.auth.uid
-                    && incoming().createdAt == request.time;
+                    && incoming().authorId == request.auth.uid;
       allow update: if isSignedIn()
                     && isValidBlog(incoming())
                     && incoming().authorId == existing().authorId
-                    && incoming().createdAt == existing().createdAt
                     && incoming().diff(existing()).affectedKeys().hasOnly(['likesCount']);
       allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
     }
 
-match /friendRequests/{reqId} {
+    match /friendRequests/{reqId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && incoming().from == request.auth.uid;
-      allow update: if isSignedIn() && existing().to == request.auth.uid && incoming().status == 'accepted';
+      allow update: if isSignedIn() && (existing().to == request.auth.uid || existing().from == request.auth.uid);
       allow delete: if isSignedIn() && (existing().from == request.auth.uid || existing().to == request.auth.uid);
     }
     
-    match /{collection}/{docId} {
-      allow read: if collection.matches('^events_.*');
-      allow write: if isSignedIn() && collection.matches('^events_.*');
+    match /{colId}/{docId} {
+      allow read: if colId.matches('^events_.*');
+      allow write: if isSignedIn() && colId.matches('^events_.*');
     }
 
     match /channels/{channelId}/messages/{msgId} {
@@ -166,7 +159,7 @@ match /friendRequests/{reqId} {
 
     match /events/{eventId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && (request.auth.token.email == 'leeseok981@gmail.com' || docId == 'adminEvents');
+      allow write: if isSignedIn() && (request.auth.token.email == 'leeseok981@gmail.com' || eventId == 'adminEvents');
     }
     match /gardenEvents/{eventId} {
       allow read: if isSignedIn();
@@ -179,17 +172,20 @@ match /friendRequests/{reqId} {
       allow update: if isSignedIn() && existing().used == false && incoming().used == true;
     }
 
-    
     match /customGames/{gameId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (request.auth.token.email == 'leeseok981@gmail.com');
+      allow update: if isSignedIn() && (request.auth.token.email == 'leeseok981@gmail.com' || resource.data.creatorUid == request.auth.uid);
       allow delete: if isSignedIn() && (request.auth.token.email == 'leeseok981@gmail.com' || resource.data.creatorUid == request.auth.uid);
     }
 
     match /system/{docId} {
       allow read: if true;
-      allow write: if isSignedIn() && request.auth.token.email == 'leeseok981@gmail.com';
+      allow write: if isSignedIn() && (
+        request.auth.token.email == 'leeseok981@gmail.com' ||
+        (docId == 'adminEvents') ||
+        (docId == 'gardenConfig' && incoming().diff(existing()).affectedKeys().hasOnly(['activeVote']))
+      );
     }
   }
 }
