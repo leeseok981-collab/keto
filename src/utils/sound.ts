@@ -1,16 +1,26 @@
 const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
 
+let masterVolume = 1.0;
+export function setMasterVolume(vol: number) {
+    masterVolume = Math.max(0, Math.min(1, vol));
+}
+export function getMasterVolume(): number {
+    return masterVolume;
+}
+
 function playTone(freq: number, type: OscillatorType, duration: number, vol: number = 0.1) {
+    if (masterVolume <= 0.001) return;
     if (audioCtx.state === 'suspended') audioCtx.resume();
     
+    const effectiveVol = vol * masterVolume;
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
     
     osc.type = type;
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
     
-    gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    gainNode.gain.setValueAtTime(effectiveVol, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
     
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
@@ -137,10 +147,13 @@ export function loadCustomAudio() {
 loadCustomAudio();
 
 export function playKeyboardClick(type: number = 0, vol: number = 0.45) {
+    if (masterVolume <= 0.001) return;
     try {
         if (audioCtx.state === 'suspended') {
             audioCtx.resume().catch(() => {});
         }
+
+        const effectiveVol = vol * masterVolume;
 
         // Custom uploaded audio: 99B4823E5F71EDA02C.mp3
         if (type === 0) {
@@ -152,7 +165,7 @@ export function playKeyboardClick(type: number = 0, vol: number = 0.45) {
                 source.playbackRate.value = 0.98 + (Math.random() * 0.04);
 
                 const gainNode = audioCtx.createGain();
-                gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(effectiveVol, audioCtx.currentTime);
 
                 source.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
@@ -161,7 +174,7 @@ export function playKeyboardClick(type: number = 0, vol: number = 0.45) {
             } else {
                 // Fallback audio element before decode finishes
                 const audio = new Audio(CUSTOM_KEY_SOUND_URL);
-                audio.volume = Math.min(1, vol);
+                audio.volume = Math.min(1, effectiveVol);
                 audio.play().catch(() => {});
                 return;
             }
@@ -179,8 +192,7 @@ export function playKeyboardClick(type: number = 0, vol: number = 0.45) {
         source.playbackRate.value = 0.97 + (Math.random() * 0.06);
 
         const gainNode = audioCtx.createGain();
-        gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
-
+        gainNode.gain.setValueAtTime(effectiveVol, audioCtx.currentTime);
         source.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         source.start();

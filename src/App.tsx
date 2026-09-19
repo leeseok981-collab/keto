@@ -13,6 +13,8 @@ import { Sprout, Terminal, Trophy, Fish, Cat, Pencil, Star, ShieldAlert, Sparkle
 import { playKeySound, GlobalMessageOverlay, RhythmGame, SpacebarGame, BossFight, DeathScreen, updateGlobalBuffs, MiniGameMaster } from './RaceFeatures';
 import { ChannelView } from './ChannelSystem';
 import { LoadingScreen } from './components/LoadingScreen';
+import { DesktopOS } from './DesktopOS';
+import { GameWindowShell } from './components/GameWindowShell';
 
 export const BADGES = [
     { id: 'first_farm', name: '첫 농사', desc: '씨앗을 처음 심었습니다!', icon: '🌱', bg: 'bg-green-600' },
@@ -418,142 +420,11 @@ const GAME_DETAILS: Record<string, any> = {
         icon: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=200&q=80'
     }
 };
-const DesktopOS = ({ user, onLogin, isLoggingIn, onLaunch, onOpenNotepad, onGsiLogin }: { user: any, onLogin: () => void, isLoggingIn: boolean, onLaunch: () => void, onOpenNotepad: () => void, onGsiLogin: (cred: string) => void }) => {
-  const handleNotepadClick = () => {
-    launchRealWindowsNotepad();
-    onOpenNotepad();
-  };
-  const [showLoginWindow, setShowLoginWindow] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-
-  useEffect(() => {
-    if (showLoginWindow && (window as any).google && document.getElementById('gsi-button')) {
-      (window as any).google.accounts.id.initialize({
-        client_id: '129372360916-srlvsjsv36nsklfafh4b9c8lkl7q09fn.apps.googleusercontent.com',
-        callback: (response: any) => {
-          onGsiLogin(response.credential);
-        }
-      });
-      (window as any).google.accounts.id.renderButton(
-        document.getElementById('gsi-button'),
-        { theme: 'outline', size: 'large', type: 'standard', width: 280 }
-      );
-    }
-  }, [showLoginWindow, onGsiLogin]);
-
-  const handleCattoClick = () => {
-    if (user) {
-      onLaunch();
-    } else {
-      setShowLoginWindow(true);
-    }
-  };
-
-  useEffect(() => {
-    if (user && showLoginWindow) {
-      onLaunch();
-    }
-  }, [user, showLoginWindow, onLaunch]);
-
-  return (
-    <div className="min-h-screen bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center flex flex-col relative overflow-hidden">
-        {/* Desktop Icons */}
-        <div className="flex-1 p-4 flex flex-col gap-4 items-start">
-          <div 
-            className="flex flex-col items-center gap-1 cursor-pointer hover:bg-white/20 p-2 rounded w-24 group transition-colors"
-            onDoubleClick={handleCattoClick}
-            onClick={handleCattoClick}
-          >
-            <Cat className="w-12 h-12 text-cyan-200 drop-shadow-md group-hover:drop-shadow-lg" />
-            <span className="text-white text-xs text-center drop-shadow-md font-semibold mt-1">캐토<br/>(스피드 훈련소)</span>
-          </div>
-          
-          <div 
-            className="flex flex-col items-center gap-1 cursor-pointer hover:bg-white/20 p-2 rounded w-24 group transition-colors"
-            onClick={handleNotepadClick}
-            onDoubleClick={handleNotepadClick}
-          >
-            <svg className="w-11 h-11 text-yellow-300 drop-shadow-md group-hover:drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h20V2H2v20zm2-18h16v12H4V4zm4 4h8v2H8V8zm0 4h8v2H8v-2z"/></svg>
-            <span className="text-white text-xs text-center drop-shadow-md font-semibold mt-1">메모장</span>
-          </div>
-        </div>
-
-        {/* Login Window */}
-        {showLoginWindow && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[400px] bg-slate-900 border border-slate-600 rounded-md shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/50 select-none">
-            {/* Window Header */}
-            <div className="bg-slate-800 border-b border-slate-700/50 px-3 py-1.5 flex items-center justify-between cursor-default">
-              <div className="flex items-center gap-2">
-                <Cat className="w-4 h-4 text-cyan-400" />
-                <span className="text-slate-200 text-xs font-semibold tracking-wide">스피드 훈련소 - 로그인</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button className="w-7 h-6 flex items-center justify-center hover:bg-white/10 text-slate-300 transition-colors"><div className="w-2.5 h-px bg-current mt-2"></div></button>
-                <button className="w-7 h-6 flex items-center justify-center hover:bg-white/10 text-slate-300 transition-colors"><div className="w-2.5 h-2.5 border border-current"></div></button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setShowLoginWindow(false); }}
-                  className="w-8 h-6 flex items-center justify-center hover:bg-red-500 hover:text-white text-slate-300 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            
-            {/* Window Content */}
-            <div className="p-8 flex flex-col items-center bg-slate-900">
-              <Cat className="w-16 h-16 text-cyan-400 mb-4" />
-              <h1 className="text-2xl font-black text-white mb-2">스피드 훈련소</h1>
-              <p className="text-slate-400 mb-8 text-center text-xs">타이핑과 클릭으로 스피드를 기르고 레이스에서 우승하세요!</p>
-              <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
-                {isLoggingIn ? (
-                  <div className="flex items-center gap-2 text-slate-300 font-bold">
-                    <div className="w-5 h-5 border-2 border-slate-300 border-t-transparent rounded-full animate-spin"></div>
-                    로그인 중...
-                  </div>
-                ) : (
-                  <div id="gsi-button" className="w-full flex justify-center bg-white rounded"></div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Taskbar */}
-        <div className="h-12 bg-slate-900/90 backdrop-blur-xl border-t border-slate-700/50 flex items-center px-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)] z-10 relative select-none">
-          <button className="flex items-center justify-center hover:bg-white/10 w-10 h-10 rounded transition-colors group">
-            <svg className="w-5 h-5 text-cyan-400 group-hover:text-cyan-300" viewBox="0 0 88 88" fill="currentColor"><path d="M0 12.402l35.687-4.86.016 34.423-35.67.203v-29.766zm35.67 33.529l.016 34.423-35.67-4.86v-29.734l35.654.171zm4.326-39.006l47.988-6.925v40.384l-47.988.358v-33.817zm47.988 38.324v40.384l-47.988-6.925v-33.817l47.988.358z"/></svg>
-          </button>
-          
-          <div onClick={handleNotepadClick} className="flex items-center justify-center hover:bg-white/10 w-10 h-10 rounded transition-colors cursor-pointer ml-1" title="메모장 (Notepad)"><svg className="w-5 h-5 text-yellow-300 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M2 22h20V2H2v20zm2-18h16v12H4V4zm4 4h8v2H8V8zm0 4h8v2H8v-2z"/></svg></div><div className="mx-2 w-px h-6 bg-slate-700"></div>
-          
-          {showLoginWindow && (
-            <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded border-b-[3px] border-cyan-400 text-white text-xs font-medium shadow-inner cursor-pointer hover:bg-white/20 transition-colors h-10">
-              <Cat className="w-4 h-4 text-cyan-300" />
-              <span>스피드 훈련소</span>
-            </div>
-          )}
-          
-          <div className="ml-auto flex items-center gap-3 px-3 py-1 hover:bg-white/10 rounded cursor-pointer transition-colors text-slate-200 text-xs font-medium h-10">
-            <Wifi className="w-4 h-4" />
-            <Volume2 className="w-4 h-4" />
-            <div className="flex flex-col items-end leading-tight">
-                <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                <span className="text-[10px] text-slate-400">{currentTime.toLocaleDateString([], { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '/').replace(/ /g, '')}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-  );
-};
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [inDesktop, setInDesktop] = useState(true);
+  const [isGameFullscreen, setIsGameFullscreen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [profileSetup, setProfileSetup] = useState(false);
@@ -1240,6 +1111,19 @@ export default function App() {
         onLogin={handleGoogleLogin}
         isLoggingIn={isLoggingIn || authLoading}
         onLaunch={() => setInDesktop(false)}
+        onOpenSpeedKeyboard2={() => {
+          if (!user) {
+            setUser({
+              uid: 'guest_' + Date.now(),
+              email: 'guest@speed.com',
+              displayName: '스피드 러너',
+              photoURL: '',
+              isAnonymous: true
+            } as any);
+          }
+          setInDesktop(false);
+          setAppMode('speed_keyboard_2');
+        }}
         onOpenNotepad={() => {
           launchRealWindowsNotepad();
         }}
@@ -1286,79 +1170,151 @@ export default function App() {
   }
 
   if (appMode === 'gardenGame') {
-      return <GardenGame user={user} userData={state} onBack={() => setAppMode('lobby')} onBadgeUnlock={(id: string) => {
-          const userBadges = state.badges || [];
-          if (!userBadges.includes(id)) {
-              userBadges.push(id);
-              setActiveBadge(BADGES.find((b: any) => b.id === id));
-              updateDoc(doc(db, 'users', user!.uid), { badges: userBadges });
-          }
-      }} />;
+      return (
+          <GameWindowShell
+              title="캐토 정원 키우기 (그로우 어 가든)"
+              isFullscreen={isGameFullscreen}
+              onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+              onMinimize={() => setInDesktop(true)}
+              onClose={() => setInDesktop(true)}
+          >
+              <GardenGame user={user} userData={state} onBack={() => setAppMode('lobby')} onBadgeUnlock={(id: string) => {
+                  const userBadges = state.badges || [];
+                  if (!userBadges.includes(id)) {
+                      userBadges.push(id);
+                      setActiveBadge(BADGES.find((b: any) => b.id === id));
+                      updateDoc(doc(db, 'users', user!.uid), { badges: userBadges });
+                  }
+              }} />
+          </GameWindowShell>
+      );
   }
   
   if (appMode === 'blue_tower') {
-      return <BlueTower user={user} onBack={() => setAppMode('lobby')} deviceMode={deviceMode} />;
+      return (
+          <GameWindowShell
+              title="블루 타워 디펜스"
+              isFullscreen={isGameFullscreen}
+              onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+              onMinimize={() => setInDesktop(true)}
+              onClose={() => setInDesktop(true)}
+          >
+              <BlueTower user={user} onBack={() => setAppMode('lobby')} deviceMode={deviceMode} />
+          </GameWindowShell>
+      );
   }
 
 
   if (appMode === 'eat_clicker') {
-      return <EatClickerGame user={user} state={state} setState={setState} db={db} formatNumber={formatNumber} />;
+      return (
+          <GameWindowShell
+              title="Eat 클릭커 게임"
+              isFullscreen={isGameFullscreen}
+              onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+              onMinimize={() => setInDesktop(true)}
+              onClose={() => setInDesktop(true)}
+          >
+              <EatClickerGame user={user} state={state} setState={setState} db={db} formatNumber={formatNumber} />
+          </GameWindowShell>
+      );
   }
 
   if (appMode === 'survivor') {
-      return <SurvivorGame user={user} userData={state} onBack={() => setAppMode('lobby')} deviceMode={deviceMode} />;
+      return (
+          <GameWindowShell
+              title="탕탕특공대 (서바이벌)"
+              isFullscreen={isGameFullscreen}
+              onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+              onMinimize={() => setInDesktop(true)}
+              onClose={() => setInDesktop(true)}
+          >
+              <SurvivorGame user={user} userData={state} onBack={() => setAppMode('lobby')} deviceMode={deviceMode} />
+          </GameWindowShell>
+      );
   }
 
   if (appMode === 'fishing') {
       return (
-          <div className="flex-1 flex flex-col h-screen min-h-screen bg-slate-950 text-white select-none">
-              <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center z-10 shrink-0">
-                  <div className="flex gap-4">
-                      <button onClick={() => setAppMode('lobby')} className="text-slate-400 hover:text-white flex items-center gap-2 font-bold">
-                          <DoorOpen className="w-5 h-5" /> 로비로 돌아가기
-                      </button>
-                      {isOwner && (
-                          <button onClick={() => setShowAdminPanel(true)} className="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-lg flex items-center gap-2 font-bold hover:bg-yellow-500/30">
-                              <Crown className="w-4 h-4" /> 오너
+          <GameWindowShell
+              title="낚시 시뮬레이터"
+              isFullscreen={isGameFullscreen}
+              onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+              onMinimize={() => setInDesktop(true)}
+              onClose={() => setInDesktop(true)}
+          >
+              <div className="flex-1 flex flex-col h-full min-h-full bg-slate-950 text-white select-none">
+                  <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center z-10 shrink-0">
+                      <div className="flex gap-4">
+                          <button onClick={() => setAppMode('lobby')} className="text-slate-400 hover:text-white flex items-center gap-2 font-bold">
+                              <DoorOpen className="w-5 h-5" /> 로비로 돌아가기
                           </button>
-                      )}
+                          {isOwner && (
+                              <button onClick={() => setShowAdminPanel(true)} className="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-lg flex items-center gap-2 font-bold hover:bg-yellow-500/30">
+                                  <Crown className="w-4 h-4" /> 오너
+                              </button>
+                          )}
+                      </div>
                   </div>
-              </div>
-              <div className="flex-1 overflow-hidden relative">
-                  <FishingGame user={user} state={state} setState={setState} db={db} formatNumber={formatNumber} />
-              </div>
-              
-              <AnimatePresence>
-                  {showAdminPanel && (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
-                          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900 p-8 rounded-3xl max-w-sm w-full border-2 border-yellow-500/30 text-center">
-                              <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                              <h2 className="text-3xl font-black text-white mb-2">어드민 패널</h2>
-                              <p className="text-slate-400 font-bold mb-8">Coming Soon</p>
-                              <button onClick={() => setShowAdminPanel(false)} className="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold">닫기</button>
+                  <div className="flex-1 overflow-hidden relative">
+                      <FishingGame user={user} state={state} setState={setState} db={db} formatNumber={formatNumber} />
+                  </div>
+                  
+                  <AnimatePresence>
+                      {showAdminPanel && (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+                              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900 p-8 rounded-3xl max-w-sm w-full border-2 border-yellow-500/30 text-center">
+                                  <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+                                  <h2 className="text-3xl font-black text-white mb-2">어드민 패널</h2>
+                                  <p className="text-slate-400 font-bold mb-8">Coming Soon</p>
+                                  <button onClick={() => setShowAdminPanel(false)} className="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold">닫기</button>
+                              </motion.div>
                           </motion.div>
-                      </motion.div>
-                  )}
-              </AnimatePresence>
-
-
-
-          </div>
+                      )}
+                  </AnimatePresence>
+              </div>
+          </GameWindowShell>
       );
   }
 
     if (appMode === 'blog') {
-      return <BlogSystem user={user} onBack={() => setAppMode('lobby')} />;
+      return (
+          <GameWindowShell
+              title="캐로그 (공식 블로그)"
+              isFullscreen={isGameFullscreen}
+              onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+              onMinimize={() => setInDesktop(true)}
+              onClose={() => setInDesktop(true)}
+          >
+              <BlogSystem user={user} onBack={() => setAppMode('lobby')} />
+          </GameWindowShell>
+      );
   }
 
   if (appMode === 'speed_keyboard_2') {
-      return <SpeedKeyboard2 user={user} onBack={() => setAppMode('lobby')} />;
+      return (
+          <GameWindowShell
+              title="스피드 키보드 탈출 2"
+              isFullscreen={isGameFullscreen}
+              onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+              onMinimize={() => setInDesktop(true)}
+              onClose={() => setInDesktop(true)}
+          >
+              <SpeedKeyboard2 user={user} onBack={() => setAppMode('lobby')} />
+          </GameWindowShell>
+      );
   }
   
 
   if (appMode === 'lobby') {
       return (
-          <div className="min-h-screen bg-slate-950 text-white flex flex-col overflow-hidden select-none">
+          <GameWindowShell
+              title="캐토 게이밍 플랫폼"
+              isFullscreen={isGameFullscreen}
+              onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+              onMinimize={() => setInDesktop(true)}
+              onClose={() => setInDesktop(true)}
+          >
+              <div className="h-full bg-slate-950 text-white flex flex-col overflow-hidden select-none">
 
 
 {selectedGame && GAME_DETAILS[selectedGame] && (
@@ -2039,16 +1995,8 @@ export default function App() {
                   )}
               </AnimatePresence>
 
-
-
-
-
-
-
-
-
-
           </div>
+          </GameWindowShell>
       );
   }
 
@@ -2175,8 +2123,15 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen ${themeClasses.bg} text-white flex flex-col overflow-hidden select-none`}>
-      <PartyOverlay partyType={globalBuffs?.partyType || null} partyEndTime={globalBuffs?.partyEndTime || 0} clicks={partyClicks} onHit={() => setPartyClicks(c => c + 1)} />
+    <GameWindowShell
+        title="스피드 키보드 탈출"
+        isFullscreen={isGameFullscreen}
+        onToggleFullscreen={() => setIsGameFullscreen(prev => !prev)}
+        onMinimize={() => setInDesktop(true)}
+        onClose={() => setInDesktop(true)}
+    >
+      <div className={`h-full ${themeClasses.bg} text-white flex flex-col overflow-hidden select-none`}>
+        <PartyOverlay partyType={globalBuffs?.partyType || null} partyEndTime={globalBuffs?.partyEndTime || 0} clicks={partyClicks} onHit={() => setPartyClicks(c => c + 1)} />
       <AdminEventsOverlay user={user} state={state} setState={setState} adminEvents={adminEvents} formatNumber={formatNumber} db={db} hardcoreLives={hardcoreLives} setHardcoreLives={setHardcoreLives} />
 
       {/* Admin Image Notification */}
@@ -3154,7 +3109,7 @@ export default function App() {
           </div>
       )}
 
-    
       </div>
+    </GameWindowShell>
   );
 }

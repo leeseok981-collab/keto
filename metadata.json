@@ -1,7 +1,9 @@
 {
-  "name": "\uce90\ud2b8",
-  "description": "\ub2e4\uc591\ud55c \uac8c\uc784\ub4e4\uc744 \ub9cc\ub098\ubcf4\uc138\uc694!",
-  "requestFramePermissions": [],
+  "name": "캐트",
+  "description": "다양한 게임들과 유튜브 실시간 싱크 픽셀 노래방(PIXEL KARAOKE)을 만나보세요!",
+  "requestFramePermissions": [
+    "microphone"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
