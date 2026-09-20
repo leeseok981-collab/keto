@@ -437,7 +437,24 @@ export default function App() {
   });
   const [showCustomAuthModal, setShowCustomAuthModal] = useState<boolean>(() => !customUser);
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('keto_custom_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.username) {
+          return {
+            uid: parsed.username,
+            email: parsed.username + '@keto.app',
+            displayName: parsed.username,
+            photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${parsed.username}`,
+            isAnonymous: false
+          } as any;
+        }
+      }
+    } catch {}
+    return null;
+  });
   const [inDesktop, setInDesktop] = useState(true);
   const [isGameFullscreen, setIsGameFullscreen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -1149,7 +1166,9 @@ export default function App() {
               setShowCustomAuthModal(true);
               return;
             }
-            setAppMode('lobby');
+            if (appMode === 'loading') {
+              setAppMode('lobby');
+            }
             setInDesktop(false);
           }}
           onOpenSpeedKeyboard2={() => {
@@ -1170,6 +1189,8 @@ export default function App() {
           onSuccess={(u) => {
             setCustomUser(u);
             setShowCustomAuthModal(false);
+            setAppMode('lobby');
+            setInDesktop(false);
           }}
           onCancel={customUser ? () => setShowCustomAuthModal(false) : undefined}
         />
@@ -1177,8 +1198,8 @@ export default function App() {
     );
   }
   
-  if (!user) {
-    // If not in desktop and not user (e.g. they somehow bypassed or logged out), go back to desktop
+  if (!user && !customUser) {
+    // If not in desktop and neither user nor customUser exists, return to desktop
     setInDesktop(true);
     return null;
   }

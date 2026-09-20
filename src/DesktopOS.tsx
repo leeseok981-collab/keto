@@ -486,8 +486,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         if (item.type === 'app') {
             if (item.appType === 'notepad') handleOpenNotepad();
             else if (item.appType === 'calculator') { sound.click(); setShowCalculator(true); }
-            else if (item.appType === 'catchon') { sound.click(); setShowCatchOn(true); }
-            else if (item.appType === 'catto') { sound.click(); onLaunch(); }
+            else if (item.appType === 'catchon' || item.appType === 'catto') { sound.click(); onLaunch(); }
             else if (item.appType === 'catvas') { sound.click(); setShowCatvas(true); }
             else if (item.appType === 'screenshot') { sound.click(); setShowScreenshot(true); }
             else if (item.appType === 'paint') { sound.click(); setShowPaint(true); }
@@ -1940,7 +1939,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
 
 
 
-                        {/* 캐치온 */}
+                        {/* 캐치온 / 캐트 - 게임 시작 */}
                         <div 
                             draggable={true}
                             onDragStart={(e) => {
@@ -1953,13 +1952,13 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
                         >
                             <button 
-                                onClick={() => { setShowCatchOn(true); setShowStartMenu(false); }}
+                                onClick={() => { onLaunch(); setShowStartMenu(false); }}
                                 className="flex items-center gap-3 flex-1 text-left cursor-pointer"
                             >
-                                <img src="/assets/catchon.png" alt="CatchOn" className="w-8 h-8 rounded-lg object-cover" />
+                                <img src="/assets/catchon.png" alt="CatchOn" className="w-8 h-8 rounded-lg object-cover" onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }} />
                                 <div>
-                                    <div className="text-xs font-bold text-white">캐치온</div>
-                                    <div className="text-[10px] text-slate-400">구글 스타일 통합 검색 엔진</div>
+                                    <div className="text-xs font-bold text-white">캐치온 / 캐트 게임</div>
+                                    <div className="text-[10px] text-slate-400">메인 게임 바로 실행</div>
                                 </div>
                             </button>
                         </div>
