@@ -649,17 +649,14 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                 {/* Right Contextual Properties Panel */}
                 <CatvasPropertiesPanel
                     selectedObject={selectedObject}
-                    canvasPage={activePage}
                     onUpdateObject={(updated) => selectedId && handleUpdateObject(selectedId, updated)}
-                    onUpdatePageBackground={(bg) => {
-                        const updatedPages = [...project.pages];
-                        updatedPages[currentPageIndex] = { ...activePage, background: bg };
-                        recordChange({ ...project, pages: updatedPages });
-                    }}
-                    onDeleteObject={() => selectedId && handleDeleteObject(selectedId)}
-                    onDuplicateObject={() => selectedId && handleDuplicateObject(selectedId)}
-                    onReorderObject={(dir) => selectedId && handleReorderObject(selectedId, dir)}
-                    onSelectObject={(id) => setSelectedId(id)}
+                    onDeleteObject={(id) => handleDeleteObject(id)}
+                    onDuplicateObject={(id) => handleDuplicateObject(id)}
+                    onBringForward={(id) => handleReorderObject(id, 'up')}
+                    onSendBackward={(id) => handleReorderObject(id, 'down')}
+                    onTriggerRemoveBg={() => {}}
+                    onTriggerUpscale={() => {}}
+                    onOpenAiModal={() => {}}
                 />
             </div>
 

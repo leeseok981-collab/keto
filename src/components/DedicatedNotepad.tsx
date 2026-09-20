@@ -31,13 +31,17 @@ export const DedicatedNotepad: React.FC<DedicatedNotepadProps> = ({
     }, [initialContent]);
 
     // Handle cursor pos
-    const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const updateStats = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
         const text = e.currentTarget.value.slice(0, e.currentTarget.selectionStart);
         const lines = text.split('\n');
         setCursorPos({
             line: lines.length,
             col: lines[lines.length - 1].length + 1
         });
+    };
+
+    const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        updateStats(e);
     };
 
     // Save handler
@@ -140,7 +144,7 @@ export const DedicatedNotepad: React.FC<DedicatedNotepadProps> = ({
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     onKeyUp={handleKeyUp}
-                    onClick={handleKeyUp}
+                    onClick={updateStats}
                     placeholder="여기에 자유롭게 내용을 입력하세요... (Ctrl+S로 저장)"
                     className={`w-full h-full bg-transparent text-slate-100 outline-none resize-none leading-relaxed selection:bg-cyan-700 selection:text-white ${
                         fontFamily === 'mono' ? 'font-mono' : 'font-sans'

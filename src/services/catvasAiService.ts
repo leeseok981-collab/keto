@@ -65,10 +65,28 @@ export class CatvasAiService {
         };
     }
 
+    private async safeFetch(url: string, options?: RequestInit) {
+        try {
+            const res = await fetch(url, options);
+            const data = await res.json();
+            if (!res.ok) {
+                const errorMsg = data.error || `Server Error: ${res.status}`;
+                if (res.status === 429 || errorMsg.includes('Rate') || errorMsg.includes('한도')) {
+                    throw new Error('AI 사용량 한도를 초과했습니다. 잠시 후(약 10초) 다시 시도해 주세요.');
+                }
+                throw new Error(errorMsg);
+            }
+            return data;
+        } catch (err: any) {
+            console.error('[AI Service Error]:', err);
+            throw err;
+        }
+    }
+
     // 1. Text Copywriting & Creative Generation
     async generateText(prompt: string, tone?: string, format: string = 'general', context?: string): Promise<string> {
         const userKey = this.getClientApiKey();
-        const res = await fetch('/api/gemini/catvas', {
+        const data = await this.safeFetch('/api/gemini/catvas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -81,10 +99,6 @@ export class CatvasAiService {
             })
         });
 
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.error || 'AI 텍스트 생성 실패');
-        }
         return data.result || '';
     }
 
@@ -96,7 +110,7 @@ export class CatvasAiService {
     // 3. Translation
     async translateText(text: string, targetLanguage: string): Promise<string> {
         const userKey = this.getClientApiKey();
-        const res = await fetch('/api/gemini/catvas', {
+        const data = await this.safeFetch('/api/gemini/catvas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -108,10 +122,6 @@ export class CatvasAiService {
             })
         });
 
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.error || 'AI 번역 실패');
-        }
         return data.result || '';
     }
 
@@ -123,7 +133,7 @@ export class CatvasAiService {
     // 5. Image Generation
     async generateImage(prompt: string, style?: string, aspectRatio?: string): Promise<string> {
         const userKey = this.getClientApiKey();
-        const res = await fetch('/api/gemini/catvas', {
+        const data = await this.safeFetch('/api/gemini/catvas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -134,10 +144,6 @@ export class CatvasAiService {
             })
         });
 
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.error || 'AI 이미지 생성에 실패했습니다. (API 키 필요)');
-        }
         if (data.imageUrl) {
             return data.imageUrl;
         }
@@ -167,7 +173,7 @@ export class CatvasAiService {
         // 1. Fetch AI Storyboard from Gemini API
         let storyboard: any = null;
         try {
-            const res = await fetch('/api/gemini/catvas', {
+            const data = await this.safeFetch('/api/gemini/catvas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -178,10 +184,7 @@ export class CatvasAiService {
                     clientApiKey: userKey
                 })
             });
-            if (res.ok) {
-                const data = await res.json();
-                storyboard = data.result;
-            }
+            storyboard = data.result;
         } catch (e) {
             console.warn('AI video storyboard fallback:', e);
         }

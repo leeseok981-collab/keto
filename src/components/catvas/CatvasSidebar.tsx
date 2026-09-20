@@ -317,7 +317,7 @@ export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
                                     .map((tpl) => (
                                         <div
                                             key={tpl.id}
-                                            onClick={() => { sound.click(); onApplyTemplate(tpl.pages, tpl.width, tpl.height); }}
+                                            onClick={() => { sound.click(); onApplyTemplate?.(tpl); }}
                                             className="p-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-purple-500/50 cursor-pointer transition-all hover:scale-[1.01]"
                                         >
                                             <div className="text-xs font-bold text-white mb-1">{tpl.name}</div>

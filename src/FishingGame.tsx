@@ -111,7 +111,7 @@ const FishingRhythm = ({ fish, rodLevel, onWin, onLose }: any) => {
         };
     }, [handleAction]);
     
-    const animRef = React.useRef<number>();
+    const animRef = React.useRef<number | undefined>(undefined);
     
     React.useEffect(() => {
         const ctx = canvasRef.current?.getContext('2d');

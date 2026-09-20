@@ -1,6 +1,5 @@
 import express from "express";
-import path from "path";
-import { createServer as createViteServer } from "vite";
+import path from "node:path";
 import { GoogleGenAI } from "@google/genai";
 import * as dotenv from "dotenv";
 
@@ -8,7 +7,7 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 3000);
 
   app.use(express.json({ limit: '10mb' }));
 
@@ -26,7 +25,7 @@ async function startServer() {
     });
   };
 
-  // Helper with exponential backoff & model fallback for 503 / high demand / quota limits
+  // Helper with exponential backoff & model fallback for 429 / 503 / high demand / rate limits / quota limits
   const generateWithFallback = async (
     aiInstance: GoogleGenAI,
     modelsToTry: string[],
@@ -34,7 +33,7 @@ async function startServer() {
   ) => {
     let lastError: any = null;
     for (const model of modelsToTry) {
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const res = await aiInstance.models.generateContent({
             ...params,
@@ -48,15 +47,21 @@ async function startServer() {
 
           const isTransient = 
             errMsg.includes('503') || 
+            errMsg.includes('429') ||
             errMsg.includes('high demand') || 
             errMsg.includes('UNAVAILABLE') || 
             errMsg.includes('RESOURCE_EXHAUSTED') ||
+            errMsg.includes('Rate exceeded') ||
+            errMsg.includes('Quota exceeded') ||
+            errMsg.includes('quota') ||
             err.status === 'UNAVAILABLE' ||
+            err.status === 429 ||
             err.status === 503;
 
-          if (isTransient && attempt === 0) {
-            // Short backoff before 2nd attempt on same model
-            await new Promise((resolve) => setTimeout(resolve, 800));
+          if (isTransient && attempt < 2) {
+            // Increased backoff for rate limits
+            const delay = (attempt + 1) * 2000;
+            await new Promise((resolve) => setTimeout(resolve, delay));
             continue;
           }
           // Break to next fallback model
@@ -132,7 +137,7 @@ async function startServer() {
 
         const response = await generateWithFallback(
           activeAi,
-          ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
           {
             contents: `${systemInstruction}\n\n[톤: ${tone || '전문적이고 세련됨'}]\n\n내용:\n${userPrompt}\n\n${context ? `[추가 맥락]: ${context}` : ''}`,
           }
@@ -186,7 +191,7 @@ async function startServer() {
         try {
           const response = await generateWithFallback(
             activeAi,
-            ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+            ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
             {
               contents: `${systemInstruction}\n\n[비디오 프롬프트: ${prompt}]\n[스타일: ${tone || 'cinematic 4K'}]\n[화면 비율: ${req.body.aspectRatio || '16:9'}]\n\n다음 JSON 구조로 응답하세요 (코드블록 없이):
 {
@@ -230,6 +235,12 @@ async function startServer() {
       res.status(400).json({ error: "Invalid mode specified" });
     } catch (err: any) {
       console.error(err);
+      const errMsg = String(err?.message || err);
+      if (errMsg.includes('429') || errMsg.includes('Rate exceeded') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota')) {
+        return res.status(429).json({ 
+          error: "AI 요청 사용량 한도(Rate limit)를 초과했습니다. 약 10~15초 후 다시 시도해 주세요." 
+        });
+      }
       res.status(500).json({ error: err.message || "AI 요청 처리 실패" });
     }
   });
@@ -247,7 +258,7 @@ async function startServer() {
 
       const response = await generateWithFallback(
         ai,
-        ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
         {
           contents: `You are an AI assistant. Answer concisely and helpfully: "${userInput}".`,
         }
@@ -256,26 +267,91 @@ async function startServer() {
       res.json({ text: response.text });
     } catch (err: any) {
       console.error(err);
+      const errMsg = String(err?.message || err);
+      if (errMsg.includes('429') || errMsg.includes('Rate exceeded') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota')) {
+        return res.status(429).json({ 
+          error: "API 사용량 한도(Rate limit)를 초과했습니다. 잠시 후 다시 시도해 주세요." 
+        });
+      }
       res.status(500).json({ error: err.message });
     }
   });
 
+  // Dedicated Conversational AI Chat Endpoint
+  app.post("/api/gemini/chat", async (req, res) => {
+    try {
+      const ai = getGeminiAI();
+      const { messages, systemPrompt, personality } = req.body;
+
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ error: "Messages array is required" });
+      }
+
+      if (!ai) {
+        // Fallback local smart response if API key is not yet set
+        const lastUserMsg = messages[messages.length - 1]?.text || "";
+        return res.json({ 
+          text: `안녕하세요! KETO & CatchOn AI 비서입니다. 🤖\n\n"${lastUserMsg}"에 대한 질문을 확인했습니다!\n\n(참고: GEMINI_API_KEY가 설정되어 있으면 실시간 최신 Gemini 모델의 초지능 답변을 생성합니다. 현재 시뮬레이션 모드로 친절하게 대화를 나눌 수 있습니다!)` 
+        });
+      }
+
+      // Convert messages to Gemini format
+      const systemInstruction = systemPrompt || 
+        "당신은 CatchOn OS 및 KETO Phone의 친절하고 유능한 개인 AI 비서 'KETO AI'입니다. 한국어로 정중하고 명쾌하며 도움이 되는 답변을 제공합니다. 마크다운 형식을 적절히 사용하여 가독성을 높여주세요.";
+
+      const contents = messages.map((m: any) => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+      }));
+
+      const response = await generateWithFallback(
+        ai,
+        ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+        {
+          contents,
+          config: {
+            systemInstruction: {
+              parts: [{ text: systemInstruction }]
+            }
+          }
+        }
+      );
+
+      res.json({ text: response.text });
+    } catch (err: any) {
+      console.error("[Gemini Chat Error]:", err);
+      const errMsg = String(err?.message || err);
+      if (errMsg.includes('429') || errMsg.includes('Rate exceeded') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota')) {
+        return res.json({ 
+          text: `⚠️ **AI 서버 사용량 한도 초과 (Rate Limit)**\n\n현재 순간적으로 AI 요청 사용량이 폭주하여 답변 생성이 제한되었습니다.\n약 10초~15초 후 다시 질문을 입력해 주세요! 🤖✨` 
+        });
+      }
+      res.status(500).json({ error: err.message || "AI 대화 처리 중 오류가 발생했습니다." });
+    }
+  });
+
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: false,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    // In production, server.cjs is located in the dist folder, 
+    // and process.cwd() is the project root.
+    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
 

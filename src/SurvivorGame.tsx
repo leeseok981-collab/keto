@@ -78,6 +78,7 @@ export default function SurvivorGame({ user, userData, onBack, deviceMode }: any
     // UI State
     const [mode, setMode] = useState<'menu' | 'playing'>('menu');
     const [menuTab, setMenuTab] = useState<'play' | 'gacha' | 'inventory'>('play');
+    const [showAllSkills, setShowAllSkills] = useState(false);
     const [currentWorldIdx, setCurrentWorldIdx] = useState(0);
     const [gachaResult, setGachaResult] = useState<any>(null);
     const [isRoulette, setIsRoulette] = useState(false);
@@ -729,7 +730,7 @@ export default function SurvivorGame({ user, userData, onBack, deviceMode }: any
             {(gameState === 'playing' || gameState === 'levelup') && (
                 <div className="absolute bottom-6 left-6 z-10 flex flex-col gap-2 max-w-[50%]">
                     <div className="flex flex-wrap gap-2 pointer-events-none">
-                        {Object.entries(playerSkills).filter(([id, lv]) => Number(lv) > 0).slice(0, menuTab === 'showAllSkills' ? 99 : 6).map(([id, lv]) => {
+                        {Object.entries(playerSkills).filter(([id, lv]) => Number(lv) > 0).slice(0, showAllSkills ? 99 : 6).map(([id, lv]) => {
                             const s = SKILL_DB[id];
                             if (!s) return null;
                             return (
@@ -741,8 +742,8 @@ export default function SurvivorGame({ user, userData, onBack, deviceMode }: any
                         })}
                     </div>
                     {Object.entries(playerSkills).filter(([id, lv]) => Number(lv) > 0).length > 6 && (
-                        <button onClick={() => setMenuTab(menuTab === 'showAllSkills' ? 'playing' : 'showAllSkills')} className="w-fit bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1 rounded-full border border-slate-600 shadow-lg pointer-events-auto">
-                            {menuTab === 'showAllSkills' ? '접기 ◀' : '더보기 ▶'}
+                        <button onClick={() => setShowAllSkills(prev => !prev)} className="w-fit bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1 rounded-full border border-slate-600 shadow-lg pointer-events-auto">
+                            {showAllSkills ? '접기 ◀' : '더보기 ▶'}
                         </button>
                     )}
                 </div>

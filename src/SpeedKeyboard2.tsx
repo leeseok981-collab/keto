@@ -315,7 +315,7 @@ export function SpeedKeyboard2({ user, onBack }: SpeedKeyboard2Props) {
                     
                     <div className="flex items-center gap-2.5 ml-1 sm:ml-2">
                         <img 
-                            src="/assets/gpt1아이콘.png" 
+                            src="/assets/gpt1icon.png" 
                             alt="Logo" 
                             className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-cyan-500/50 shadow-md object-cover shrink-0" 
                         />

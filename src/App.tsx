@@ -99,6 +99,11 @@ interface GameState {
   trophyMulti: number;
   keyboardSound: number;
   naro: number;
+  badges?: string[];
+  playTime?: number;
+  age?: number;
+  description?: string;
+  doubleSpeed?: boolean;
 }
 
 const DEFAULT_STATE: GameState = {
@@ -291,10 +296,10 @@ const GAME_DETAILS: Record<string, any> = {
         banner: '/assets/gpt2.png',
         images: [
             '/assets/gpt2.png',
-            '/assets/gpt1아이콘.png'
+            '/assets/gpt1icon.png'
         ],
         tags: ['후속작', '얼리액세스', '타이핑', '스피드'],
-        icon: '/assets/gpt1아이콘.png'
+        icon: '/assets/gpt1icon.png'
     },
 
 
@@ -432,7 +437,7 @@ export default function App() {
   const [state, setState] = useState<GameState>(DEFAULT_STATE);
   const [currentTab, setCurrentTab] = useState<'training' | 'race' | 'collection' | 'shop' | 'inventory' | 'world' | 'treadmill300'>('training');
   const [isTreadmill, setIsTreadmill] = useState(false);
-  const [appMode, setAppMode] = useState<'loading' | 'lobby' | 'game' | 'wardrobe' | 'channel' | 'createGame' | 'fishing' | 'survivor' | 'gardenGame' | 'blue_tower' | 'eat_clicker' | 'patchnotes' | 'blog' | 'notepad' | 'speed_keyboard_2'>('loading');
+  const [appMode, setAppMode] = useState<'loading' | 'lobby' | 'game' | 'wardrobe' | 'channel' | 'createGame' | 'fishing' | 'survivor' | 'gardenGame' | 'blue_tower' | 'eat_clicker' | 'patchnotes' | 'blog' | 'notepad' | 'speed_keyboard_2' | 'leaderboard'>('loading');
   const [deviceMode, setDeviceMode] = useState<'pc' | 'mobile'>('pc');
   const [skip300xCutscene, setSkip300xCutscene] = useState(false);
   const [topSpeedUsers, setTopSpeedUsers] = useState<any[]>([]);
@@ -1563,7 +1568,7 @@ export default function App() {
                 </button>
                 <div className="absolute bottom-3 left-6 flex items-center gap-3">
                     <img 
-                        src="/assets/gpt1아이콘.png" 
+                        src="/assets/gpt1icon.png" 
                         alt="icon" 
                         className="w-14 h-14 rounded-xl border-2 border-cyan-400 object-cover shadow-lg" 
                     />
@@ -1764,7 +1769,7 @@ export default function App() {
                                     <p className="text-xs text-slate-400 mt-1">로그라이크 서바이벌</p></div>
                                 <div onMouseEnter={sound.hover} onClick={() => { sound.click(); setSelectedGame('mystery'); }} className="bg-slate-900 rounded-2xl p-4 border border-slate-700 hover:border-cyan-400 hover:bg-slate-800 cursor-pointer transition-colors text-center group">
                                     <div className="bg-gradient-to-br from-indigo-900 to-cyan-900 aspect-square rounded-xl mb-3 flex items-center justify-center group-hover:scale-105 transition-transform relative overflow-hidden border border-cyan-500/30">
-                                        <img src="/assets/gpt1아이콘.png" alt="스피드 키보드 탈출 2" className="w-full h-full object-cover rounded-xl" />
+                                        <img src="/assets/gpt1icon.png" alt="스피드 키보드 탈출 2" className="w-full h-full object-cover rounded-xl" />
                                     </div>
                                     <h3 className="font-black text-sm text-white truncate">스피드 키보드 탈출 2</h3>
                                     <p className="text-xs text-amber-400 font-bold mt-1 whitespace-nowrap">얼리액세스</p>
@@ -2044,7 +2049,7 @@ export default function App() {
                               if (file.size > 10000 * 1024) return alert('10MB 이하만 가능합니다.');
                               const reader = new FileReader();
                               reader.onload = async (ev) => {
-                                  const pic = ev.target.result;
+                                  const pic = (ev.target?.result as string) || '';
                                   await updateDoc(doc(db, 'users', user.uid), { profilePic: pic });
                                   setState(s => ({...s, profilePic: pic}));
                                   alert('프로필 사진이 업데이트되었습니다.');
@@ -2056,7 +2061,7 @@ export default function App() {
                       <div>
                           <label className="block text-sm font-bold text-slate-400 mb-2">나이</label>
                           <input type="number" placeholder="나이 입력" value={state.age || ''} onChange={(e) => {
-                              const age = e.target.value;
+                              const age = Number(e.target.value) || 0;
                               setState(s => ({...s, age}));
                               updateDoc(doc(db, 'users', user.uid), { age });
                           }} className="w-full bg-slate-800 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-bold"/>

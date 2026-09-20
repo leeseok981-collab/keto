@@ -332,6 +332,7 @@ export interface CanvasTemplate {
         | 'a4-doc' 
         | 'wallpaper';
     previewUrl?: string;
+    thumbnailUrl?: string;
     width: number;
     height: number;
     pages: CanvasPage[];

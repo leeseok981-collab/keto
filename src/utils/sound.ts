@@ -250,6 +250,10 @@ export const sound = {
         playTone(900, 'sine', 0.04, 0.08);
         setTimeout(() => playTone(1400, 'sine', 0.06, 0.06), 30);
     },
+    camera: () => {
+        playTone(1800, 'sine', 0.03, 0.08);
+        setTimeout(() => playTone(1200, 'triangle', 0.05, 0.07), 40);
+    },
     fanfare: () => {
         playTone(523.25, 'triangle', 0.12, 0.1); // C5
         setTimeout(() => playTone(659.25, 'triangle', 0.12, 0.1), 120); // E5

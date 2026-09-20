@@ -24,7 +24,7 @@ export function AdminEventsOverlay({ user, state, setState, adminEvents, formatN
     const [doorProgress, setDoorProgress] = useState(0);
     const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const keysRef = useRef<{ [key: string]: boolean }>({});
-    const animRef = useRef<number>();
+    const animRef = useRef<number | undefined>(undefined);
     const [circleHovered, setCircleHovered] = useState<number>(0); // 0 none, 1 normal, 2 small
 
     useEffect(() => {
