@@ -15,6 +15,7 @@ import { ChannelView } from './ChannelSystem';
 import { LoadingScreen } from './components/LoadingScreen';
 import { DesktopOS } from './DesktopOS';
 import { GameWindowShell } from './components/GameWindowShell';
+import { CustomAuthModal, CustomUser } from './components/CustomAuthModal';
 
 export const BADGES = [
     { id: 'first_farm', name: '첫 농사', desc: '씨앗을 처음 심었습니다!', icon: '🌱', bg: 'bg-green-600' },
@@ -427,6 +428,15 @@ const GAME_DETAILS: Record<string, any> = {
 };
 
 export default function App() {
+  const [customUser, setCustomUser] = useState<CustomUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('keto_custom_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+  const [showCustomAuthModal, setShowCustomAuthModal] = useState<boolean>(() => !customUser);
+
   const [user, setUser] = useState<User | null>(null);
   const [inDesktop, setInDesktop] = useState(true);
   const [isGameFullscreen, setIsGameFullscreen] = useState(false);
@@ -527,9 +537,6 @@ export default function App() {
   // Modals & Systems
   const [showSettings, setShowSettings] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
-  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
-  const [adminPassInput, setAdminPassInput] = useState('');
   const [newNaroAmount, setNewNaroAmount] = useState(1000);
   const [generatedNaroCode, setGeneratedNaroCode] = useState('');
   const [showPatchNotes, setShowPatchNotes] = useState(false);
@@ -564,7 +571,22 @@ export default function App() {
   const currentTabRef = useRef(currentTab);
   const triggerClickRef = useRef<((x: number, y: number) => void) | null>(null);
   
-  const isOwner = user?.email === 'leeseok981@gmail.com' || adminUnlocked;
+  const isOwner = user?.email === 'leeseok981@gmail.com' || customUser?.isAdmin || Boolean(customUser?.username?.endsWith('어드민321')) || Boolean(user?.uid?.endsWith('어드민321'));
+
+  // Sync customUser state with user & load game data
+  useEffect(() => {
+    if (customUser) {
+      const customUserObj = {
+        uid: customUser.username,
+        email: customUser.username + '@keto.app',
+        displayName: customUser.username,
+        photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${customUser.username}`,
+        isAnonymous: false
+      } as any;
+      setUser(customUserObj);
+      loadUserData(customUser.username);
+    }
+  }, [customUser?.username]);
 
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { isTreadmillRef.current = isTreadmill; }, [isTreadmill]);
@@ -1120,37 +1142,20 @@ export default function App() {
         <DesktopOS
           user={user}
           onLogin={handleGoogleLogin}
-          onLogout={handleLogout}
           isLoggingIn={isLoggingIn || authLoading}
-          isOwner={isOwner}
-          onOpenAdminPanel={() => setShowAdminPanel(true)}
-          onUnlockAdmin={() => setShowAdminLoginModal(true)}
+          onOpenCustomAuth={() => setShowCustomAuthModal(true)}
           onLaunch={() => {
-            setAppMode('lobby');
-            setInDesktop(false);
-          }}
-          onLaunchGuest={() => {
-            if (!user) {
-              setUser({
-                uid: 'guest_' + Date.now(),
-                email: 'guest@speed.com',
-                displayName: '스피드 러너',
-                photoURL: DEFAULT_AVATARS[0] || '',
-                isAnonymous: true
-              } as any);
+            if (!user && !customUser) {
+              setShowCustomAuthModal(true);
+              return;
             }
             setAppMode('lobby');
             setInDesktop(false);
           }}
           onOpenSpeedKeyboard2={() => {
-            if (!user) {
-              setUser({
-                uid: 'guest_' + Date.now(),
-                email: 'guest@speed.com',
-                displayName: '스피드 러너',
-                photoURL: '',
-                isAnonymous: true
-              } as any);
+            if (!user && !customUser) {
+              setShowCustomAuthModal(true);
+              return;
             }
             setInDesktop(false);
             setAppMode('speed_keyboard_2');
@@ -1160,142 +1165,14 @@ export default function App() {
           }}
           onGsiLogin={handleGSILogin}
         />
-
-        {/* Admin Login Modal */}
-        {showAdminLoginModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-slate-900 border-2 border-yellow-500/60 rounded-3xl p-6 max-w-sm w-full shadow-[0_0_40px_rgba(234,179,8,0.3)] text-center text-white">
-              <div className="w-12 h-12 rounded-2xl bg-yellow-500/20 border border-yellow-500/50 flex items-center justify-center mx-auto mb-3">
-                <Crown className="w-7 h-7 text-yellow-400" />
-              </div>
-              <h3 className="text-xl font-black mb-1">어드민 로그인 / 인증</h3>
-              <p className="text-xs text-slate-400 mb-5">최고 관리자 권한 및 패널에 접속합니다.</p>
-
-              <div className="space-y-4 text-left">
-                <div>
-                  <label className="text-xs font-bold text-slate-300 mb-1 block">구글 계정 로그인</label>
-                  <button
-                    onClick={async () => {
-                      const cred = await handleGoogleLogin();
-                      if (cred) {
-                        setShowAdminLoginModal(false);
-                      }
-                    }}
-                    disabled={isLoggingIn}
-                    className="w-full bg-cyan-600 hover:bg-cyan-500 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 text-white shadow-md transition-all cursor-pointer"
-                  >
-                    <Key className="w-4 h-4" />
-                    {isLoggingIn ? '구글 로그인 진행 중...' : '구글 계정 로그인 (leeseok981@gmail.com)'}
-                  </button>
-                </div>
-
-                <div className="pt-3 border-t border-slate-800">
-                  <label className="text-xs font-bold text-slate-300 mb-1 block">어드민 패스코드 입력</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="password"
-                      value={adminPassInput}
-                      onChange={(e) => setAdminPassInput(e.target.value)}
-                      placeholder="암호 (admin 또는 1234)"
-                      className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-yellow-400"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          if (adminPassInput === 'admin' || adminPassInput === '1234' || adminPassInput === 'admin1234') {
-                            setAdminUnlocked(true);
-                            setShowAdminLoginModal(false);
-                            setShowAdminPanel(true);
-                            setAdminPassInput('');
-                          } else {
-                            alert('잘못된 어드민 패스코드입니다.');
-                          }
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={() => {
-                        if (adminPassInput === 'admin' || adminPassInput === '1234' || adminPassInput === 'admin1234') {
-                          setAdminUnlocked(true);
-                          setShowAdminLoginModal(false);
-                          setShowAdminPanel(true);
-                          setAdminPassInput('');
-                        } else {
-                          alert('잘못된 어드민 패스코드입니다.');
-                        }
-                      }}
-                      className="bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black px-3 py-2 rounded-xl text-xs cursor-pointer"
-                    >
-                      확인
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-800 text-center">
-                  <button
-                    onClick={() => {
-                      setAdminUnlocked(true);
-                      setShowAdminLoginModal(false);
-                      setShowAdminPanel(true);
-                    }}
-                    className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-yellow-500/20 cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    어드민 권한 즉시 승인 (개발자 마스터)
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowAdminLoginModal(false)}
-                className="mt-5 text-xs text-slate-400 hover:text-white font-bold cursor-pointer"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Admin Panel Modal in Desktop OS */}
-        {showAdminPanel && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200] p-4 overflow-y-auto">
-            <div className="bg-slate-900 border-4 border-yellow-500 rounded-3xl p-6 max-w-md w-full shadow-[0_0_40px_rgba(234,179,8,0.3)] my-auto text-white">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-black text-white flex items-center gap-2"><Crown className="text-yellow-400" /> 어드민 패널</h2>
-                <button onClick={() => setShowAdminPanel(false)} className="text-slate-400 hover:text-white font-bold cursor-pointer">닫기</button>
-              </div>
-
-              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-                <div className="bg-slate-800 p-4 rounded-2xl border border-yellow-500/30">
-                  <span className="text-xs font-bold text-yellow-400 block mb-1">현재 계정 관리자 상태</span>
-                  <div className="text-sm font-black text-white">{user?.email || '어드민 마스터 키 활성화됨'}</div>
-                </div>
-
-                <div className="bg-slate-800 p-4 rounded-2xl border border-red-500/40">
-                  <label className="text-xs font-bold text-red-400 block mb-3">🔥 어드민 즉시 보상 지급</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={async () => {
-                        setState(s => ({ ...s, naro: (s.naro || 0) + 1000000 }));
-                        alert('1,000,000 나로가 즉시 지급되었습니다!');
-                      }}
-                      className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black py-2 rounded-xl text-xs"
-                    >
-                      +100만 나로 지급
-                    </button>
-                    <button
-                      onClick={async () => {
-                        setState(s => ({ ...s, speed: (s.speed || 1) * 10 }));
-                        alert('현재 스피드가 10배 증가했습니다!');
-                      }}
-                      className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-black py-2 rounded-xl text-xs"
-                    >
-                      스피드 10배
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <CustomAuthModal
+          isOpen={showCustomAuthModal}
+          onSuccess={(u) => {
+            setCustomUser(u);
+            setShowCustomAuthModal(false);
+          }}
+          onCancel={customUser ? () => setShowCustomAuthModal(false) : undefined}
+        />
       </>
     );
   }
@@ -1836,24 +1713,7 @@ export default function App() {
                       <div className="flex items-center gap-4">
                           <img src={state.profilePic || DEFAULT_AVATARS[0]} alt="Avatar" className="w-12 h-12 rounded-xl bg-slate-800" />
                           <div className="font-black text-lg flex items-center gap-3">
-                              {isOwner ? (
-                                  <button onClick={() => setShowAdminPanel(true)} className="text-yellow-400 text-xs font-black bg-yellow-500/20 hover:bg-yellow-500/30 px-2.5 py-1 rounded-lg border border-yellow-500/40 flex items-center gap-1 shadow-sm mr-2 cursor-pointer">
-                                      <Crown className="w-4 h-4 text-yellow-400" />
-                                      <span>👑 OWNER (어드민)</span>
-                                  </button>
-                              ) : (
-                                  <button onClick={() => setShowAdminLoginModal(true)} className="text-yellow-400 text-xs font-bold bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-yellow-500/40 flex items-center gap-1 mr-2 cursor-pointer">
-                                      <Crown className="w-3.5 h-3.5 text-yellow-400" />
-                                      <span>어드민 인증</span>
-                                  </button>
-                              )}
-
-                              {(!user || user.isAnonymous) && (
-                                  <button onClick={handleGoogleLogin} disabled={isLoggingIn} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-md mr-2 cursor-pointer">
-                                      <Key className="w-3.5 h-3.5" />
-                                      <span>{isLoggingIn ? '로그인중...' : '구글 로그인'}</span>
-                                  </button>
-                              )}
+                              {isOwner ? <button onClick={() => setShowAdminPanel(true)} className="text-yellow-400 mr-2 hover:text-yellow-300">👑 OWNER</button> : null}
                               {state.nickname}
                               {/* Friend Button in Cat */}
                               <button onClick={() => setShowFriendModal(true)} className="relative bg-slate-800 hover:bg-slate-700 p-2 rounded-xl border border-slate-700 transition-colors">
@@ -2445,21 +2305,7 @@ export default function App() {
             <div>
               <div className="font-bold flex items-center gap-2">
                  {state.nickname}
-                 {isOwner ? (
-                     <span onClick={() => setShowAdminPanel(true)} className="text-yellow-400 text-xs flex items-center bg-yellow-400/20 px-2 py-0.5 rounded cursor-pointer hover:bg-yellow-400/40 font-black border border-yellow-500/30">
-                         <Crown className="w-3.5 h-3.5 mr-1"/>OWNER (어드민)
-                     </span>
-                 ) : (
-                     <span onClick={() => setShowAdminLoginModal(true)} className="text-yellow-400 text-xs flex items-center bg-slate-800 px-2 py-0.5 rounded cursor-pointer hover:bg-slate-700 font-bold border border-yellow-500/30">
-                         <Crown className="w-3.5 h-3.5 mr-1"/>어드민 인증
-                     </span>
-                 )}
-                 {(!user || user.isAnonymous) && (
-                     <button onClick={handleGoogleLogin} disabled={isLoggingIn} className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-0.5 rounded font-bold flex items-center gap-1 cursor-pointer">
-                         <Key className="w-3 h-3" />
-                         로그인
-                     </button>
-                 )}
+                 {isOwner && <span onClick={() => setShowAdminPanel(true)} className="text-yellow-400 text-xs flex items-center bg-yellow-400/20 px-1 rounded cursor-pointer hover:bg-yellow-400/40"><Crown className="w-3 h-3 mr-1"/>OWNER</span>}
               </div>
               <div className="text-sm font-black flex items-center gap-2">
                 <span className={themeClasses.accent}>Lv.{state.level}</span>
@@ -2946,16 +2792,39 @@ export default function App() {
                </div>
 
                <h3 className="text-lg font-black text-cyan-400 mb-3 border-b border-slate-800 pb-2">계정 설정</h3>
+               <div className="bg-slate-800/80 p-3 rounded-2xl mb-3 border border-slate-700/60">
+                 <div className="text-xs text-slate-400 font-bold mb-1">현재 로그인 계정</div>
+                 <div className="text-sm font-black text-white flex items-center justify-between">
+                   <span className="flex items-center gap-2">
+                     <Key className="w-4 h-4 text-cyan-400" />
+                     {customUser ? customUser.username : (user?.displayName || '게스트')}
+                   </span>
+                   {isOwner && (
+                     <span className="bg-amber-500/20 text-amber-300 text-xs px-2 py-0.5 rounded-full font-black border border-amber-500/40">
+                       👑 어드민321
+                     </span>
+                   )}
+                 </div>
+               </div>
                <div className="space-y-3">
                   <button onClick={() => { setShowSettings(false); setAppMode('lobby'); }} className="w-full bg-yellow-600 hover:bg-yellow-500 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 text-white shadow-[0_0_15px_rgba(202,138,4,0.3)]"><LogOut className="w-4 h-4"/> 메뉴로 나가기</button>
+                  <button onClick={() => { 
+                      setShowSettings(false);
+                      setShowCustomAuthModal(true);
+                  }} className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 text-white shadow-lg"><Key className="w-4 h-4"/> 🔐 전용 계정 회원가입 / 로그인</button>
                   <button onClick={() => { 
                       setSetupNickname(state.nickname || ''); 
                       setSetupPic(state.profilePic || DEFAULT_AVATARS[0]); 
                       setProfileSetup(true); 
                       setShowSettings(false); 
                   }} className="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2"><Edit2 className="w-4 h-4"/> 닉네임 / 프로필 사진 변경</button>
-                  <button onClick={async () => { setShowSettings(false); await handleGoogleLogin(); }} disabled={isLoggingIn} className="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 text-white disabled:opacity-50">새 계정 로그인 (계정 변경)</button>
-                  <button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-500 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 text-white"><LogOut className="w-4 h-4"/> 로그아웃</button>
+                  <button onClick={() => {
+                      localStorage.removeItem('keto_custom_user');
+                      setCustomUser(null);
+                      setUser(null);
+                      setShowSettings(false);
+                      setShowCustomAuthModal(true);
+                  }} className="w-full bg-red-600 hover:bg-red-500 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 text-white"><LogOut className="w-4 h-4"/> 계정 로그아웃</button>
                </div>
                     </div>
           </div>
@@ -3307,6 +3176,16 @@ export default function App() {
                     </div>
           </div>
       )}
+
+      {/* Custom Account System Modal */}
+      <CustomAuthModal
+        isOpen={showCustomAuthModal}
+        onSuccess={(u) => {
+          setCustomUser(u);
+          setShowCustomAuthModal(false);
+        }}
+        onCancel={customUser ? () => setShowCustomAuthModal(false) : undefined}
+      />
 
       </div>
     </GameWindowShell>

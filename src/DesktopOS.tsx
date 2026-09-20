@@ -9,7 +9,7 @@ import {
     CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
     FolderPlus, Monitor, Video, ShieldCheck, Calculator, Cat,
     PlaySquare, Code, Apple, Layout, Scissors, Palette, MousePointer, Sliders,
-    Camera, Bot, Plus, Crown, Key
+    Camera, Bot, Plus
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { sound, setMasterVolume, getMasterVolume } from './utils/sound';
@@ -38,7 +38,7 @@ export interface DesktopItem {
     id: string;
     name: string;
     type: DesktopItemType;
-    appType?: 'catto' | 'notepad' | 'catchon' | 'calculator' | 'catvas' | 'screenshot' | 'paint' | 'aichat' | 'phone' | 'admin';
+    appType?: 'catto' | 'notepad' | 'catchon' | 'calculator' | 'catvas' | 'screenshot' | 'paint' | 'aichat' | 'phone';
     content?: string;
     fileUrl?: string;
     size?: string;
@@ -47,11 +47,11 @@ export interface DesktopItem {
 }
 
 // 필수 기본 시스템 앱 (삭제 불가)
-export const PERMANENT_APP_IDS = ['app-notepad', 'app-calculator', 'app-catchon', 'app-catvas', 'app-catto', 'app-aichat', 'app-admin'];
+export const PERMANENT_APP_IDS = ['app-notepad', 'app-calculator', 'app-catchon', 'app-catvas', 'app-catto', 'app-aichat'];
 
 export const isPermanentItem = (item?: DesktopItem | null) => {
     if (!item) return false;
-    return PERMANENT_APP_IDS.includes(item.id) || (item.type === 'app' && ['notepad', 'calculator', 'catchon', 'catvas', 'catto', 'aichat', 'admin'].includes(item.appType || ''));
+    return PERMANENT_APP_IDS.includes(item.id) || (item.type === 'app' && ['notepad', 'calculator', 'catchon', 'catvas', 'catto'].includes(item.appType || ''));
 };
 
 // 바탕화면 기본 앱: 메모장, 계산기, 캐치온, 캐버스(올인원 디자인 스튜디오)
@@ -92,13 +92,6 @@ const DEFAULT_DESKTOP_ITEMS: DesktopItem[] = [
         updatedAt: '2026-09-20'
     },
     {
-        id: 'app-admin',
-        name: '어드민 패널',
-        type: 'app',
-        appType: 'admin',
-        updatedAt: '2026-09-20'
-    },
-    {
         id: 'app-catvas',
         name: '캐버스',
         type: 'app',
@@ -124,14 +117,10 @@ interface DesktopOSProps {
     onLogin: () => void;
     isLoggingIn: boolean;
     onLaunch: () => void;
-    onLaunchGuest?: () => void;
     onOpenNotepad: () => void;
     onGsiLogin: (cred: string) => void;
     onOpenSpeedKeyboard2?: () => void;
-    onLogout?: () => void;
-    isOwner?: boolean;
-    onOpenAdminPanel?: () => void;
-    onUnlockAdmin?: () => void;
+    onOpenCustomAuth?: () => void;
 }
 
 export const DesktopOS: React.FC<DesktopOSProps> = ({
@@ -139,14 +128,10 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     onLogin,
     isLoggingIn,
     onLaunch,
-    onLaunchGuest,
     onOpenNotepad,
     onGsiLogin,
     onOpenSpeedKeyboard2,
-    onLogout,
-    isOwner,
-    onOpenAdminPanel,
-    onUnlockAdmin
+    onOpenCustomAuth
 }) => {
     // Desktop items state (Strictly persisted in localStorage)
     const [items, setItems] = useState<DesktopItem[]>(() => {
@@ -236,41 +221,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showScreenshot, setShowScreenshot] = useState(false);
     const [showPaint, setShowPaint] = useState(false);
     const [showAIChat, setShowAIChat] = useState(false);
-    const [showLoginWindow, setShowLoginWindow] = useState(false);
-
-    useEffect(() => {
-        if (showLoginWindow && (window as any).google && document.getElementById('gsi-button')) {
-            try {
-                (window as any).google.accounts.id.initialize({
-                    client_id: '129372360916-srlvsjsv36nsklfafh4b9c8lkl7q09fn.apps.googleusercontent.com',
-                    callback: (response: any) => {
-                        onGsiLogin(response.credential);
-                    }
-                });
-                (window as any).google.accounts.id.renderButton(
-                    document.getElementById('gsi-button'),
-                    { theme: 'outline', size: 'large', type: 'standard', width: 280 }
-                );
-            } catch (e) {
-                console.warn("GSI init error:", e);
-            }
-        }
-    }, [showLoginWindow, onGsiLogin]);
-
-    useEffect(() => {
-        if (user && !user.isAnonymous && showLoginWindow) {
-            setShowLoginWindow(false);
-            onLaunch();
-        }
-    }, [user, showLoginWindow, onLaunch]);
-
-    const handleCattoClick = () => {
-        if (user && !user.isAnonymous) {
-            onLaunch();
-        } else {
-            setShowLoginWindow(true);
-        }
-    };
 
     // Mouse Cursor Customization State (Persisted)
     const [cursorSettings, setCursorSettings] = useState<CursorSettings>(() => {
@@ -537,16 +487,15 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             if (item.appType === 'notepad') handleOpenNotepad();
             else if (item.appType === 'calculator') { sound.click(); setShowCalculator(true); }
             else if (item.appType === 'catchon') { sound.click(); setShowCatchOn(true); }
-            else if (item.appType === 'catto') { sound.click(); handleCattoClick(); }
+            else if (item.appType === 'catto') { sound.click(); onLaunch(); }
             else if (item.appType === 'catvas') { sound.click(); setShowCatvas(true); }
             else if (item.appType === 'screenshot') { sound.click(); setShowScreenshot(true); }
             else if (item.appType === 'paint') { sound.click(); setShowPaint(true); }
             else if (item.appType === 'aichat') { sound.click(); setShowAIChat(true); }
-            else if (item.appType === 'admin') { sound.click(); if (isOwner) onOpenAdminPanel?.(); else onUnlockAdmin?.(); }
-            else { sound.click(); handleCattoClick(); }
+            else { sound.click(); onLaunch(); }
         } else if (item.type === 'game') {
             sound.click();
-            handleCattoClick();
+            onLaunch();
         } else if (item.type === 'folder') {
             handleOpenFolder(item);
         } else if (item.type === 'text') {
@@ -1306,11 +1255,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Bot className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
                                     </div>
                                 )}
-                                {(item.id === 'app-admin' || item.appType === 'admin') && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-yellow-500 to-amber-600 flex items-center justify-center shadow-lg border border-yellow-300/50 ring-2 ring-yellow-500/30 group-hover:scale-105 transition-all">
-                                        <Crown className="w-7 h-7 text-slate-950 drop-shadow" />
-                                    </div>
-                                )}
                                 {item.appType === 'screenshot' && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 via-pink-600 to-purple-600 flex items-center justify-center shadow-lg border border-rose-300/40 ring-2 ring-rose-500/30 group-hover:scale-105 transition-transform">
                                         <Scissors className="w-7 h-7 text-white drop-shadow" />
@@ -1814,110 +1758,43 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     className={`fixed ${theme === 'mac' ? 'bottom-20 left-4 sm:left-8' : 'bottom-14 left-2'} w-80 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden text-slate-200 select-none font-sans ring-1 ring-black/60 animate-fade-in`}
                 >
                     {/* User profile header */}
-                    <div className="p-4 border-b border-slate-800 flex flex-col gap-3 bg-slate-850">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                {user?.photoURL ? (
-                                    <img src={user.photoURL} alt="Avatar" className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 object-cover" />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-sm shadow">
-                                        {user ? (user.displayName?.[0] || 'U') : 'C'}
-                                    </div>
-                                )}
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-sm font-bold text-white leading-tight">
-                                            {user?.displayName || 'CatchOn 게스트'}
+                    <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-850">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow">
+                                {user ? (user.displayName?.[0] || 'U') : 'U'}
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
+                                    {user ? (user.displayName || user.uid) : '게스트 사용자'}
+                                    {user?.uid?.endsWith('어드민321') && (
+                                        <span className="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 py-0.2 rounded font-black border border-amber-500/40">
+                                            👑 어드민321
                                         </span>
-                                        {isOwner && (
-                                            <span className="bg-yellow-500/20 text-yellow-400 text-[10px] font-black px-1.5 py-0.5 rounded border border-yellow-500/30">👑 OWNER</span>
-                                        )}
-                                    </div>
-                                    <span className="text-[11px] text-cyan-400">
-                                        {user?.email || '비로그인 게스트'}
-                                    </span>
-                                </div>
+                                    )}
+                                </span>
+                                <span className="text-[11px] text-cyan-400">
+                                    {user?.uid?.endsWith('어드민321') ? '최고 관리자 계정' : '전용 회원 계정'}
+                                </span>
                             </div>
                         </div>
-
-                        {/* Login & Admin Actions */}
-                        <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
-                            {!user || user.isAnonymous ? (
-                                <button
-                                    onClick={() => { setShowStartMenu(false); onLogin(); }}
-                                    disabled={isLoggingIn}
-                                    className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold py-1.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow transition-all cursor-pointer"
-                                >
-                                    <Key className="w-3.5 h-3.5" />
-                                    {isLoggingIn ? '로그인 중...' : '구글 로그인'}
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => { setShowStartMenu(false); onLogout?.(); }}
-                                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-1.5 px-3 rounded-xl border border-slate-700 transition-all text-center cursor-pointer"
-                                >
-                                    로그아웃
-                                </button>
-                            )}
-
-                            {isOwner ? (
-                                <button
-                                    onClick={() => { setShowStartMenu(false); onOpenAdminPanel?.(); }}
-                                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs py-1.5 px-3 rounded-xl flex items-center gap-1 shadow-[0_0_12px_rgba(245,158,11,0.4)] cursor-pointer"
-                                >
-                                    <Crown className="w-3.5 h-3.5" />
-                                    어드민 패널
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => { setShowStartMenu(false); onUnlockAdmin?.(); }}
-                                    className="bg-slate-800 hover:bg-slate-700 text-yellow-400 text-xs font-bold py-1.5 px-3 rounded-xl border border-yellow-500/40 flex items-center gap-1 cursor-pointer"
-                                    title="어드민 암호 입력 / 인증"
-                                >
-                                    <Crown className="w-3.5 h-3.5 text-yellow-400" />
-                                    어드민 인증
-                                </button>
-                            )}
-                        </div>
+                        {onOpenCustomAuth && (
+                            <button
+                                onClick={() => {
+                                    setShowStartMenu(false);
+                                    onOpenCustomAuth();
+                                }}
+                                className="px-2.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-black shadow transition-all cursor-pointer flex items-center gap-1"
+                            >
+                                계정 관리
+                            </button>
+                        )}
                     </div>
 
                     {/* Quick App Shortcuts */}
                     <div className="p-3 flex flex-col gap-1 max-h-[380px] overflow-y-auto custom-scrollbar">
                         <div className="flex items-center justify-between px-2 py-1">
-                            <span className="text-[10px] font-bold text-slate-400">시스템 & 추천 앱</span>
+                            <span className="text-[10px] font-bold text-slate-400">시스템 & 추천 앱 (바탕화면으로 드래그 가능)</span>
                             <span className="text-[9px] text-cyan-400 font-semibold">드래그/클릭</span>
-                        </div>
-
-                        {/* 👑 어드민 패널 shortcut */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: '어드민 패널',
-                                    type: 'app',
-                                    appType: 'admin'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => {
-                                    setShowStartMenu(false);
-                                    if (isOwner) onOpenAdminPanel?.();
-                                    else onUnlockAdmin?.();
-                                }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-yellow-500 flex items-center justify-center shadow-md">
-                                    <Crown className="w-4 h-4 text-slate-950" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-yellow-400 flex items-center gap-1.5">
-                                        <span>어드민 패널 (Admin)</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-400">시스템 이벤트 & 개발자 관리 권한</div>
-                                </div>
-                            </button>
                         </div>
 
                         {/* 📸 스크린샷 캡처 */}
@@ -2100,7 +1977,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
                         >
                             <button 
-                                onClick={() => { handleCattoClick(); setShowStartMenu(false); }}
+                                onClick={() => { onLaunch(); setShowStartMenu(false); }}
                                 className="flex items-center gap-3 flex-1 text-left cursor-pointer"
                             >
                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 flex items-center justify-center border border-cyan-400/40">
@@ -2617,56 +2494,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 onSelectWallpaper={handleSelectWallpaper}
                 onToggleTheme={toggleTheme}
             />
-
-            {/* Login Window Modal */}
-            {showLoginWindow && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-slate-900 border-2 border-cyan-500/60 rounded-3xl p-7 max-w-sm w-full shadow-[0_0_50px_rgba(6,182,212,0.35)] text-center text-white relative">
-                        <button 
-                            onClick={() => setShowLoginWindow(false)}
-                            className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-slate-800 transition-colors cursor-pointer"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-400/50 flex items-center justify-center mx-auto mb-4 shadow-inner">
-                            <Cat className="w-10 h-10 text-cyan-400" />
-                        </div>
-
-                        <h3 className="text-2xl font-black mb-1 text-white">스피드 훈련소 - 로그인</h3>
-                        <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-                            구글 계정으로 로그인하여 기존 세이브 데이터<br/>
-                            <span className="text-cyan-300 font-bold">(스피드, 트로피, 나로, 환생)</span>를 안전하게 불러오세요!
-                        </p>
-
-                        <div className="space-y-3">
-                            <button
-                                onClick={async () => {
-                                    await onLogin();
-                                }}
-                                disabled={isLoggingIn}
-                                className="w-full bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 font-black py-3.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 text-white shadow-lg shadow-cyan-500/25 transition-all cursor-pointer disabled:opacity-50"
-                            >
-                                <Key className="w-5 h-5" />
-                                {isLoggingIn ? '구글 로그인 진행 중...' : '구글 계정으로 로그인'}
-                            </button>
-
-                            <div id="gsi-button" className="w-full flex justify-center bg-white rounded overflow-hidden"></div>
-
-                            <button
-                                onClick={() => {
-                                    setShowLoginWindow(false);
-                                    if (onLaunchGuest) onLaunchGuest();
-                                    else onLaunch();
-                                }}
-                                className="w-full bg-slate-800/80 hover:bg-slate-700 font-bold py-2.5 px-4 rounded-xl text-xs text-slate-300 transition-colors cursor-pointer border border-slate-700/60"
-                            >
-                                게스트로 계속하기 (임시 플레이)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

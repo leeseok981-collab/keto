@@ -29,12 +29,28 @@
         "keyboardSound": { "type": "number" }
       },
       "required": ["nickname", "profilePic", "level", "speed", "totalSpeed", "trophies", "totalTrophies", "raceStage", "wallIndex", "equippedTrail", "equippedAura", "ownedItems", "rebirths", "lastSaveTime", "createdAt", "updatedAt", "world", "cashMultiplier", "doubleTrophies", "fpsLimit", "trophyMulti", "keyboardSound"]
+    },
+    "custom_account": {
+      "title": "Custom App Account",
+      "description": "Stores custom ID and password user account data",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["username", "password", "isAdmin", "createdAt"]
     }
   },
   "firestore": {
     "users/{userId}": {
       "schema": { "$ref": "#/entities/user" },
       "description": "User documents containing their profile and game state."
+    },
+    "custom_accounts/{accId}": {
+      "schema": { "$ref": "#/entities/custom_account" },
+      "description": "Custom account documents for app-specific ID and password login."
     }
   }
 }
