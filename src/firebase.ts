@@ -27,13 +27,9 @@ export const loginWithGSI = async (credential: string) => {
 };
 
 export const loginWithGoogle = async () => {
-  if (loginInProgress) {
-    console.warn("Google login is already in progress, ignoring concurrent request.");
-    return null;
-  }
-
   loginInProgress = true;
   try {
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error: any) {
@@ -42,13 +38,15 @@ export const loginWithGoogle = async () => {
     if (
       code === 'auth/cancelled-popup-request' ||
       code === 'auth/popup-closed-by-user' ||
-      code === 'auth/popup-blocked' ||
       code === 'auth/user-cancelled' ||
       message.includes('cancelled-popup-request') ||
-      message.includes('popup-closed-by-user') ||
-      message.includes('popup-blocked')
+      message.includes('popup-closed-by-user')
     ) {
       console.warn("Google login popup was closed or request cancelled by user.");
+      return null;
+    }
+    if (code === 'auth/popup-blocked' || message.includes('popup-blocked')) {
+      alert("팝업창이 차단되었습니다. 브라우저의 팝업 차단을 해제하거나 다른 방법으로 로그인해 주세요.");
       return null;
     }
     console.error("Login failed", error);
