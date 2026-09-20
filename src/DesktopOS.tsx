@@ -478,7 +478,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             if (item.appType === 'notepad') handleOpenNotepad();
             else if (item.appType === 'calculator') { sound.click(); setShowCalculator(true); }
             else if (item.appType === 'catchon') { sound.click(); setShowCatchOn(true); }
-            else if (item.appType === 'catto') { sound.click(); onLaunch(); }
+            else if (item.appType === 'catto') { sound.click(); setShowAIChat(true); }
             else if (item.appType === 'catvas') { sound.click(); setShowCatvas(true); }
             else if (item.appType === 'screenshot') { sound.click(); setShowScreenshot(true); }
             else if (item.appType === 'paint') { sound.click(); setShowPaint(true); }
@@ -1924,6 +1924,32 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 <div>
                                     <div className="text-xs font-bold text-white">캐치온</div>
                                     <div className="text-[10px] text-slate-400">구글 스타일 통합 검색 엔진</div>
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* 캐트 (Catto) AI */}
+                        <div 
+                            draggable={true}
+                            onDragStart={(e) => {
+                                e.dataTransfer.setData('application/json', JSON.stringify({
+                                    name: '캐트',
+                                    type: 'app',
+                                    appType: 'catto'
+                                }));
+                            }}
+                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
+                        >
+                            <button 
+                                onClick={() => { setShowAIChat(true); setShowStartMenu(false); }}
+                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 flex items-center justify-center border border-cyan-400/40">
+                                    <Cat className="w-4 h-4 text-cyan-400" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-white">캐트 (Catto)</div>
+                                    <div className="text-[10px] text-slate-400">지능형 AI 어시스턴트</div>
                                 </div>
                             </button>
                         </div>

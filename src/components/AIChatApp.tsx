@@ -28,7 +28,7 @@ interface AIChatAppProps {
 const DEFAULT_WELCOME_MSG: Message = {
     id: 'welcome',
     sender: 'ai',
-    text: '안녕하세요! 무엇이든 도와드리는 **CatchOn AI 비서**입니다. 🤖✨\n\n궁금한 질문, 코딩, 번역, 아이디어 구상, 문서 작성 등 무엇이든 편하게 물어보세요!',
+    text: '안녕하세요! 무엇이든 도와드리는 **캐트 (Catto) AI 비서**입니다. 🤖✨\n\n궁금한 질문, 코딩, 번역, 아이디어 구상, 문서 작성 등 무엇이든 편하게 물어보세요!',
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 };
 
@@ -262,7 +262,7 @@ export const AIChatApp: React.FC<AIChatAppProps> = ({ onClose, onSaveNoteToDeskt
                     </div>
                     <div>
                         <div className="text-sm font-black text-white flex items-center gap-2">
-                            <span>CatchOn AI 어시스턴트</span>
+                            <span>캐트 (Catto) AI 어시스턴트</span>
                             <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
                                 Gemini Powered
