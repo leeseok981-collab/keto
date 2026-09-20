@@ -47,11 +47,11 @@ export interface DesktopItem {
 }
 
 // 필수 기본 시스템 앱 (삭제 불가)
-export const PERMANENT_APP_IDS = ['app-notepad', 'app-calculator', 'app-catchon', 'app-catvas'];
+export const PERMANENT_APP_IDS = ['app-notepad', 'app-calculator', 'app-catchon', 'app-catvas', 'app-catto'];
 
 export const isPermanentItem = (item?: DesktopItem | null) => {
     if (!item) return false;
-    return PERMANENT_APP_IDS.includes(item.id) || (item.type === 'app' && ['notepad', 'calculator', 'catchon', 'catvas'].includes(item.appType || ''));
+    return PERMANENT_APP_IDS.includes(item.id) || (item.type === 'app' && ['notepad', 'calculator', 'catchon', 'catvas', 'catto'].includes(item.appType || ''));
 };
 
 // 바탕화면 기본 앱: 메모장, 계산기, 캐치온, 캐버스(올인원 디자인 스튜디오)
@@ -76,6 +76,13 @@ const DEFAULT_DESKTOP_ITEMS: DesktopItem[] = [
         type: 'app',
         appType: 'catchon',
         updatedAt: '2026-09-18'
+    },
+    {
+        id: 'app-catto',
+        name: '캐트',
+        type: 'app',
+        appType: 'catto',
+        updatedAt: '2026-09-20'
     },
     {
         id: 'app-catvas',
@@ -121,36 +128,43 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [items, setItems] = useState<DesktopItem[]>(() => {
         try {
             const saved = localStorage.getItem('desktop_os_items_v5') || localStorage.getItem('desktop_os_items_v4');
-            const coreApps: DesktopItem[] = [
-                {
-                    id: 'app-notepad',
-                    name: '메모장',
-                    type: 'app',
-                    appType: 'notepad',
-                    updatedAt: '2026-09-18'
-                },
-                {
-                    id: 'app-calculator',
-                    name: '계산기',
-                    type: 'app',
-                    appType: 'calculator',
-                    updatedAt: '2026-09-18'
-                },
-                {
-                    id: 'app-catchon',
-                    name: '캐치온',
-                    type: 'app',
-                    appType: 'catchon',
-                    updatedAt: '2026-09-18'
-                },
-                {
-                    id: 'app-catvas',
-                    name: '캐버스',
-                    type: 'app',
-                    appType: 'catvas',
-                    updatedAt: '2026-09-19'
-                }
-            ];
+                const coreApps: DesktopItem[] = [
+                    {
+                        id: 'app-notepad',
+                        name: '메모장',
+                        type: 'app',
+                        appType: 'notepad',
+                        updatedAt: '2026-09-18'
+                    },
+                    {
+                        id: 'app-calculator',
+                        name: '계산기',
+                        type: 'app',
+                        appType: 'calculator',
+                        updatedAt: '2026-09-18'
+                    },
+                    {
+                        id: 'app-catchon',
+                        name: '캐치온',
+                        type: 'app',
+                        appType: 'catchon',
+                        updatedAt: '2026-09-18'
+                    },
+                    {
+                        id: 'app-catto',
+                        name: '캐트',
+                        type: 'app',
+                        appType: 'catto',
+                        updatedAt: '2026-09-20'
+                    },
+                    {
+                        id: 'app-catvas',
+                        name: '캐버스',
+                        type: 'app',
+                        appType: 'catvas',
+                        updatedAt: '2026-09-19'
+                    }
+                ];
 
             try {
                 localStorage.removeItem('kainc_rpg_saved_account_v1');
@@ -158,7 +172,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
 
             if (saved) {
                 let parsed: DesktopItem[] = JSON.parse(saved);
-                // 구버전 아이템 정리, 캐튜 / 캐트 삭제
+                // 구버전 아이템 정리, 캐튜 삭제
                 parsed = parsed
                     .filter(it => 
                         it.id !== 'app-capture' && 
@@ -171,10 +185,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                         it.name !== '카인크 RPG' &&
                         it.id !== 'app-catube' &&
                         (it as any).appType !== 'catube' &&
-                        it.name !== '캐튜' &&
-                        it.id !== 'app-catto' &&
-                        (it as any).appType !== 'catto' &&
-                        it.name !== '캐트'
+                        it.name !== '캐튜'
                     );
                 
                 // 사용자가 만든 다른 파일이나 폴더들 보존
@@ -737,11 +748,11 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         if (permanentTargets.length > 0) {
             sound.wrong();
             if (permanentTargets.length === targets.length) {
-                alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트)은 삭제할 수 없습니다.');
+                alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트, 캐버스)은 삭제할 수 없습니다.');
                 setContextMenu(null);
                 return;
             } else {
-                alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트)을 제외한 선택된 파일이 삭제됩니다.');
+                alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트, 캐버스)을 제외한 선택된 파일이 삭제됩니다.');
             }
         } else {
             sound.wrong();
@@ -804,7 +815,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
 
         if (isPermanentItem(dragged)) {
             sound.wrong();
-            alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트)은 폴더로 이동할 수 없으며 바탕화면에 고정됩니다.');
+            alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트, 캐버스)은 폴더로 이동할 수 없으며 바탕화면에 고정됩니다.');
             return;
         }
 
@@ -820,7 +831,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         } else {
             if (isPermanentItem(targetItem)) {
                 sound.wrong();
-                alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트)은 폴더로 묶을 수 없습니다.');
+                alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트, 캐버스)은 폴더로 묶을 수 없습니다.');
                 return;
             }
             // Target is another file: Put both inside a newly created folder
@@ -1204,14 +1215,17 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                     </div>
                                 )}
                                 {item.id === 'app-catchon' && (
-                                    <img 
-                                        src="/assets/catchon.png" 
-                                        alt="CatchOn" 
-                                        className="w-12 h-12 rounded-xl object-cover shadow-lg border border-cyan-400/40 ring-2 ring-white/20 group-hover:scale-105 transition-transform"
-                                        onError={(e) => {
-                                             (e.currentTarget as HTMLElement).style.display = 'none';
-                                        }}
-                                    />
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 flex items-center justify-center shadow-lg border border-blue-300/40 group-hover:scale-105 transition-transform overflow-hidden">
+                                        <img 
+                                            src="/assets/catchon.png" 
+                                            alt="CatchOn" 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                (e.currentTarget as HTMLElement).style.display = 'none';
+                                            }}
+                                        />
+                                        <Search className="w-7 h-7 text-white absolute pointer-events-none" />
+                                    </div>
                                 )}
                                 {item.id === 'app-catto' && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 flex items-center justify-center shadow-lg border border-cyan-400/50 ring-2 ring-cyan-500/20 group-hover:scale-105 group-hover:border-cyan-400 transition-all">
@@ -1564,7 +1578,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                         const item = items.find(i => i.id === itemId);
                         if (item && isPermanentItem(item)) {
                             sound.wrong();
-                            alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트)은 폴더로 이동할 수 없습니다.');
+                            alert('기본 시스템 앱(메모장, 계산기, 캐치온, 캐트, 캐버스)은 폴더로 이동할 수 없습니다.');
                             return;
                         }
                         sound.fish();
