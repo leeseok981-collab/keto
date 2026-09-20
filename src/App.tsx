@@ -1118,6 +1118,15 @@ export default function App() {
         onLogin={handleGoogleLogin}
         isLoggingIn={isLoggingIn || authLoading}
         onLaunch={() => {
+          if (!user) {
+            setUser({
+              uid: 'guest_' + Date.now(),
+              email: 'guest@speed.com',
+              displayName: '스피드 러너',
+              photoURL: DEFAULT_AVATARS[0] || '',
+              isAnonymous: true
+            } as any);
+          }
           setAppMode('lobby');
           setInDesktop(false);
         }}

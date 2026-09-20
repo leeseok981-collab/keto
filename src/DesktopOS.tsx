@@ -490,6 +490,10 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'screenshot') { sound.click(); setShowScreenshot(true); }
             else if (item.appType === 'paint') { sound.click(); setShowPaint(true); }
             else if (item.appType === 'aichat') { sound.click(); setShowAIChat(true); }
+            else { sound.click(); onLaunch(); }
+        } else if (item.type === 'game') {
+            sound.click();
+            onLaunch();
         } else if (item.type === 'folder') {
             handleOpenFolder(item);
         } else if (item.type === 'text') {
