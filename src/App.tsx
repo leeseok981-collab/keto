@@ -1054,9 +1054,11 @@ export default function App() {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     try {
-      await loginWithGoogle();
+      const cred = await loginWithGoogle();
+      return cred;
     } catch (err) {
       console.warn("Google login finished or cancelled", err);
+      return null;
     } finally {
       setIsLoggingIn(false);
     }

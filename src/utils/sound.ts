@@ -245,5 +245,15 @@ export const sound = {
     },
     type: () => playKeyboardClick(0, 0.35),
     correct: () => playTone(1200, 'sine', 0.1, 0.05),
-    wrong: () => playTone(200, 'sawtooth', 0.2, 0.1)
+    wrong: () => playTone(200, 'sawtooth', 0.2, 0.1),
+    pop: () => {
+        playTone(900, 'sine', 0.04, 0.08);
+        setTimeout(() => playTone(1400, 'sine', 0.06, 0.06), 30);
+    },
+    fanfare: () => {
+        playTone(523.25, 'triangle', 0.12, 0.1); // C5
+        setTimeout(() => playTone(659.25, 'triangle', 0.12, 0.1), 120); // E5
+        setTimeout(() => playTone(783.99, 'triangle', 0.14, 0.12), 240); // G5
+        setTimeout(() => playTone(1046.50, 'triangle', 0.3, 0.15), 360); // C6
+    }
 };

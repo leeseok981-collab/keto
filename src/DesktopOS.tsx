@@ -7,7 +7,8 @@ import {
     Image as ImageIcon, Music, HelpCircle, ArrowRight,
     Calendar as CalendarIcon, Clock, Power, RotateCw, 
     CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
-    FolderPlus, Monitor, Video, ShieldCheck, Calculator, Cat, Mic2
+    FolderPlus, Monitor, Video, ShieldCheck, Calculator, Cat,
+    PlaySquare, Code, Apple, Layout, Scissors, Palette, MousePointer, Sliders
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { sound, setMasterVolume, getMasterVolume } from './utils/sound';
@@ -15,7 +16,17 @@ import { CatchOnSearch } from './components/CatchOnSearch';
 import { CalculatorApp } from './components/CalculatorApp';
 import { DedicatedNotepad } from './components/DedicatedNotepad';
 import { FolderExplorer } from './components/FolderExplorer';
-import { KaraokeWindow } from './components/karaoke/KaraokeWindow';
+import { WallpaperModal, DEFAULT_WINDOWS_WALLPAPER, DEFAULT_MAC_WALLPAPER } from './components/WallpaperModal';
+import { CatvasEditor } from './components/CatvasEditor';
+import { CanvasApp } from './components/canvas/CanvasApp';
+import { catvasDb } from './services/catvasDb';
+import { CustomCursorFollower } from './components/CustomCursorFollower';
+import { 
+    MouseSettingsModal, 
+    CursorSettings, 
+    DEFAULT_CURSOR_SETTINGS, 
+    CURSOR_PRESETS 
+} from './components/MouseSettingsModal';
 
 export type DesktopItemType = 'app' | 'text' | 'file' | 'video' | 'image' | 'audio' | 'game' | 'zip' | 'folder';
 
@@ -23,7 +34,7 @@ export interface DesktopItem {
     id: string;
     name: string;
     type: DesktopItemType;
-    appType?: 'catto' | 'notepad' | 'catchon' | 'calculator' | 'karaoke';
+    appType?: 'catto' | 'notepad' | 'catchon' | 'calculator' | 'catvas';
     content?: string;
     fileUrl?: string;
     size?: string;
@@ -31,15 +42,15 @@ export interface DesktopItem {
     updatedAt: string;
 }
 
-// 5대 필수 기본 시스템 앱 (삭제 불가)
-export const PERMANENT_APP_IDS = ['app-notepad', 'app-calculator', 'app-catchon', 'app-catto', 'app-karaoke'];
+// 필수 기본 시스템 앱 (삭제 불가)
+export const PERMANENT_APP_IDS = ['app-notepad', 'app-calculator', 'app-catchon', 'app-catvas'];
 
 export const isPermanentItem = (item?: DesktopItem | null) => {
     if (!item) return false;
-    return PERMANENT_APP_IDS.includes(item.id) || (item.type === 'app' && ['notepad', 'calculator', 'catchon', 'catto', 'karaoke'].includes(item.appType || ''));
+    return PERMANENT_APP_IDS.includes(item.id) || (item.type === 'app' && ['notepad', 'calculator', 'catchon', 'catvas'].includes(item.appType || ''));
 };
 
-// 바탕화면 기본 앱: 메모장, 계산기, 캐치온, 캐트, 노래방
+// 바탕화면 기본 앱: 메모장, 계산기, 캐치온, 캐버스(올인원 디자인 스튜디오)
 const DEFAULT_DESKTOP_ITEMS: DesktopItem[] = [
     {
         id: 'app-notepad',
@@ -63,17 +74,10 @@ const DEFAULT_DESKTOP_ITEMS: DesktopItem[] = [
         updatedAt: '2026-09-18'
     },
     {
-        id: 'app-catto',
-        name: '캐트',
+        id: 'app-catvas',
+        name: '캐버스',
         type: 'app',
-        appType: 'catto',
-        updatedAt: '2026-09-18'
-    },
-    {
-        id: 'app-karaoke',
-        name: '노래방',
-        type: 'app',
-        appType: 'karaoke',
+        appType: 'catvas',
         updatedAt: '2026-09-19'
     }
 ];
@@ -136,27 +140,38 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     updatedAt: '2026-09-18'
                 },
                 {
-                    id: 'app-catto',
-                    name: '캐트',
+                    id: 'app-catvas',
+                    name: '캐버스',
                     type: 'app',
-                    appType: 'catto',
-                    updatedAt: '2026-09-18'
-                },
-                {
-                    id: 'app-karaoke',
-                    name: '노래방',
-                    type: 'app',
-                    appType: 'karaoke',
+                    appType: 'catvas',
                     updatedAt: '2026-09-19'
                 }
             ];
 
+            try {
+                localStorage.removeItem('kainc_rpg_saved_account_v1');
+            } catch (e) {}
+
             if (saved) {
                 let parsed: DesktopItem[] = JSON.parse(saved);
-                // 캐프처 완전 삭제 및 구버전 아이템 정리, 캐토 -> 캐트 업데이트
+                // 구버전 아이템 정리, 캐튜 / 캐트 삭제
                 parsed = parsed
-                    .filter(it => it.id !== 'app-capture' && (it as any).appType !== 'capture' && it.id !== 'app-speed2')
-                    .map(it => it.id === 'app-catto' ? { ...it, name: '캐트' } : it);
+                    .filter(it => 
+                        it.id !== 'app-capture' && 
+                        (it as any).appType !== 'capture' && 
+                        it.id !== 'app-speed2' && 
+                        it.id !== 'app-karaoke' && 
+                        (it as any).appType !== 'karaoke' &&
+                        it.id !== 'app-kainc-rpg' &&
+                        (it as any).appType !== 'rpg' &&
+                        it.name !== '카인크 RPG' &&
+                        it.id !== 'app-catube' &&
+                        (it as any).appType !== 'catube' &&
+                        it.name !== '캐튜' &&
+                        it.id !== 'app-catto' &&
+                        (it as any).appType !== 'catto' &&
+                        it.name !== '캐트'
+                    );
                 
                 // 사용자가 만든 다른 파일이나 폴더들 보존
                 const userCreatedItems = parsed.filter(it => !coreApps.some(ca => ca.id === it.id));
@@ -177,7 +192,46 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showCalendarTray, setShowCalendarTray] = useState(false);
     const [showCatchOn, setShowCatchOn] = useState(false);
     const [showCalculator, setShowCalculator] = useState(false);
-    const [showKaraoke, setShowKaraoke] = useState(false);
+    const [showCatvas, setShowCatvas] = useState(false);
+    const [showMouseSettings, setShowMouseSettings] = useState(false);
+
+    // Mouse Cursor Customization State (Persisted)
+    const [cursorSettings, setCursorSettings] = useState<CursorSettings>(() => {
+        try {
+            const saved = localStorage.getItem('desktop_cursor_settings_v1');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return DEFAULT_CURSOR_SETTINGS;
+    });
+
+    const handleUpdateCursorSettings = (newSettings: CursorSettings) => {
+        setCursorSettings(newSettings);
+        try {
+            localStorage.setItem('desktop_cursor_settings_v1', JSON.stringify(newSettings));
+        } catch (e) {}
+    };
+
+    // Click Ripple Particle Effect State
+    const [cursorParticles, setCursorParticles] = useState<{ id: number; x: number; y: number }[]>([]);
+
+    useEffect(() => {
+        if (!cursorSettings.enableTrail) return;
+        const handleClick = (e: MouseEvent) => {
+            const id = Date.now();
+            setCursorParticles(prev => [...prev.slice(-6), { id, x: e.clientX, y: e.clientY }]);
+            setTimeout(() => {
+                setCursorParticles(prev => prev.filter(p => p.id !== id));
+            }, 600);
+        };
+        window.addEventListener('click', handleClick);
+        return () => window.removeEventListener('click', handleClick);
+    }, [cursorSettings.enableTrail]);
+
+    // Active Cursor CSS styling helper
+    const activeCursorPreset = CURSOR_PRESETS.find(p => p.id === cursorSettings.cursorId);
+    const cursorSvgUrl = cursorSettings.cursorId === 'custom-user-image' && cursorSettings.customImageUrl 
+        ? cursorSettings.customImageUrl 
+        : activeCursorPreset?.iconSvg || '';
     
     // Dedicated In-App Windows
     const [activeNotepadFile, setActiveNotepadFile] = useState<DesktopItem | null>(null);
@@ -185,10 +239,65 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [activeVideoFile, setActiveVideoFile] = useState<DesktopItem | null>(null);
     const [activeGenericFile, setActiveGenericFile] = useState<DesktopItem | null>(null);
     const [activeImageFile, setActiveImageFile] = useState<DesktopItem | null>(null);
+    const [activeHtmlFile, setActiveHtmlFile] = useState<DesktopItem | null>(null);
 
     // Power & Black Screen State (Shut down mode)
     const [isPoweredOff, setIsPoweredOff] = useState(false);
     const [isBooting, setIsBooting] = useState(false);
+
+    // Desktop Theme: 'windows' | 'mac'
+    const [theme, setTheme] = useState<'windows' | 'mac'>(() => {
+        const saved = localStorage.getItem('desktop_os_theme');
+        return (saved === 'mac' || saved === 'windows') ? saved : 'windows';
+    });
+
+    // Custom Wallpaper state (Persisted in IndexedDB & localStorage)
+    const [customWallpaper, setCustomWallpaper] = useState<string | null>(() => {
+        try {
+            return localStorage.getItem('desktop_custom_wallpaper') || null;
+        } catch {
+            return null;
+        }
+    });
+    const [showWallpaperModal, setShowWallpaperModal] = useState(false);
+
+    // Load full-resolution wallpaper from IndexedDB on initial mount
+    useEffect(() => {
+        catvasDb.getMetaItem<string>('desktop_custom_wallpaper').then((saved) => {
+            if (saved) {
+                setCustomWallpaper(saved);
+            }
+        }).catch(console.warn);
+    }, []);
+
+    const handleSelectWallpaper = (url: string | null) => {
+        setCustomWallpaper(url);
+        if (url) {
+            // 1. Store safely in IndexedDB (No 5MB quota limitation)
+            catvasDb.setMetaItem('desktop_custom_wallpaper', url).catch(console.warn);
+            
+            // 2. Safely attempt localStorage caching with try-catch
+            try {
+                localStorage.setItem('desktop_custom_wallpaper', url);
+            } catch (quotaErr) {
+                console.warn('LocalStorage quota limit reached for wallpaper, safely stored in IndexedDB:', quotaErr);
+            }
+        } else {
+            catvasDb.removeMetaItem('desktop_custom_wallpaper').catch(console.warn);
+            try {
+                localStorage.removeItem('desktop_custom_wallpaper');
+            } catch {}
+        }
+    };
+
+    const toggleTheme = () => {
+        sound.click();
+        setTheme(prev => {
+            const next = prev === 'windows' ? 'mac' : 'windows';
+            localStorage.setItem('desktop_os_theme', next);
+            return next;
+        });
+    };
 
     // Audio Volume & Online Status State
     const [volume, setVolume] = useState(() => Math.round(getMasterVolume() * 100));
@@ -350,7 +459,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'calculator') { sound.click(); setShowCalculator(true); }
             else if (item.appType === 'catchon') { sound.click(); setShowCatchOn(true); }
             else if (item.appType === 'catto') { sound.click(); onLaunch(); }
-            else if (item.appType === 'karaoke') { sound.click(); setShowKaraoke(true); }
+            else if (item.appType === 'catvas') { sound.click(); setShowCatvas(true); }
         } else if (item.type === 'folder') {
             handleOpenFolder(item);
         } else if (item.type === 'text') {
@@ -364,8 +473,13 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         } else if (item.type === 'zip') {
             handleExtractZip(item);
         } else if (item.type === 'file') {
-            sound.click();
-            setActiveGenericFile(item);
+            if (item.name.toLowerCase().endsWith('.html') || item.fileUrl?.endsWith('.html')) {
+                sound.click();
+                setActiveHtmlFile(item);
+            } else {
+                sound.click();
+                setActiveGenericFile(item);
+            }
         }
     };
 
@@ -869,11 +983,26 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     // Filter desktop-level items (not placed in subfolders)
     const desktopItems = items.filter(item => !item.folderId);
 
+    // Wallpaper: if user specified a custom wallpaper, use it; otherwise use authentic default wallpaper based on current theme
+    const activeWallpaperUrl = customWallpaper || (theme === 'mac' ? DEFAULT_MAC_WALLPAPER : DEFAULT_WINDOWS_WALLPAPER);
+
+    // Dynamic custom cursor CSS rule
+    const cursorCss = cursorSvgUrl && cursorSettings.cursorId !== 'default'
+        ? `* { cursor: url("${cursorSvgUrl}") ${Math.floor(cursorSettings.size / 4)} ${Math.floor(cursorSettings.size / 4)}, auto !important; }`
+        : '';
+
     return (
         <div 
             ref={desktopAreaRef}
             data-desktop-bg="true"
-            className="min-h-screen bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center flex flex-col relative overflow-hidden select-none"
+            data-os-theme={theme}
+            style={{
+                backgroundImage: `url('${activeWallpaperUrl}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            }}
+            className="min-h-screen bg-slate-950 flex flex-col relative overflow-hidden select-none"
             onContextMenu={(e) => handleContextMenu(e)}
             onMouseDown={handleDesktopMouseDown}
         >
@@ -1046,11 +1175,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Cat className="w-7 h-7 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
                                     </div>
                                 )}
-                                {(item.id === 'app-karaoke' || item.appType === 'karaoke') && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-fuchsia-600 via-purple-600 to-cyan-400 p-0.5 shadow-lg shadow-fuchsia-600/30 group-hover:scale-105 transition-all">
-                                        <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                                            <Mic2 className="w-7 h-7 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-                                        </div>
+                                {item.id === 'app-catvas' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg border border-purple-300/40 ring-2 ring-purple-500/20 group-hover:scale-105 group-hover:border-purple-400 transition-all">
+                                        <Palette className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
                                     </div>
                                 )}
                                 {item.type === 'folder' && (
@@ -1188,6 +1315,21 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                     <Download className="w-3.5 h-3.5 text-emerald-400" /> 실제 PC(다운로드)로 저장
                                 </button>
                             )}
+                            {contextMenu.targetItem.type === 'image' && (
+                                <button 
+                                    onClick={() => {
+                                        const url = contextMenu.targetItem?.fileUrl || contextMenu.targetItem?.content;
+                                        if (url) {
+                                            handleSelectWallpaper(url);
+                                            sound.buy();
+                                            setContextMenu(null);
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 text-left hover:bg-cyan-600 hover:text-white flex items-center gap-2 transition-colors cursor-pointer text-cyan-300 font-bold"
+                                >
+                                    <ImageIcon className="w-3.5 h-3.5 text-cyan-400" /> 바탕화면 배경으로 지정
+                                </button>
+                            )}
                             <div className="h-px bg-slate-800 my-1"></div>
                             {isPermanentItem(contextMenu.targetItem) ? (
                                 <div className="px-3 py-2 text-left text-slate-400 flex items-center gap-2 text-xs bg-slate-950/60 select-none cursor-not-allowed">
@@ -1207,7 +1349,42 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                         <>
                             <div className="px-3 py-1.5 text-[11px] text-slate-400 font-bold border-b border-slate-800 flex items-center justify-between">
                                 <span>바탕화면</span>
-                                <span className="text-cyan-400">CatchOn OS</span>
+                                <span className="text-cyan-400 font-mono">CatchOn OS</span>
+                            </div>
+
+                            {/* 바탕화면 이미지 설정 */}
+                            <button 
+                                onClick={() => { setShowWallpaperModal(true); setContextMenu(null); sound.click(); }}
+                                className="w-full px-3 py-2.5 text-left hover:bg-cyan-600 hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer text-cyan-300 font-bold bg-cyan-950/60 border-b border-slate-800 group"
+                            >
+                                <div className="p-1 rounded-md bg-cyan-500/20 text-cyan-400 group-hover:bg-white group-hover:text-cyan-700 transition-colors">
+                                    <ImageIcon className="w-4 h-4" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-black flex items-center gap-1.5">
+                                        바탕화면 이미지 설정
+                                        <span className="text-[9px] bg-cyan-500/30 text-cyan-200 px-1.5 py-0.2 rounded font-normal">설정창 열기</span>
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 group-hover:text-cyan-100">배경화면 변경 및 맥북/윈도우 기본 배경</span>
+                                </div>
+                            </button>
+
+                            {/* 원클릭 맥북 / 윈도우 기본 배경 빠른 전환 */}
+                            <div className="grid grid-cols-2 gap-1 p-1.5 bg-slate-950/80 border-b border-slate-800 text-[11px]">
+                                <button
+                                    onClick={() => { handleSelectWallpaper(DEFAULT_MAC_WALLPAPER); setContextMenu(null); sound.buy(); }}
+                                    className="px-2 py-1.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-700 hover:text-white text-indigo-300 font-bold flex items-center justify-center gap-1 transition-colors border border-indigo-500/30"
+                                    title="맥북 공식 다이내믹 기본 배경화면으로 즉시 변경"
+                                >
+                                    <Apple className="w-3 h-3" /> 맥북 기본 배경
+                                </button>
+                                <button
+                                    onClick={() => { handleSelectWallpaper(DEFAULT_WINDOWS_WALLPAPER); setContextMenu(null); sound.buy(); }}
+                                    className="px-2 py-1.5 rounded-lg bg-cyan-950/70 hover:bg-cyan-700 hover:text-white text-cyan-300 font-bold flex items-center justify-center gap-1 transition-colors border border-cyan-500/30"
+                                    title="윈도우 11 Bloom 공식 기본 배경화면으로 즉시 변경"
+                                >
+                                    <Monitor className="w-3 h-3" /> 윈도우 기본 배경
+                                </button>
                             </div>
 
                             {/* 파일은 폴더야 정리 할수있는 */}
@@ -1279,11 +1456,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             {/* CatchOn Search Window */}
             {showCatchOn && (
                 <CatchOnSearch onClose={() => setShowCatchOn(false)} />
-            )}
-
-            {/* Karaoke Window (PIXEL KARAOKE 노래방 프로그램) */}
-            {showKaraoke && (
-                <KaraokeWindow onClose={() => setShowKaraoke(false)} />
             )}
 
             {/* Calculator Window (전용 계산기 프로그램) */}
@@ -1449,11 +1621,51 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 </div>
             )}
 
-            {/* Windows Start Menu (하단 왼쪽 윈도우 버튼 클릭 시) */}
+            {/* Standalone HTML Game / App Window */}
+            {activeHtmlFile && (
+                <div className="fixed inset-2 sm:inset-8 md:inset-12 bg-slate-950 border border-slate-700/60 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden ring-1 ring-white/10 animate-fade-in">
+                    <div className="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-2 flex items-center justify-between select-none">
+                        <div className="flex items-center gap-2">
+                            <Code className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs text-white font-bold">{activeHtmlFile.name}</span>
+                            <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full">Web Document</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {activeHtmlFile.fileUrl && (
+                                <a 
+                                    href={activeHtmlFile.fileUrl} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="text-slate-400 hover:text-cyan-400 p-1 rounded transition-colors"
+                                    title="새 탭에서 열기"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                </a>
+                            )}
+                            <button 
+                                onClick={() => setActiveHtmlFile(null)} 
+                                className="text-slate-400 hover:text-white p-1 rounded hover:bg-rose-500/20 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex-1 w-full h-full overflow-hidden bg-black relative">
+                        <iframe 
+                            src={activeHtmlFile.fileUrl || ''} 
+                            className="w-full h-full border-0"
+                            title={activeHtmlFile.name}
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Windows Start Menu / Mac Apple Menu (하단 왼쪽 윈도우/애플 버튼 클릭 시) */}
             {showStartMenu && (
                 <div 
                     onClick={(e) => e.stopPropagation()}
-                    className="fixed bottom-14 left-2 w-80 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden text-slate-200 select-none font-sans ring-1 ring-black/60 animate-fade-in"
+                    className={`fixed ${theme === 'mac' ? 'bottom-20 left-4 sm:left-8' : 'bottom-14 left-2'} w-80 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden text-slate-200 select-none font-sans ring-1 ring-black/60 animate-fade-in`}
                 >
                     {/* User profile header */}
                     <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-850">
@@ -1520,15 +1732,30 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             </div>
                         </button>
                         <button 
-                            onClick={() => { setShowKaraoke(true); setShowStartMenu(false); }}
+                            onClick={() => { setShowCatvas(true); setShowStartMenu(false); }}
                             className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition-colors text-left cursor-pointer"
                         >
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-600 to-cyan-500 flex items-center justify-center">
-                                <Mic2 className="w-4 h-4 text-white drop-shadow" />
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 border border-purple-400/40 flex items-center justify-center shadow-md shadow-purple-900/30">
+                                <Palette className="w-4 h-4 text-white" />
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-white">노래방</div>
-                                <div className="text-[10px] text-slate-400">PIXEL KARAOKE 유튜브 가사 싱크</div>
+                                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <span>CANVAS (캔버스)</span>
+                                    <span className="px-1 py-0.2 rounded text-[8px] font-black bg-purple-500/30 text-purple-300">PRO</span>
+                                </div>
+                                <div className="text-[10px] text-slate-400">디자인 & 영상 제작 올인원 스튜디오</div>
+                            </div>
+                        </button>
+                        <button 
+                            onClick={() => { setShowMouseSettings(true); setShowStartMenu(false); }}
+                            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                        >
+                            <div className="w-7 h-7 rounded-lg bg-cyan-900/60 border border-cyan-400/40 flex items-center justify-center">
+                                <MousePointer className="w-4 h-4 text-cyan-300" />
+                            </div>
+                            <div>
+                                <div className="text-xs font-bold text-white">마우스 포인터 설정</div>
+                                <div className="text-[10px] text-slate-400">20종 커서 & 커스텀 이미지/감도 조절</div>
                             </div>
                         </button>
                     </div>
@@ -1571,7 +1798,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             {showCalendarTray && (
                 <div 
                     onClick={(e) => e.stopPropagation()}
-                    className="fixed bottom-14 right-2 w-88 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col p-4 text-slate-200 select-none font-sans ring-1 ring-black/60 animate-fade-in gap-4"
+                    className={`fixed ${theme === 'mac' ? 'bottom-20 right-4 sm:right-8' : 'bottom-14 right-2'} w-88 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col p-4 text-slate-200 select-none font-sans ring-1 ring-black/60 animate-fade-in gap-4`}
                 >
                     {/* Live Clock & Date header */}
                     <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
@@ -1690,38 +1917,69 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             />
                         </div>
                     </div>
+
+                    {/* Tray Bottom Action Bar (하단 시간 창 오른쪽 하단 설정 버튼) */}
+                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500 font-mono">CatchOS v5.2</span>
+                        <button
+                            onClick={() => {
+                                sound.click();
+                                setShowCalendarTray(false);
+                                setShowMouseSettings(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ml-auto hover:scale-105 active:scale-95"
+                            title="마우스 포인터 모양, 감도 및 크기 설정"
+                        >
+                            <MousePointer className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>마우스 설정</span>
+                        </button>
+                    </div>
                 </div>
             )}
 
-            {/* Windows Taskbar (하단 작업표시줄) */}
-            <div className="h-12 bg-slate-950/85 backdrop-blur-md border-t border-white/10 px-3 flex items-center justify-between z-40 relative">
-                {/* Left: Windows Start & Pinned Apps */}
-                <div className="flex items-center gap-2">
-                    {/* Windows Logo Button */}
+            {/* Taskbar / Dock (하단 작업표시줄: Windows 작업표시줄 또는 macOS Dock 스타일) */}
+            <div className={`transition-all duration-300 z-40 relative flex items-center justify-between ${
+                theme === 'mac'
+                    ? 'h-16 bg-slate-900/60 backdrop-blur-2xl border border-white/20 rounded-2xl mx-3 sm:mx-6 mb-3 shadow-2xl px-4 ring-1 ring-white/10'
+                    : 'h-12 bg-slate-950/85 backdrop-blur-md border-t border-white/10 px-3'
+            }`}>
+                {/* Left: Start/Apple & Pinned Apps */}
+                <div className={`flex items-center gap-2 ${theme === 'mac' ? 'gap-2.5' : 'gap-2'}`}>
+                    {/* Windows / Mac Apple Logo Button */}
                     <button 
                         onClick={(e) => { e.stopPropagation(); sound.click(); setShowStartMenu(prev => !prev); setShowCalendarTray(false); }}
                         className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                             showStartMenu 
-                                ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30' 
-                                : 'hover:bg-white/10 text-cyan-400'
+                                ? theme === 'mac'
+                                    ? 'bg-white/30 text-white shadow-lg shadow-white/10 ring-1 ring-white/30'
+                                    : 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30' 
+                                : theme === 'mac'
+                                    ? 'hover:bg-white/15 text-white/90'
+                                    : 'hover:bg-white/10 text-cyan-400'
                         }`}
-                        title="시작 (Windows)"
+                        title={theme === 'mac' ? "애플 메뉴 (Mac)" : "시작 (Windows)"}
                     >
-                        <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.95-1.8"/>
-                        </svg>
+                        {theme === 'mac' ? (
+                            <Apple className="w-5 h-5 fill-current text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
+                        ) : (
+                            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.95-1.8"/>
+                            </svg>
+                        )}
                     </button>
 
                     {/* Pinned CatchOn Search Icon */}
                     <button 
                         onClick={() => { sound.click(); setShowCatchOn(true); }}
-                        className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center p-1.5 transition-all group cursor-pointer"
+                        className={`w-9 h-9 rounded-xl hover:bg-white/15 flex items-center justify-center p-1.5 transition-all group cursor-pointer ${
+                            theme === 'mac' ? 'hover:-translate-y-1 hover:scale-110' : ''
+                        }`}
                         title="캐치온 (검색엔진)"
                     >
                         <img 
                             src="/제목 없는 디자인.png" 
                             alt="CatchOn" 
-                            className="w-full h-full object-cover rounded-md group-hover:scale-110 transition-transform" 
+                            className="w-full h-full object-cover rounded-md group-hover:scale-110 transition-transform shadow-sm" 
                             onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                         />
                     </button>
@@ -1729,44 +1987,52 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     {/* Pinned Dedicated Notepad Icon */}
                     <button 
                         onClick={() => handleOpenNotepad()}
-                        className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center transition-all group text-amber-300 cursor-pointer"
+                        className={`w-9 h-9 rounded-xl hover:bg-white/15 flex items-center justify-center transition-all group text-amber-300 cursor-pointer ${
+                            theme === 'mac' ? 'hover:-translate-y-1 hover:scale-110' : ''
+                        }`}
                         title="메모장"
                     >
-                        <FileText className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <FileText className="w-5 h-5 group-hover:scale-110 transition-transform drop-shadow-[0_0_4px_rgba(252,211,77,0.4)]" />
                     </button>
 
                     {/* Pinned Calculator Icon */}
                     <button 
                         onClick={() => { sound.click(); setShowCalculator(true); }}
-                        className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center transition-all group text-emerald-400 cursor-pointer"
+                        className={`w-9 h-9 rounded-xl hover:bg-white/15 flex items-center justify-center transition-all group text-emerald-400 cursor-pointer ${
+                            theme === 'mac' ? 'hover:-translate-y-1 hover:scale-110' : ''
+                        }`}
                         title="계산기"
                     >
-                        <Calculator className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <Calculator className="w-5 h-5 group-hover:scale-110 transition-transform drop-shadow-[0_0_4px_rgba(52,211,153,0.4)]" />
                     </button>
 
                     {/* Pinned Catto Icon */}
                     <button 
                         onClick={() => { sound.click(); onLaunch(); }}
-                        className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center transition-all group cursor-pointer text-cyan-400"
+                        className={`w-9 h-9 rounded-xl hover:bg-white/15 flex items-center justify-center transition-all group cursor-pointer text-cyan-400 ${
+                            theme === 'mac' ? 'hover:-translate-y-1 hover:scale-110' : ''
+                        }`}
                         title="캐트"
                     >
-                        <div className="w-7 h-7 rounded-lg bg-slate-900 border border-cyan-400/40 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-7 h-7 rounded-lg bg-slate-900 border border-cyan-400/40 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
                             <Cat className="w-4 h-4 text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.5)]" />
                         </div>
                     </button>
 
-                    {/* Pinned Karaoke Icon */}
+                    {/* Pinned Catvas Canvas Editor Icon */}
                     <button 
-                        onClick={() => { sound.click(); setShowKaraoke(true); }}
-                        className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center transition-all group cursor-pointer"
-                        title="노래방 (PIXEL KARAOKE)"
+                        onClick={() => { sound.click(); setShowCatvas(true); }}
+                        className={`w-9 h-9 rounded-xl hover:bg-white/15 flex items-center justify-center transition-all group cursor-pointer text-purple-400 ${
+                            theme === 'mac' ? 'hover:-translate-y-1 hover:scale-110' : ''
+                        }`}
+                        title="캐버스 (캔버스 디자인 & 템플릿)"
                     >
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-600 to-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                            <Mic2 className="w-4 h-4 text-white drop-shadow" />
+                        <div className="w-7 h-7 rounded-lg bg-purple-950/80 border border-purple-400/40 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                            <Palette className="w-4 h-4 text-purple-300 drop-shadow-[0_0_4px_rgba(168,85,247,0.5)]" />
                         </div>
                     </button>
 
-                    {/* File Import Button (대신 파일 가져오기 버튼으로 교체) */}
+                    {/* File Import Button */}
                     <button 
                         onClick={() => fileInputRef.current?.click()}
                         className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ml-1"
@@ -1774,6 +2040,24 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     >
                         <Upload className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">파일 가져오기</span>
+                    </button>
+
+                    {/* Type / Theme Toggle Button (유형: 윈도우 / 맥북 디자인 번갈아 변경) */}
+                    <button 
+                        onClick={toggleTheme}
+                        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ml-1 border ${
+                            theme === 'mac'
+                                ? 'bg-indigo-600/40 hover:bg-indigo-600/60 text-indigo-200 border-indigo-400/50 shadow-indigo-500/20'
+                                : 'bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border-cyan-400/40 shadow-cyan-500/20'
+                        }`}
+                        title="디자인 유형 변경 (Windows / 맥북 번갈아 전환)"
+                    >
+                        {theme === 'mac' ? (
+                            <Apple className="w-3.5 h-3.5 text-white" />
+                        ) : (
+                            <Monitor className="w-3.5 h-3.5 text-cyan-400" />
+                        )}
+                        <span className="inline font-extrabold">유형: {theme === 'mac' ? '맥북' : '윈도우'}</span>
                     </button>
                 </div>
 
@@ -1807,7 +2091,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     <button 
                         onClick={(e) => { e.stopPropagation(); sound.click(); setShowCalendarTray(prev => !prev); setShowStartMenu(false); }}
                         className={`flex flex-col items-end px-2.5 py-1 rounded-xl cursor-pointer transition-colors text-right ${
-                            showCalendarTray ? 'bg-white/20' : 'hover:bg-white/10'
+                            showCalendarTray 
+                                ? theme === 'mac' ? 'bg-white/30 text-white' : 'bg-white/20' 
+                                : 'hover:bg-white/10'
                         }`}
                         title="달력 및 시간 열기"
                     >
@@ -1820,6 +2106,46 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     </button>
                 </div>
             </div>
+
+            {/* CANVAS — 디자인 & 영상 스튜디오 메인 시스템 */}
+            {showCatvas && (
+                <CanvasApp 
+                    onClose={() => setShowCatvas(false)}
+                    onSaveToDesktop={(name, content, fileUrl, type) => {
+                        const newItem: DesktopItem = {
+                            id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                            name: name || '캐버스_디자인.png',
+                            type: (type as any) || 'image',
+                            fileUrl: fileUrl,
+                            content: typeof content === 'string' ? content : undefined,
+                            updatedAt: new Date().toLocaleDateString()
+                        };
+                        setItems(prev => [...prev, newItem]);
+                    }}
+                />
+            )}
+
+            {/* Universal Custom Cursor Follower Engine */}
+            <CustomCursorFollower settings={cursorSettings} />
+
+            {/* Mouse Pointer Customization Modal */}
+            <MouseSettingsModal
+                isOpen={showMouseSettings}
+                onClose={() => setShowMouseSettings(false)}
+                settings={cursorSettings}
+                onUpdateSettings={handleUpdateCursorSettings}
+                onSave={handleUpdateCursorSettings}
+            />
+
+            {/* Wallpaper Settings Modal */}
+            <WallpaperModal
+                isOpen={showWallpaperModal}
+                onClose={() => setShowWallpaperModal(false)}
+                currentTheme={theme}
+                customWallpaper={customWallpaper}
+                onSelectWallpaper={handleSelectWallpaper}
+                onToggleTheme={toggleTheme}
+            />
         </div>
     );
 };
