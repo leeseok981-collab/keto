@@ -1205,7 +1205,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 )}
                                 {item.id === 'app-catchon' && (
                                     <img 
-                                        src="/제목 없는 디자인.png" 
+                                        src="/assets/catchon.png" 
                                         alt="CatchOn" 
                                         className="w-12 h-12 rounded-xl object-cover shadow-lg border border-cyan-400/40 ring-2 ring-white/20 group-hover:scale-105 transition-transform"
                                         onError={(e) => {
@@ -1906,7 +1906,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 onClick={() => { setShowCatchOn(true); setShowStartMenu(false); }}
                                 className="flex items-center gap-3 flex-1 text-left cursor-pointer"
                             >
-                                <img src="/제목 없는 디자인.png" alt="CatchOn" className="w-8 h-8 rounded-lg object-cover" />
+                                <img src="/assets/catchon.png" alt="CatchOn" className="w-8 h-8 rounded-lg object-cover" />
                                 <div>
                                     <div className="text-xs font-bold text-white">캐치온</div>
                                     <div className="text-[10px] text-slate-400">구글 스타일 통합 검색 엔진</div>

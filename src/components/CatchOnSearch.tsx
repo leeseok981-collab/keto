@@ -148,7 +148,7 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
             <div className="bg-slate-100 border-b border-slate-300 px-4 py-2.5 flex items-center justify-between select-none">
                 <div className="flex items-center gap-2">
                     <img 
-                        src="/제목 없는 디자인.png" 
+                        src="/assets/catchon.png" 
                         alt="CatchOn" 
                         className="w-5 h-5 rounded object-cover shadow-sm"
                         onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -213,7 +213,7 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
                         <div className="flex flex-col items-center mb-8">
                             <div className="relative mb-3">
                                 <img 
-                                    src="/제목 없는 디자인.png" 
+                                    src="/assets/catchon.png" 
                                     alt="CatchOn Logo" 
                                     className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl shadow-lg object-cover ring-4 ring-slate-100"
                                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -356,7 +356,7 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
                                 className="flex items-center gap-1 font-black text-xl tracking-tight cursor-pointer select-none"
                             >
                                 <img 
-                                    src="/제목 없는 디자인.png" 
+                                    src="/assets/catchon.png" 
                                     alt="Logo" 
                                     className="w-7 h-7 rounded object-cover mr-1"
                                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
