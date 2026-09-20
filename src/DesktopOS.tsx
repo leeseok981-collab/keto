@@ -47,7 +47,7 @@ export interface DesktopItem {
 }
 
 // 필수 기본 시스템 앱 (삭제 불가)
-export const PERMANENT_APP_IDS = ['app-notepad', 'app-calculator', 'app-catchon', 'app-catvas', 'app-catto'];
+export const PERMANENT_APP_IDS = ['app-notepad', 'app-calculator', 'app-catchon', 'app-catvas', 'app-catto', 'app-aichat'];
 
 export const isPermanentItem = (item?: DesktopItem | null) => {
     if (!item) return false;
@@ -79,9 +79,16 @@ const DEFAULT_DESKTOP_ITEMS: DesktopItem[] = [
     },
     {
         id: 'app-catto',
-        name: '캐트',
+        name: '캐트 (KETO 게임)',
         type: 'app',
         appType: 'catto',
+        updatedAt: '2026-09-20'
+    },
+    {
+        id: 'app-aichat',
+        name: '캐트 AI',
+        type: 'app',
+        appType: 'aichat',
         updatedAt: '2026-09-20'
     },
     {
@@ -478,7 +485,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             if (item.appType === 'notepad') handleOpenNotepad();
             else if (item.appType === 'calculator') { sound.click(); setShowCalculator(true); }
             else if (item.appType === 'catchon') { sound.click(); setShowCatchOn(true); }
-            else if (item.appType === 'catto') { sound.click(); setShowAIChat(true); }
+            else if (item.appType === 'catto') { sound.click(); onLaunch(); }
             else if (item.appType === 'catvas') { sound.click(); setShowCatvas(true); }
             else if (item.appType === 'screenshot') { sound.click(); setShowScreenshot(true); }
             else if (item.appType === 'paint') { sound.click(); setShowPaint(true); }
@@ -1237,6 +1244,11 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Palette className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
                                     </div>
                                 )}
+                                {item.id === 'app-aichat' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg border border-cyan-300/40 ring-2 ring-cyan-500/20 group-hover:scale-105 transition-all">
+                                        <Bot className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
+                                    </div>
+                                )}
                                 {item.appType === 'screenshot' && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 via-pink-600 to-purple-600 flex items-center justify-center shadow-lg border border-rose-300/40 ring-2 ring-rose-500/30 group-hover:scale-105 transition-transform">
                                         <Scissors className="w-7 h-7 text-white drop-shadow" />
@@ -1928,7 +1940,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             </button>
                         </div>
 
-                        {/* 캐트 (Catto) AI */}
+                        {/* 캐트 (Catto) - 게임 시작 */}
                         <div 
                             draggable={true}
                             onDragStart={(e) => {
@@ -1941,14 +1953,40 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
                         >
                             <button 
-                                onClick={() => { setShowAIChat(true); setShowStartMenu(false); }}
+                                onClick={() => { onLaunch(); setShowStartMenu(false); }}
                                 className="flex items-center gap-3 flex-1 text-left cursor-pointer"
                             >
                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 flex items-center justify-center border border-cyan-400/40">
                                     <Cat className="w-4 h-4 text-cyan-400" />
                                 </div>
                                 <div>
-                                    <div className="text-xs font-bold text-white">캐트 (Catto)</div>
+                                    <div className="text-xs font-bold text-white">캐트 (KETO)</div>
+                                    <div className="text-[10px] text-slate-400">메인 게임 시작하기</div>
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* AI 채팅 */}
+                        <div 
+                            draggable={true}
+                            onDragStart={(e) => {
+                                e.dataTransfer.setData('application/json', JSON.stringify({
+                                    name: 'AI 채팅',
+                                    type: 'app',
+                                    appType: 'aichat'
+                                }));
+                            }}
+                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
+                        >
+                            <button 
+                                onClick={() => { setShowAIChat(true); setShowStartMenu(false); }}
+                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center border border-cyan-400/40">
+                                    <Bot className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-white">AI 채팅</div>
                                     <div className="text-[10px] text-slate-400">지능형 AI 어시스턴트</div>
                                 </div>
                             </button>

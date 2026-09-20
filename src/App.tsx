@@ -1117,7 +1117,10 @@ export default function App() {
         user={user}
         onLogin={handleGoogleLogin}
         isLoggingIn={isLoggingIn || authLoading}
-        onLaunch={() => setInDesktop(false)}
+        onLaunch={() => {
+          setAppMode('lobby');
+          setInDesktop(false);
+        }}
         onOpenSpeedKeyboard2={() => {
           if (!user) {
             setUser({
