@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { User, Lock, ShieldCheck, Key, LogIn, UserPlus, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User, Lock, Key, LogIn, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { sound } from '../utils/sound';
@@ -233,27 +233,6 @@ export const CustomAuthModal: React.FC<CustomAuthModalProps> = ({ onSuccess, onC
           >
             <UserPlus className="w-4 h-4" /> 회원가입
           </button>
-        </div>
-
-        {/* Admin Special Hint Box */}
-        <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed mb-5 transition-all ${
-          isCurrentlyAdminInput
-            ? 'bg-amber-950/60 border-amber-500 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse'
-            : 'bg-slate-800/80 border-slate-700 text-slate-300'
-        }`}>
-          <div className="flex items-center gap-2 font-black mb-1 text-amber-400">
-            <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400" />
-            <span>어드민321 특별 기능 안내</span>
-          </div>
-          <p>
-            아이디 뒤에 <strong className="text-amber-300 underline font-black">어드민321</strong>을 붙여 계정을 생성하면 (예: <code className="bg-slate-900 px-1 py-0.5 rounded text-amber-300">k3to어드민321</code>), 파일에 정의된 <strong className="text-amber-300">어드민 전용 기능</strong>(관리자 패널, 월드 보스/이벤트 제어, 글로벌 버프, 나로 무제한 생성 등)이 자동으로 부여됩니다!
-          </p>
-          {isCurrentlyAdminInput && (
-            <div className="mt-2 text-amber-300 font-bold flex items-center gap-1.5 text-[11px] bg-amber-900/50 p-1.5 rounded-lg border border-amber-500/50">
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              감지됨: '어드민321' 키워드가 포함되어 회원가입/로그인 시 어드민 권한이 부여됩니다!
-            </div>
-          )}
         </div>
 
         {/* Form */}
