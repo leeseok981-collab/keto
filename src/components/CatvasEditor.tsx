@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
     CanvasObject, CanvasPage, CanvasProject, PresetCanvasSize, 
-    CANVAS_PRESET_SIZES, SubtitleItem, VideoClipItem 
+    CANVAS_PRESET_SIZES, SubtitleItem, VideoClipItem, VideoDebugInfo, MediaAsset 
 } from '../types/catvas';
 import { catvasDb } from '../services/catvasDb';
 import { CatvasTopBar } from './catvas/CatvasTopBar';
@@ -11,15 +11,21 @@ import { CatvasPropertiesPanel } from './catvas/CatvasPropertiesPanel';
 import { CatvasTimelinePanel } from './catvas/CatvasTimelinePanel';
 import { CatvasAiModal } from './catvas/CatvasAiModal';
 import { CatvasExportModal } from './catvas/CatvasExportModal';
+import { CatvasPresentationView } from './catvas/CatvasPresentationView';
+import { CatvasVideoDebugger } from './catvas/CatvasVideoDebugger';
 import { catvasAiService } from '../services/catvasAiService';
+import { CatvasMediaSplitter } from '../utils/catvasMediaSplitter';
 import { sound } from '../utils/sound';
 
 interface CatvasEditorProps {
     onClose: () => void;
+    onCloseEditor?: () => void;
     initialProject?: CanvasProject | null;
     onSaveToDesktop?: (name: string, content: string | Blob, fileUrl?: string, type?: string) => void;
     user?: any;
     onLogin?: () => void;
+    isProSubscribed?: boolean;
+    onOpenProModal?: (noticeMsg?: string) => void;
 }
 
 const DEFAULT_PROJECT: CanvasProject = {
@@ -105,7 +111,16 @@ const DEFAULT_PROJECT: CanvasProject = {
     updatedAt: new Date().toISOString()
 };
 
-export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProject, onSaveToDesktop, user, onLogin }) => {
+export const CatvasEditor: React.FC<CatvasEditorProps> = ({ 
+    onClose, 
+    onCloseEditor,
+    initialProject, 
+    onSaveToDesktop, 
+    user, 
+    onLogin,
+    isProSubscribed = false,
+    onOpenProModal
+}) => {
     // Project State
     const [project, setProject] = useState<CanvasProject>(() => initialProject || DEFAULT_PROJECT);
     const [selectedId, setSelectedId] = useState<string | null>('obj-heading');
@@ -122,6 +137,22 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
     const [isExportOpen, setIsExportOpen] = useState(false);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [aiInitialTab, setAiInitialTab] = useState('video');
+    const [isFullscreenPresentation, setIsFullscreenPresentation] = useState(false);
+    const [videoDebugInfo, setVideoDebugInfo] = useState<VideoDebugInfo | null>(null);
+    const [isVideoDebuggerOpen, setIsVideoDebuggerOpen] = useState(false);
+
+    // Global F2 shortcut to toggle Fullscreen Presentation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'F2') {
+                e.preventDefault();
+                sound.click();
+                setIsFullscreenPresentation(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     // Drawing Tool State
     const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -131,6 +162,31 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [isListeningSubtitles, setIsListeningSubtitles] = useState(false);
+    const animPreviewTimerRef = useRef<number | null>(null);
+
+    const handlePreviewAnimation = useCallback(() => {
+        if (animPreviewTimerRef.current) {
+            cancelAnimationFrame(animPreviewTimerRef.current);
+        }
+        setIsPlaying(true);
+        setCurrentTime(0);
+        const startTime = performance.now();
+        const duration = 2.0;
+
+        const animate = (now: number) => {
+            const elapsed = (now - startTime) / 1000;
+            setCurrentTime(elapsed);
+            if (elapsed < duration) {
+                animPreviewTimerRef.current = requestAnimationFrame(animate);
+            } else {
+                setIsPlaying(false);
+                setCurrentTime(0);
+                animPreviewTimerRef.current = null;
+            }
+        };
+
+        animPreviewTimerRef.current = requestAnimationFrame(animate);
+    }, []);
 
     // Subtitles List
     const [subtitles, setSubtitles] = useState<SubtitleItem[]>([]);
@@ -180,10 +236,21 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
     const activePage = project.pages[currentPageIndex] || project.pages[0];
     const selectedObject = activePage?.objects.find(o => o.id === selectedId) || null;
 
-    // Calculate Total Duration (max of slides total or video clips total)
-    const slidesDuration = project.pages.reduce((acc, p) => acc + (p.duration || 3), 0);
-    const clipsMaxEnd = (project.videoClips || []).reduce((acc, c) => Math.max(acc, c.startTime + c.duration), 0);
-    const totalDuration = Math.max(5, Math.max(slidesDuration, clipsMaxEnd));
+    // Calculate Total Duration (1초부터 최대 10시간 = 36,000초까지 유연하게 지원)
+    const MAX_10_HOURS_SECONDS = 36000;
+    const slidesDuration = project.pages.reduce((acc, p) => {
+        const dur = typeof p.duration === 'number' && Number.isFinite(p.duration) && p.duration > 0 ? p.duration : 1;
+        return acc + dur;
+    }, 0);
+    const clipsMaxEnd = (project.videoClips || []).reduce((acc, c) => {
+        const st = typeof c.startTime === 'number' && Number.isFinite(c.startTime) ? c.startTime : 0;
+        const dur = typeof c.duration === 'number' && Number.isFinite(c.duration) && c.duration > 0 ? c.duration : 1;
+        return Math.max(acc, st + dur);
+    }, 0);
+    const calculatedDuration = Math.max(slidesDuration, clipsMaxEnd);
+    const totalDuration = Number.isFinite(calculatedDuration) && calculatedDuration >= 1
+        ? Math.min(MAX_10_HOURS_SECONDS, Math.max(1, calculatedDuration))
+        : 1;
 
     // Undo / Redo Handlers
     const handleUndo = () => {
@@ -248,18 +315,49 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
     // CRUD Objects in Active Page
     const handleAddObject = (newObj: CanvasObject) => {
         sound.buy();
+        const sanitized: CanvasObject = {
+            ...newObj,
+            x: Number.isFinite(newObj.x) ? newObj.x : 100,
+            y: Number.isFinite(newObj.y) ? newObj.y : 100,
+            width: Number.isFinite(newObj.width) && newObj.width > 0 ? newObj.width : 200,
+            height: Number.isFinite(newObj.height) && newObj.height > 0 ? newObj.height : 100,
+            rotation: Number.isFinite(newObj.rotation) ? newObj.rotation : 0,
+            opacity: Number.isFinite(newObj.opacity) ? newObj.opacity : 1
+        };
         const updatedPages = [...project.pages];
         const page = { ...activePage };
-        page.objects = [...page.objects, newObj];
+        page.objects = [...page.objects, sanitized];
         updatedPages[currentPageIndex] = page;
         recordChange({ ...project, pages: updatedPages });
-        setSelectedId(newObj.id);
+        setSelectedId(sanitized.id);
     };
 
     const handleUpdateObject = (id: string, updated: Partial<CanvasObject>) => {
         const updatedPages = [...project.pages];
         const page = { ...activePage };
-        page.objects = page.objects.map(obj => obj.id === id ? { ...obj, ...updated } : obj);
+        page.objects = page.objects.map(obj => {
+            if (obj.id !== id) return obj;
+            const merged = { ...obj, ...updated };
+            if ('x' in updated) {
+                merged.x = typeof updated.x === 'number' && Number.isFinite(updated.x) ? updated.x : (obj.x ?? 0);
+            }
+            if ('y' in updated) {
+                merged.y = typeof updated.y === 'number' && Number.isFinite(updated.y) ? updated.y : (obj.y ?? 0);
+            }
+            if ('width' in updated) {
+                merged.width = typeof updated.width === 'number' && Number.isFinite(updated.width) && updated.width > 0 ? updated.width : (obj.width ?? 100);
+            }
+            if ('height' in updated) {
+                merged.height = typeof updated.height === 'number' && Number.isFinite(updated.height) && updated.height > 0 ? updated.height : (obj.height ?? 50);
+            }
+            if ('rotation' in updated) {
+                merged.rotation = typeof updated.rotation === 'number' && Number.isFinite(updated.rotation) ? updated.rotation : (obj.rotation ?? 0);
+            }
+            if ('opacity' in updated) {
+                merged.opacity = typeof updated.opacity === 'number' && Number.isFinite(updated.opacity) ? updated.opacity : (obj.opacity ?? 1);
+            }
+            return merged;
+        });
         updatedPages[currentPageIndex] = page;
         recordChange({ ...project, pages: updatedPages });
     };
@@ -416,16 +514,144 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
         handleUpdateVideoClip(clipId, { inPoint, outPoint, duration: dur });
     };
 
-    // Import User Video File (MP4, WebM, MOV, AVI, MKV)
-    const handleImportVideoFile = (file: File) => {
+    // Separate Video and Audio Track (오디오 분리)
+    const handleSeparateVideoAudio = async (clipId: string) => {
+        const clip = (project.videoClips || []).find(c => c.id === clipId);
+        if (!clip || !clip.src) {
+            alert('분리할 영상 클립을 찾을 수 없습니다.');
+            return;
+        }
+        sound.click();
+        try {
+            const { audioUrl, duration } = await CatvasMediaSplitter.extractAudioFromVideo(clip.src, clip.name);
+
+            // Mute original video
+            const updatedClips = (project.videoClips || []).map(c => 
+                c.id === clipId ? { ...c, volume: 0 } : c
+            );
+
+            // Mute corresponding canvas video object
+            const updatedPages = project.pages.map(p => ({
+                ...p,
+                objects: p.objects.map(obj => 
+                    obj.type === 'video' && (obj.videoUrl === clip.src || obj.name === clip.name)
+                        ? { ...obj, mediaVolume: 0 }
+                        : obj
+                )
+            }));
+
+            // Add dedicated audio track clip synced to video startTime
+            const newAudioClip: VideoClipItem = {
+                id: `audio-split-${Date.now()}`,
+                name: `[오디오 트랙] ${clip.name}`,
+                src: audioUrl,
+                trackId: 'audio1',
+                startTime: clip.startTime,
+                duration: Math.min(clip.duration, duration || clip.duration),
+                inPoint: clip.inPoint,
+                outPoint: clip.outPoint,
+                volume: 1,
+                speed: clip.speed || 1,
+                colorGrading: { brightness: 100, contrast: 100, saturation: 100, exposure: 0, temperature: 0 },
+                filter: 'none'
+            };
+
+            updatedClips.push(newAudioClip);
+            recordChange({
+                ...project,
+                pages: updatedPages,
+                videoClips: updatedClips
+            });
+            sound.buy();
+            alert('🎉 영상과 오디오가 성공적으로 분리되었습니다!\n영상은 음소거되고 오디오 트랙이 독립적으로 추가되어 싱크 밀림 없이 안정적으로 재생됩니다.');
+        } catch (e: any) {
+            alert('영상/오디오 분리 중 오류: ' + (e?.message || e));
+        }
+    };
+
+    // Import User Video File (MP4, WebM, MOV, AVI, MKV) with IndexedDB large blob persistence & Video Debugger
+    const handleImportVideoFile = async (file: File) => {
         sound.buy();
-        const videoUrl = URL.createObjectURL(file);
-        
-        // Create an offscreen video to measure duration
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        const mimeType = file.type || `video/${ext}`;
+
+        const initialDebug: VideoDebugInfo = {
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: mimeType,
+            extension: ext,
+            objectUrlCreated: false,
+            readyState: 0,
+            networkState: 0,
+            duration: 0,
+            videoWidth: 0,
+            videoHeight: 0,
+            status: 'pending',
+            diagnosticMessage: '비디오 파일 파이프라인 수신 및 Object URL/메타데이터 분석 초기화 중...'
+        };
+        setVideoDebugInfo(initialDebug);
+
+        let videoUrl = '';
+        const blobKey = `video-blob-${Date.now()}`;
+        try {
+            videoUrl = URL.createObjectURL(file);
+            initialDebug.objectUrlCreated = true;
+            initialDebug.objectUrl = videoUrl;
+
+            // Save to IndexedDB large blobs store
+            await catvasDb.saveLargeBlob(blobKey, file, file.name);
+        } catch (err: any) {
+            console.warn('IndexedDB video blob cache warning:', err);
+        }
+
         const tempVideo = document.createElement('video');
+        tempVideo.preload = 'auto';
+        tempVideo.crossOrigin = 'anonymous';
+        tempVideo.muted = true;
+        tempVideo.playsInline = true;
         tempVideo.src = videoUrl;
-        tempVideo.onloadedmetadata = () => {
-            const duration = tempVideo.duration || 5;
+
+        let processed = false;
+
+        const processVideoMetadata = () => {
+            if (processed) return;
+
+            // Handle Infinity duration issue in Chrome/Safari for blob videos
+            if (tempVideo.duration === Infinity || isNaN(tempVideo.duration)) {
+                tempVideo.currentTime = 1e101;
+                tempVideo.ontimeupdate = () => {
+                    tempVideo.ontimeupdate = null;
+                    tempVideo.currentTime = 0;
+                    finalizeVideoImport();
+                };
+                return;
+            }
+
+            finalizeVideoImport();
+        };
+
+        const finalizeVideoImport = () => {
+            if (processed) return;
+            processed = true;
+
+            const detectedDur = Number.isFinite(tempVideo.duration) && tempVideo.duration > 0 ? tempVideo.duration : 10;
+            const width = tempVideo.videoWidth || 1280;
+            const height = tempVideo.videoHeight || 720;
+
+            const successDebug: VideoDebugInfo = {
+                ...initialDebug,
+                objectUrlCreated: true,
+                objectUrl: videoUrl,
+                readyState: tempVideo.readyState,
+                networkState: tempVideo.networkState,
+                duration: detectedDur,
+                videoWidth: width,
+                videoHeight: height,
+                status: 'success',
+                diagnosticMessage: `🎉 [${file.name}] 영상 로드 성공! (${width}x${height}, ${detectedDur.toFixed(1)}초)`
+            };
+            setVideoDebugInfo(successDebug);
+
             const currentTotal = (project.videoClips || []).reduce((acc, c) => Math.max(acc, c.startTime + c.duration), 0);
 
             const newClip: VideoClipItem = {
@@ -434,9 +660,9 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                 src: videoUrl,
                 trackId: 'video1',
                 startTime: currentTotal,
-                duration: duration,
+                duration: detectedDur,
                 inPoint: 0,
-                outPoint: duration,
+                outPoint: detectedDur,
                 volume: 1,
                 speed: 1,
                 colorGrading: { brightness: 100, contrast: 100, saturation: 100, exposure: 0, temperature: 0 },
@@ -445,24 +671,178 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
 
             handleAddVideoClip(newClip);
 
-            // Also place an interactive video player object on current canvas
+            // Extend current page duration to match full video length
+            if (activePage) {
+                handleUpdatePage(currentPageIndex, {
+                    duration: Math.max(activePage.duration || 4, detectedDur)
+                });
+            }
+
+            // Place interactive video player object on current canvas
             handleAddObject({
                 id: `video-obj-${Date.now()}`,
                 type: 'video',
                 name: file.name,
-                x: 100,
-                y: 100,
-                width: 800,
-                height: 450,
+                x: Math.round((project.canvas.width - Math.min(800, width)) / 2),
+                y: Math.round((project.canvas.height - Math.min(450, Math.round((height / width) * 800) || 450)) / 2),
+                width: Math.min(800, width),
+                height: Math.min(450, Math.round((height / width) * 800) || 450),
                 rotation: 0,
                 opacity: 1,
                 zIndex: activePage.objects.length + 1,
                 visible: true,
                 locked: false,
                 videoUrl: videoUrl,
-                mediaVolume: 1
+                mediaVolume: 1,
+                mediaDuration: detectedDur
             });
         };
+
+        const handleError = () => {
+            const mediaErr = tempVideo.error;
+            let msg = '영상을 불러오는 도중 오류가 발생했습니다.';
+            if (mediaErr) {
+                if (mediaErr.code === 1) msg = '영상 로딩이 중단되었습니다.';
+                else if (mediaErr.code === 2) msg = '네트워크 문제로 영상 데이터를 불러올 수 없습니다.';
+                else if (mediaErr.code === 3) msg = '영상 데코딩 실패 또는 파일이 손상되었습니다.';
+                else if (mediaErr.code === 4) msg = `이 브라우저가 해당 코덱 (${mimeType})을 지원하지 않습니다. MP4 또는 WebM으로 변환해보세요.`;
+            }
+
+            const errorDebug: VideoDebugInfo = {
+                ...initialDebug,
+                readyState: tempVideo.readyState,
+                networkState: tempVideo.networkState,
+                errorCode: mediaErr?.code,
+                errorMessage: mediaErr?.message || 'Media element error',
+                status: 'error',
+                diagnosticMessage: `⚠️ ${msg}`
+            };
+            setVideoDebugInfo(errorDebug);
+            setIsVideoDebuggerOpen(true);
+        };
+
+        tempVideo.onloadedmetadata = processVideoMetadata;
+        tempVideo.onloadeddata = processVideoMetadata;
+        tempVideo.oncanplay = processVideoMetadata;
+        tempVideo.onerror = handleError;
+        tempVideo.load();
+    };
+
+    // Import Custom Audio File (MP3, WAV, OGG, M4A)
+    const handleUploadAudio = async (file: File) => {
+        sound.buy();
+        try {
+            const audioUrl = URL.createObjectURL(file);
+            const tempAudio = document.createElement('audio');
+            tempAudio.preload = 'metadata';
+            tempAudio.src = audioUrl;
+
+            let audioProcessed = false;
+
+            const processAudioMetadata = () => {
+                if (audioProcessed) return;
+                audioProcessed = true;
+
+                const detectedDur = Number.isFinite(tempAudio.duration) && tempAudio.duration > 0 ? tempAudio.duration : 10;
+                
+                const newAudioClip: VideoClipItem = {
+                    id: `audio-clip-${Date.now()}`,
+                    name: `🎵 ${file.name}`,
+                    src: audioUrl,
+                    trackId: 'audio1',
+                    startTime: 0,
+                    duration: detectedDur,
+                    inPoint: 0,
+                    outPoint: detectedDur,
+                    volume: 1,
+                    speed: 1,
+                    colorGrading: { brightness: 100, contrast: 100, saturation: 100, exposure: 0, temperature: 0 },
+                    filter: 'none'
+                };
+
+                handleAddVideoClip(newAudioClip);
+
+                // Update active page duration
+                if (activePage) {
+                    handleUpdatePage(currentPageIndex, {
+                        duration: Math.max(activePage.duration || 4, detectedDur)
+                    });
+                }
+
+                // Add audio object to active page canvas
+                handleAddObject({
+                    id: `audio-obj-${Date.now()}`,
+                    type: 'audio',
+                    name: file.name,
+                    x: 60,
+                    y: project.canvas.height - 180,
+                    width: 380,
+                    height: 100,
+                    rotation: 0,
+                    opacity: 1,
+                    zIndex: activePage.objects.length + 1,
+                    visible: true,
+                    locked: false,
+                    mediaUrl: audioUrl,
+                    mediaVolume: 1,
+                    mediaDuration: detectedDur
+                });
+
+                alert(`🎵 [${file.name}] 오디오 파일이 성공적으로 수신되었습니다! (${detectedDur.toFixed(1)}초)\n타임라인 및 캔버스에 추가되어 미리보기/재생 시 선명하게 울립니다.`);
+            };
+
+            tempAudio.onloadedmetadata = processAudioMetadata;
+            tempAudio.onloadeddata = processAudioMetadata;
+            tempAudio.onerror = () => {
+                processAudioMetadata();
+            };
+            tempAudio.load();
+        } catch (e: any) {
+            alert('오디오 불러오기 오류: ' + (e?.message || e));
+        }
+    };
+
+    const handleApplyAiCommands = (commands: any[]) => {
+        sound.buy();
+        if (!commands || commands.length === 0) return;
+
+        let updatedPages = [...project.pages];
+        let page = { ...activePage };
+        let objs = [...page.objects];
+
+        commands.forEach(cmd => {
+            if (cmd.action === 'autoTidy') {
+                objs = catvasAiService.generateAutoTidy(objs, project.canvas.width, project.canvas.height);
+            } else if (cmd.action === 'align') {
+                const targetObjs = cmd.target === 'selected' && selectedId 
+                    ? objs.filter(o => o.id === selectedId)
+                    : objs;
+                if (cmd.mode === 'center') {
+                    targetObjs.forEach(o => { o.x = Math.round((project.canvas.width - o.width) / 2); });
+                } else if (cmd.mode === 'left') {
+                    targetObjs.forEach(o => { o.x = 40; });
+                } else if (cmd.mode === 'right') {
+                    targetObjs.forEach(o => { o.x = project.canvas.width - o.width - 40; });
+                }
+            } else if (cmd.action === 'changeColor' && cmd.color) {
+                const targetObjs = selectedId ? objs.filter(o => o.id === selectedId) : objs;
+                targetObjs.forEach(o => {
+                    if (o.type === 'shape') o.fillColor = cmd.color;
+                    else if (o.type === 'text') o.textColor = cmd.color;
+                });
+            } else if (cmd.action === 'resize' && cmd.scale) {
+                const targetObjs = selectedId ? objs.filter(o => o.id === selectedId) : objs;
+                targetObjs.forEach(o => {
+                    o.width = Math.round(o.width * cmd.scale);
+                    o.height = Math.round(o.height * cmd.scale);
+                });
+            }
+        });
+
+        page.objects = objs;
+        updatedPages[currentPageIndex] = page;
+        recordChange({ ...project, pages: updatedPages });
+        alert('✨ AI 디자인 명령이 캔버스에 적용되었습니다!');
     };
 
     // Speech-to-Text Live Subtitles (Web Speech API)
@@ -549,13 +929,58 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
         return () => clearInterval(timer);
     }, [isPlaying, totalDuration]);
 
+    // Audio clips playback synchronization for timeline audio tracks (오디오 소리 재생 보장)
+    const audioTrackElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+    useEffect(() => {
+        const audioMap = audioTrackElementsRef.current;
+        const audioClips = (project.videoClips || []).filter(c => c.trackId?.startsWith('audio') && c.src);
+
+        if (!isPlaying) {
+            audioMap.forEach(el => {
+                if (!el.paused) el.pause();
+            });
+            return;
+        }
+
+        audioClips.forEach(clip => {
+            let el = audioMap.get(clip.id);
+            if (!el && clip.src) {
+                el = document.createElement('audio');
+                if (!clip.src.startsWith('blob:')) el.crossOrigin = 'anonymous';
+                el.preload = 'auto';
+                el.src = clip.src;
+                el.load();
+                audioMap.set(clip.id, el);
+            }
+            if (el) {
+                const vol = Math.max(0, Math.min(1, clip.volume ?? 1));
+                el.volume = vol;
+                const clipStart = clip.startTime || 0;
+                const clipEnd = clipStart + clip.duration;
+
+                if (currentTime >= clipStart && currentTime < clipEnd) {
+                    const localOffset = (currentTime - clipStart) + (clip.inPoint || 0);
+                    if (Math.abs(el.currentTime - localOffset) > 0.3) {
+                        el.currentTime = localOffset;
+                    }
+                    if (el.paused) {
+                        el.play().catch(() => {});
+                    }
+                } else {
+                    if (!el.paused) el.pause();
+                }
+            }
+        });
+    }, [isPlaying, currentTime, project.videoClips]);
+
     return (
-        <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col select-none overflow-hidden font-sans">
+        <div className="flex-1 flex flex-col w-full h-full select-none overflow-hidden font-sans bg-slate-950 text-white">
             {/* 1. TOP BAR */}
             <CatvasTopBar
                 project={project}
                 onUpdateProjectName={(name) => recordChange({ ...project, name })}
                 onSaveProject={handleSaveProject}
+                onOpenPresentation={() => setIsFullscreenPresentation(true)}
                 onNewProject={handleNewProject}
                 onSelectPreset={handleSelectPreset}
                 onUndo={handleUndo}
@@ -565,8 +990,14 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                 zoom={zoom}
                 onChangeZoom={setZoom}
                 onOpenExport={() => setIsExportOpen(true)}
-                onOpenAiStudio={() => { setAiInitialTab('video'); setIsAiModalOpen(true); }}
-                onClose={onClose}
+                onOpenAiStudio={() => { 
+                    setAiInitialTab('video'); 
+                    setIsAiModalOpen(true); 
+                }}
+                onClose={() => {
+                    if (onCloseEditor) onCloseEditor();
+                    else onClose();
+                }}
                 user={user}
                 onLogin={onLogin}
             />
@@ -583,25 +1014,46 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                     project={project}
                     recentProjects={savedProjectsList}
                     onAddObject={handleAddObject}
+                    isProSubscribed={isProSubscribed}
+                    onOpenProModal={onOpenProModal}
                     onOpenAiModal={(mode) => {
                         setAiInitialTab(mode);
                         setIsAiModalOpen(true);
                     }}
-                    onApplyTemplate={(template) => {
+                    onApplyTemplate={(template, mode = 'all', selectedPageIndex = 0) => {
                         sound.buy();
-                        recordChange({
-                            ...project,
-                            name: template.name,
-                            canvas: {
-                                ...project.canvas,
-                                width: template.width,
-                                height: template.height,
-                                background: template.pages[0]?.background || '#ffffff'
-                            },
-                            pages: template.pages,
-                            currentPage: 0
-                        });
+                        if (mode === 'single') {
+                            const targetPage = template.pages[selectedPageIndex] || template.pages[0];
+                            const newPage: CanvasPage = {
+                                ...targetPage,
+                                id: `page-${Date.now()}`,
+                                name: `${template.name} (슬라이드 ${selectedPageIndex + 1})`
+                            };
+                            const updatedPages = [...project.pages, newPage];
+                            recordChange({
+                                ...project,
+                                pages: updatedPages,
+                                currentPage: updatedPages.length - 1
+                            });
+                        } else {
+                            recordChange({
+                                ...project,
+                                name: template.name,
+                                canvas: {
+                                    ...project.canvas,
+                                    width: template.width,
+                                    height: template.height,
+                                    background: template.pages[0]?.background || '#ffffff'
+                                },
+                                pages: template.pages,
+                                currentPage: 0
+                            });
+                        }
                     }}
+                    onImportVideoFile={handleImportVideoFile}
+                    onUploadAudio={handleUploadAudio}
+                    onSeparateVideoAudio={handleSeparateVideoAudio}
+                    onAddVideoClip={handleAddVideoClip}
                     currentCanvasWidth={project.canvas.width}
                     currentCanvasHeight={project.canvas.height}
                 />
@@ -644,6 +1096,7 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                     }}
                     isPreviewing={isPlaying}
                     previewTime={currentTime}
+                    videoClips={project.videoClips}
                 />
 
                 {/* Right Contextual Properties Panel */}
@@ -657,6 +1110,7 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                     onTriggerRemoveBg={() => {}}
                     onTriggerUpscale={() => {}}
                     onOpenAiModal={() => {}}
+                    onPreviewAnimation={handlePreviewAnimation}
                 />
             </div>
 
@@ -681,6 +1135,7 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                 onSplitClipAtPlayhead={handleSplitClipAtPlayhead}
                 onTrimClip={handleTrimClip}
                 onImportVideoFile={handleImportVideoFile}
+                onSeparateVideoAudio={handleSeparateVideoAudio}
                 subtitles={subtitles}
                 onUpdateSubtitles={setSubtitles}
                 onStartAutoSubtitles={handleStartAutoSubtitles}
@@ -697,6 +1152,7 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                 isOpen={isAiModalOpen}
                 onClose={() => setIsAiModalOpen(false)}
                 initialMode={aiInitialTab}
+                onApplyAiCommands={handleApplyAiCommands}
                 onInsertGeneratedVideo={(videoUrl, duration, title) => {
                     const newClip: VideoClipItem = {
                         id: `ai-video-${Date.now()}`,
@@ -779,6 +1235,23 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({ onClose, initialProj
                 isOpen={isExportOpen}
                 onClose={() => setIsExportOpen(false)}
                 project={project}
+            />
+
+            {/* 6. FULLSCREEN PRESENTATION VIEW (F2 to toggle/close) */}
+            {isFullscreenPresentation && (
+                <CatvasPresentationView
+                    project={project}
+                    initialPageIndex={currentPageIndex}
+                    onClose={() => setIsFullscreenPresentation(false)}
+                    onPageChange={(idx) => setProject(prev => ({ ...prev, currentPage: idx }))}
+                />
+            )}
+
+            {/* 7. VIDEO DEBUGGER MODAL */}
+            <CatvasVideoDebugger
+                isOpen={isVideoDebuggerOpen}
+                onClose={() => setIsVideoDebuggerOpen(false)}
+                debugInfo={videoDebugInfo}
             />
         </div>
     );

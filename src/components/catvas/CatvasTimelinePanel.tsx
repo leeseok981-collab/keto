@@ -26,6 +26,7 @@ interface CatvasTimelinePanelProps {
     onSplitClipAtPlayhead: (clipId: string, time: number) => void;
     onTrimClip: (clipId: string, inPoint: number, outPoint: number) => void;
     onImportVideoFile: (file: File) => void;
+    onSeparateVideoAudio?: (clipId: string) => void;
 
     // Subtitle System Props
     subtitles: SubtitleItem[];
@@ -58,6 +59,7 @@ export const CatvasTimelinePanel: React.FC<CatvasTimelinePanelProps> = ({
     onSplitClipAtPlayhead,
     onTrimClip,
     onImportVideoFile,
+    onSeparateVideoAudio,
     subtitles,
     onUpdateSubtitles,
     onStartAutoSubtitles,
@@ -72,12 +74,19 @@ export const CatvasTimelinePanel: React.FC<CatvasTimelinePanelProps> = ({
     const [isSubtitleDrawerOpen, setIsSubtitleDrawerOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const timelineRef = useRef<HTMLDivElement>(null);
+    const [showDurationModal, setShowDurationModal] = useState(false);
+    const [customDurationInput, setCustomDurationInput] = useState<string>('10');
 
-    // Format seconds to mm:ss.ms
+    // Format seconds to hh:mm:ss.ms or mm:ss.ms (1초부터 10시간 = 36,000초까지 완벽 지원)
     const formatTimeCode = (sec: number) => {
-        const m = Math.floor(sec / 60);
-        const s = Math.floor(sec % 60);
-        const ms = Math.floor((sec % 1) * 100);
+        const validSec = Math.max(0, Number.isFinite(sec) ? sec : 0);
+        const h = Math.floor(validSec / 3600);
+        const m = Math.floor((validSec % 3600) / 60);
+        const s = Math.floor(validSec % 60);
+        const ms = Math.floor((validSec % 1) * 100);
+        if (h > 0) {
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+        }
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
     };
 
@@ -213,11 +222,23 @@ export const CatvasTimelinePanel: React.FC<CatvasTimelinePanelProps> = ({
                         </button>
                     </div>
 
-                    {/* Timecode display */}
-                    <div className="flex items-center gap-1 font-mono text-xs bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                    {/* Timecode display & Duration Setting */}
+                    <div className="flex items-center gap-1.5 font-mono text-xs bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
                         <span className="text-purple-400 font-bold">{formatTimeCode(currentTime)}</span>
                         <span className="text-slate-600">/</span>
-                        <span className="text-slate-400">{formatTimeCode(totalDuration)}</span>
+                        <span className="text-slate-300 font-medium">{formatTimeCode(totalDuration)}</span>
+                        <button
+                            onClick={() => {
+                                sound.click();
+                                setCustomDurationInput(String(Math.round(totalDuration)));
+                                setShowDurationModal(true);
+                            }}
+                            className="ml-1 px-1.5 py-0.5 rounded bg-purple-700/60 hover:bg-purple-600 text-purple-200 text-[10px] font-sans font-bold transition-all cursor-pointer flex items-center gap-0.5"
+                            title="영상 전체 길이 설정 (1초 ~ 10시간 36,000초)"
+                        >
+                            <Clock className="w-3 h-3 text-purple-300" />
+                            <span>길이 설정</span>
+                        </button>
                     </div>
                 </div>
 
@@ -274,6 +295,17 @@ export const CatvasTimelinePanel: React.FC<CatvasTimelinePanelProps> = ({
                         >
                             <Scissors className="w-3.5 h-3.5 text-purple-400" /> SPLIT
                         </button>
+
+                        {/* Separate Video & Audio */}
+                        {selectedClip && (selectedClip.trackId?.startsWith('video') || !selectedClip.trackId) && onSeparateVideoAudio && (
+                            <button
+                                onClick={() => { sound.click(); onSeparateVideoAudio(selectedClip.id); }}
+                                className="px-2.5 py-1 bg-cyan-700/80 hover:bg-cyan-600 text-white rounded-md text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap shadow-sm"
+                                title="영상과 오디오를 분리하여 오디오 트랙에 추가 (재생 싱크 밀림 해결)"
+                            >
+                                <Scissors className="w-3.5 h-3.5 text-cyan-300" /> 영상/오디오 분리
+                            </button>
+                        )}
 
                         {/* Speed Menu */}
                         {selectedClip && (
@@ -527,6 +559,97 @@ export const CatvasTimelinePanel: React.FC<CatvasTimelinePanelProps> = ({
                                 className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold"
                             >
                                 완료
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Video Duration Setting Modal (1초부터 10시간 = 36,000초까지) */}
+            {showDurationModal && (
+                <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-5 shadow-2xl flex flex-col gap-4 text-white">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-purple-400" />
+                                <h3 className="font-bold text-base">영상 재생 길이 설정</h3>
+                            </div>
+                            <button
+                                onClick={() => setShowDurationModal(false)}
+                                className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <p className="text-xs text-slate-300">
+                            1초부터 최대 10시간 (36,000초)까지 원하는 재생 길이를 직접 입력하거나 프리셋 버튼을 클릭하여 설정할 수 있습니다.
+                        </p>
+
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                min={1}
+                                max={36000}
+                                step={1}
+                                value={customDurationInput}
+                                onChange={(e) => setCustomDurationInput(e.target.value)}
+                                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-purple-300 font-mono font-bold focus:outline-none focus:border-purple-500"
+                                placeholder="초 단위 입력 (1 ~ 36000)"
+                            />
+                            <span className="text-xs font-bold text-slate-400">초 (Sec)</span>
+                            <button
+                                onClick={() => {
+                                    const sec = Math.min(36000, Math.max(1, parseFloat(customDurationInput) || 1));
+                                    sound.buy();
+                                    onUpdatePage(currentPageIndex, { duration: sec });
+                                    setShowDurationModal(false);
+                                }}
+                                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all"
+                            >
+                                적용
+                            </button>
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div className="flex flex-col gap-2">
+                            <span className="text-[11px] font-bold text-slate-400">빠른 프리셋 선택:</span>
+                            <div className="grid grid-cols-4 gap-1.5 text-xs">
+                                {[
+                                    { label: '1초', sec: 1 },
+                                    { label: '3초', sec: 3 },
+                                    { label: '5초', sec: 5 },
+                                    { label: '10초', sec: 10 },
+                                    { label: '30초', sec: 30 },
+                                    { label: '1분', sec: 60 },
+                                    { label: '5분', sec: 300 },
+                                    { label: '10분', sec: 600 },
+                                    { label: '30분', sec: 1800 },
+                                    { label: '1시간', sec: 3600 },
+                                    { label: '5시간', sec: 18000 },
+                                    { label: '10시간', sec: 36000 },
+                                ].map((item) => (
+                                    <button
+                                        key={item.sec}
+                                        onClick={() => {
+                                            sound.click();
+                                            onUpdatePage(currentPageIndex, { duration: item.sec });
+                                            setShowDurationModal(false);
+                                        }}
+                                        className="py-1.5 px-2 bg-slate-800 hover:bg-purple-700/80 hover:text-white text-slate-300 rounded-lg font-mono text-[11px] transition-colors border border-slate-700/60"
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-2 border-t border-slate-800">
+                            <button
+                                onClick={() => setShowDurationModal(false)}
+                                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold"
+                            >
+                                닫기
                             </button>
                         </div>
                     </div>

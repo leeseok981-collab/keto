@@ -39,7 +39,7 @@ export const CanvasLoginScreen: React.FC<CanvasLoginScreenProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col items-center justify-between p-6 sm:p-12 overflow-y-auto select-none">
+        <div className="flex-1 flex flex-col items-center justify-between p-6 sm:p-12 overflow-y-auto bg-slate-950 text-white select-none w-full h-full">
             {/* Top Navigation */}
             <div className="w-full max-w-5xl flex items-center justify-between">
                 <div className="flex items-center gap-3">

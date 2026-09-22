@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
     Home, Palette, Film, LayoutTemplate, FolderKanban, 
-    User, Settings, Monitor, Sparkles, ChevronLeft, ChevronRight 
+    User, Settings, Monitor, Sparkles, ChevronLeft, ChevronRight, Users 
 } from 'lucide-react';
 import { CanvasAppView } from '../../types/canvasApp';
 import { sound } from '../../utils/sound';
@@ -76,6 +76,13 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
             icon: Settings,
             color: 'text-slate-400',
             action: () => onNavigate('CANVAS_SETTINGS')
+        },
+        {
+            id: 'CANVAS_MULTI' as CanvasAppView,
+            label: '멀티 참가',
+            icon: Users,
+            color: 'text-cyan-400',
+            action: () => onNavigate('CANVAS_MULTI')
         },
     ];
 

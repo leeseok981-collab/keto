@@ -338,6 +338,48 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
     };
   }, [user]);
 
+  const giveAdminGold = (amount: number) => {
+    if (!isAdmin) return;
+    sound.buy();
+    setMoney((m: number) => m + amount);
+    alert(`💰 관리자 권한으로 ${amount.toLocaleString()} 골드를 획득했습니다!`);
+  };
+
+  const giveAllSeeds = (qty = 99) => {
+    if (!isAdmin) return;
+    sound.buy();
+    setInventory((prev: any) => {
+      const updated = { ...prev };
+      for (const key in SEEDS) {
+        updated[key] = (updated[key] || 0) + qty;
+      }
+      return updated;
+    });
+    alert(`🌱 모든 씨앗을 각각 ${qty}개씩 지급받았습니다!`);
+  };
+
+  const giveAllPets = () => {
+    if (!isAdmin) return;
+    sound.fish();
+    const newPets = PETS.map(p => ({ ...p, uid: `${p.id}_admin_${Date.now()}_${Math.random().toString(36).substring(2, 6)}` }));
+    setPets(prev => [...prev, ...newPets]);
+    alert(`🐾 전설의 용을 포함한 모든 펫을 인벤토리에 추가했습니다!`);
+  };
+
+  const instantGrowAll = () => {
+    if (!isAdmin) return;
+    sound.fish();
+    setPlots((prev: any[]) => prev.map(p => p.seedId ? { ...p, plantedAt: 0 } : p));
+    alert(`⚡ 모든 밭의 작물이 즉시 수확 가능하도록 성장 완료되었습니다!`);
+  };
+
+  const maxTools = () => {
+    if (!isAdmin) return;
+    sound.buy();
+    setToolLevels({ water: 7, sprinkler: 7 });
+    alert(`🚿 물뿌리개와 스프링클러를 최고 등급(Lv.7)으로 마스터했습니다!`);
+  };
+
   const saveAdminConfig = async () => {
     if (!isAdmin) return;
     await setDoc(doc(db, 'system', 'gardenConfig'), { timeMultiplier: tempMultiplier }, { merge: true });
@@ -1131,6 +1173,195 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
               <button onMouseEnter={sound.hover} onClick={() => setShowSettings(false)} className="w-full bg-stone-700 hover:bg-stone-600 text-white font-bold py-4 rounded-xl text-lg">
                 계속 하기
               </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin Panel Modal (어드민321 전용) */}
+      <AnimatePresence>
+        {showAdmin && isAdmin && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm select-none">
+            <div className="bg-stone-900 border-2 border-red-700 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-red-950 via-stone-900 to-amber-950 border-b border-red-800/60 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-red-600/30 border border-red-500/50 flex items-center justify-center shadow-lg shadow-red-600/20">
+                    <Crown className="w-5 h-5 text-red-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      그로우 어 가든 어드민 패널
+                      <span className="text-[10px] bg-red-600 text-white font-black px-2 py-0.5 rounded-full">어드민321 전용</span>
+                    </h2>
+                    <p className="text-[11px] text-stone-400">관리자 전용 자원 지급, 즉시 성장, 전역 배수 및 이벤트 제어</p>
+                  </div>
+                </div>
+                <button onMouseEnter={sound.hover} onClick={() => setShowAdmin(false)} className="p-2 text-stone-400 hover:text-white rounded-xl bg-stone-800/80 hover:bg-stone-700 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-stone-200">
+                {/* 1. Quick Cheats */}
+                <div className="bg-stone-950/60 p-4 rounded-2xl border border-red-900/40">
+                  <h3 className="text-sm font-black text-red-400 flex items-center gap-1.5 mb-3">
+                    <Coins className="w-4 h-4 text-yellow-400" /> 관리자 자원 즉시 지급
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    <button onClick={() => giveAdminGold(1000000)} className="bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/40 text-yellow-300 rounded-xl p-2.5 font-black text-xs flex flex-col items-center gap-1 transition-all active:scale-95">
+                      <span>💰 +1,000,000 골드</span>
+                      <span className="text-[10px] text-yellow-400/70">100만 골드 지급</span>
+                    </button>
+                    <button onClick={() => giveAdminGold(10000000)} className="bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/40 text-yellow-300 rounded-xl p-2.5 font-black text-xs flex flex-col items-center gap-1 transition-all active:scale-95">
+                      <span>💎 +10,000,000 골드</span>
+                      <span className="text-[10px] text-yellow-400/70">1000만 골드 지급</span>
+                    </button>
+                    <button onClick={() => giveAllSeeds(99)} className="bg-green-600/20 hover:bg-green-600/40 border border-green-500/40 text-green-300 rounded-xl p-2.5 font-black text-xs flex flex-col items-center gap-1 transition-all active:scale-95">
+                      <span>🌱 모든 씨앗 x99개</span>
+                      <span className="text-[10px] text-green-400/70">일반~은하수 씨앗</span>
+                    </button>
+                    <button onClick={giveAllPets} className="bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-300 rounded-xl p-2.5 font-black text-xs flex flex-col items-center gap-1 transition-all active:scale-95">
+                      <span>🐲 모든 펫 즉시 획득</span>
+                      <span className="text-[10px] text-purple-400/70">용, 여우, 토끼 등</span>
+                    </button>
+                    <button onClick={instantGrowAll} className="bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 text-emerald-300 rounded-xl p-2.5 font-black text-xs flex flex-col items-center gap-1 transition-all active:scale-95">
+                      <span>⚡ 전 밭 즉시 수확</span>
+                      <span className="text-[10px] text-emerald-400/70">대기시간 0초 완료</span>
+                    </button>
+                    <button onClick={maxTools} className="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/40 text-blue-300 rounded-xl p-2.5 font-black text-xs flex flex-col items-center gap-1 transition-all active:scale-95">
+                      <span>🚿 도구 Lv.7 마스터</span>
+                      <span className="text-[10px] text-blue-400/70">물뿌리개 & 스프링클러</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Global Speed Multiplier */}
+                <div className="bg-stone-950/60 p-4 rounded-2xl border border-red-900/40">
+                  <h3 className="text-sm font-black text-red-400 flex items-center gap-1.5 mb-2">
+                    <Zap className="w-4 h-4 text-amber-400" /> 전역 성장 속도 배수 설정 (현재: {gardenConfig?.timeMultiplier || 1}배)
+                  </h3>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {[1, 2, 5, 10, 50, 100].map(m => (
+                      <button 
+                        key={m} 
+                        onClick={() => setTempMultiplier(m)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                          tempMultiplier === m 
+                            ? 'bg-amber-500 text-stone-950 shadow-md font-bold' 
+                            : 'bg-stone-800 hover:bg-stone-700 text-stone-300'
+                        }`}
+                      >
+                        {m}배속
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={saveAdminConfig} className="w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-98 transition-all">
+                    전역 배수 {tempMultiplier}배로 서버 적용
+                  </button>
+                </div>
+
+                {/* 3. Shop Restock Control */}
+                <div className="bg-stone-950/60 p-4 rounded-2xl border border-red-900/40">
+                  <h3 className="text-sm font-black text-red-400 flex items-center gap-1.5 mb-2">
+                    <ShoppingCart className="w-4 h-4 text-emerald-400" /> 상점 강제 재입고 이벤트 발동
+                  </h3>
+                  <div className="flex gap-2">
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="100" 
+                      value={adminRestockInput} 
+                      onChange={(e) => setAdminRestockInput(Number(e.target.value))} 
+                      className="w-24 bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-white font-bold"
+                    />
+                    <button onClick={forceRestock} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 rounded-xl text-xs shadow-md transition-all active:scale-98">
+                      전체 유저 상점에 씨앗 {adminRestockInput}개씩 강제 충전
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Attribute Global Event */}
+                <div className="bg-stone-950/60 p-4 rounded-2xl border border-red-900/40">
+                  <h3 className="text-sm font-black text-red-400 flex items-center gap-1.5 mb-2">
+                    <Clock className="w-4 h-4 text-pink-400" /> 특수 속성 글로벌 이벤트 강제 생성
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <select 
+                      value={adminAttr} 
+                      onChange={(e) => setAdminAttr(e.target.value)}
+                      className="bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-white font-bold"
+                    >
+                      {Object.entries(ATTRIBUTES).map(([key, adef]) => (
+                        <option key={key} value={key}>{adef.icon} {adef.name} (x{adef.multi})</option>
+                      ))}
+                    </select>
+                    <select 
+                      value={adminDuration} 
+                      onChange={(e) => setAdminDuration(Number(e.target.value))}
+                      className="bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-white font-bold"
+                    >
+                      <option value={1}>1분 동안 지속</option>
+                      <option value={5}>5분 동안 지속</option>
+                      <option value={10}>10분 동안 지속</option>
+                      <option value={30}>30분 동안 지속</option>
+                    </select>
+                  </div>
+                  <button onClick={addCustomEvent} className="w-full bg-pink-600 hover:bg-pink-500 text-white font-black py-2.5 rounded-xl text-xs shadow-md active:scale-98 transition-all">
+                    글로벌 속성 이벤트 발동 ({adminDuration}분간)
+                  </button>
+                </div>
+
+                {/* 5. Global Announcement */}
+                <div className="bg-stone-950/60 p-4 rounded-2xl border border-red-900/40">
+                  <h3 className="text-sm font-black text-red-400 flex items-center gap-1.5 mb-2">
+                    📢 전체 공지사항 전송
+                  </h3>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="공지할 메세지를 입력하세요" 
+                      value={adminCustomText} 
+                      onChange={(e) => setAdminCustomText(e.target.value)}
+                      className="flex-1 bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-white font-bold"
+                    />
+                    <button onClick={addCustomTextEvent} className="bg-blue-600 hover:bg-blue-500 text-white font-black px-4 py-2 rounded-xl text-xs transition-all active:scale-98">
+                      전송
+                    </button>
+                  </div>
+                </div>
+
+                {/* 6. Active Custom Events List */}
+                {validCustomEvents.length > 0 && (
+                  <div className="bg-stone-950/60 p-4 rounded-2xl border border-red-900/40">
+                    <h3 className="text-sm font-black text-red-400 mb-2">현재 진행 중인 관리자 이벤트</h3>
+                    <div className="space-y-1.5">
+                      {validCustomEvents.map((ev: any) => {
+                        const adef = ATTRIBUTES[ev.attrId as keyof typeof ATTRIBUTES];
+                        const timeLeft = Math.max(0, Math.floor((ev.endsAt - currentTime) / 1000));
+                        return (
+                          <div key={ev.id} className="flex items-center justify-between bg-stone-900 px-3 py-2 rounded-xl text-xs">
+                            <span className="font-bold flex items-center gap-1.5">
+                              {adef?.icon} {adef?.name} ({timeLeft}초 남음)
+                            </span>
+                            <button onClick={() => removeCustomEvent(ev.id)} className="text-red-400 hover:text-red-300 font-bold">
+                              종료
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 7. Reset all money (Emergency) */}
+                <div className="pt-2 border-t border-stone-800 flex justify-end">
+                  <button onClick={resetAllMoney} className="text-red-400 hover:text-red-300 text-xs font-bold flex items-center gap-1">
+                    <Trash2 className="w-3.5 h-3.5" /> 전 유저 머니 1000골드로 초기화
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}

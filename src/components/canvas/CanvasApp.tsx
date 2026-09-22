@@ -11,6 +11,7 @@ import { CanvasProjectsPage } from './CanvasProjectsPage';
 import { CanvasTemplatesPage } from './CanvasTemplatesPage';
 import { CanvasProfilePage } from './CanvasProfilePage';
 import { CanvasSettingsPage } from './CanvasSettingsPage';
+import { CanvasMultiJoinPage } from './CanvasMultiJoinPage';
 import { CanvasNewDesignModal } from './CanvasNewDesignModal';
 import { CatvasEditor } from '../CatvasEditor';
 import { sound } from '../../utils/sound';
@@ -18,11 +19,15 @@ import { sound } from '../../utils/sound';
 interface CanvasAppProps {
     onClose: () => void;
     onSaveToDesktop?: (name: string, content: string | Blob, fileUrl?: string, type?: string) => void;
+    isProSubscribed?: boolean;
+    onOpenProModal?: (noticeMsg?: string) => void;
 }
 
 export const CanvasApp: React.FC<CanvasAppProps> = ({
     onClose,
-    onSaveToDesktop
+    onSaveToDesktop,
+    isProSubscribed = false,
+    onOpenProModal
 }) => {
     const [user, setUser] = useState<CanvasUser | null>(() => canvasAuthService.getUser());
     const [currentView, setCurrentView] = useState<CanvasAppView>(() => {
@@ -98,10 +103,10 @@ export const CanvasApp: React.FC<CanvasAppProps> = ({
         });
     };
 
-    // If in Editor mode, render full CatvasEditor
+    // If in Editor mode, render full CatvasEditor without OS bars
     if (currentView === 'CANVAS_EDITOR') {
         return (
-            <div className="fixed inset-0 z-50 bg-slate-950 animate-fade-in flex flex-col">
+            <div className="fixed inset-0 z-[9999] bg-slate-950 text-white animate-fade-in flex flex-col overflow-hidden">
                 <CatvasEditor
                     initialProject={activeProject}
                     onClose={() => {
@@ -109,9 +114,16 @@ export const CanvasApp: React.FC<CanvasAppProps> = ({
                         setCurrentView('CANVAS_HOME');
                         setActiveProject(null);
                     }}
+                    onCloseEditor={() => {
+                        sound.click();
+                        setCurrentView('CANVAS_HOME');
+                        setActiveProject(null);
+                    }}
                     onSaveToDesktop={onSaveToDesktop}
                     user={user}
                     onLogin={() => setCurrentView('CANVAS_LOGIN')}
+                    isProSubscribed={isProSubscribed}
+                    onOpenProModal={onOpenProModal}
                 />
             </div>
         );
@@ -128,7 +140,7 @@ export const CanvasApp: React.FC<CanvasAppProps> = ({
     }
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col overflow-hidden animate-fade-in select-none font-sans">
+        <div className="flex-1 flex flex-col w-full h-full overflow-hidden bg-slate-950 text-white select-none font-sans">
             {/* Top Navigation Header */}
             <CanvasHeader
                 user={user}
@@ -188,6 +200,15 @@ export const CanvasApp: React.FC<CanvasAppProps> = ({
 
                     {currentView === 'CANVAS_SETTINGS' && (
                         <CanvasSettingsPage />
+                    )}
+
+                    {currentView === 'CANVAS_MULTI' && (
+                        <CanvasMultiJoinPage
+                            userName={user?.name || ''}
+                            onJoinSuccess={(roomCode, project) => {
+                                handleOpenProject(project);
+                            }}
+                        />
                     )}
                 </main>
             </div>

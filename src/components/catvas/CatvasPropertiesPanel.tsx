@@ -2,7 +2,7 @@ import React from 'react';
 import { 
     AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, 
     Trash2, Copy, Lock, Unlock, Eye, EyeOff, ArrowUp, ArrowDown, 
-    Sparkles, Wand2, Sliders, Layers, CornerDownRight, Move
+    Sparkles, Wand2, Sliders, Layers, CornerDownRight, Move, Play
 } from 'lucide-react';
 import { CanvasObject, TextEffectType, BlendMode, AnimationType, FrameMaskType, ShapeType } from '../../types/catvas';
 import { sound } from '../../utils/sound';
@@ -17,6 +17,7 @@ interface CatvasPropertiesPanelProps {
     onTriggerRemoveBg: (obj: CanvasObject) => void;
     onTriggerUpscale: (obj: CanvasObject) => void;
     onOpenAiModal: (mode?: string) => void;
+    onPreviewAnimation?: () => void;
 }
 
 export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
@@ -28,7 +29,8 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
     onSendBackward,
     onTriggerRemoveBg,
     onTriggerUpscale,
-    onOpenAiModal
+    onOpenAiModal,
+    onPreviewAnimation
 }) => {
     if (!selectedObject) {
         return (
@@ -96,8 +98,13 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                             <span className="text-slate-500 text-[10px]">W</span>
                             <input
                                 type="number"
-                                value={Math.round(selectedObject.width)}
-                                onChange={(e) => onUpdateObject({ width: Math.max(10, Number(e.target.value)) })}
+                                value={typeof selectedObject.width === 'number' && Number.isFinite(selectedObject.width) ? Math.round(selectedObject.width) : 100}
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (Number.isFinite(val)) {
+                                        onUpdateObject({ width: Math.max(10, val) });
+                                    }
+                                }}
                                 className="w-full bg-transparent text-white outline-none font-mono text-xs"
                             />
                         </div>
@@ -105,8 +112,13 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                             <span className="text-slate-500 text-[10px]">H</span>
                             <input
                                 type="number"
-                                value={Math.round(selectedObject.height)}
-                                onChange={(e) => onUpdateObject({ height: Math.max(10, Number(e.target.value)) })}
+                                value={typeof selectedObject.height === 'number' && Number.isFinite(selectedObject.height) ? Math.round(selectedObject.height) : 50}
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (Number.isFinite(val)) {
+                                        onUpdateObject({ height: Math.max(10, val) });
+                                    }
+                                }}
                                 className="w-full bg-transparent text-white outline-none font-mono text-xs"
                             />
                         </div>
@@ -114,8 +126,13 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                             <span className="text-slate-500 text-[10px]">X</span>
                             <input
                                 type="number"
-                                value={Math.round(selectedObject.x)}
-                                onChange={(e) => onUpdateObject({ x: Number(e.target.value) })}
+                                value={typeof selectedObject.x === 'number' && Number.isFinite(selectedObject.x) ? Math.round(selectedObject.x) : 0}
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (Number.isFinite(val)) {
+                                        onUpdateObject({ x: val });
+                                    }
+                                }}
                                 className="w-full bg-transparent text-white outline-none font-mono text-xs"
                             />
                         </div>
@@ -123,8 +140,13 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                             <span className="text-slate-500 text-[10px]">Y</span>
                             <input
                                 type="number"
-                                value={Math.round(selectedObject.y)}
-                                onChange={(e) => onUpdateObject({ y: Number(e.target.value) })}
+                                value={typeof selectedObject.y === 'number' && Number.isFinite(selectedObject.y) ? Math.round(selectedObject.y) : 0}
+                                onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    if (Number.isFinite(val)) {
+                                        onUpdateObject({ y: val });
+                                    }
+                                }}
                                 className="w-full bg-transparent text-white outline-none font-mono text-xs"
                             />
                         </div>
@@ -135,15 +157,20 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                 <div className="space-y-2 pt-2 border-t border-slate-800">
                     <div className="flex justify-between items-center text-[11px] text-slate-400">
                         <span>투명도 (Opacity)</span>
-                        <span className="font-mono text-purple-300">{Math.round((selectedObject.opacity ?? 1) * 100)}%</span>
+                        <span className="font-mono text-purple-300">{Math.round((Number.isFinite(selectedObject.opacity) ? (selectedObject.opacity ?? 1) : 1) * 100)}%</span>
                     </div>
                     <input
                         type="range"
                         min="0"
                         max="1"
                         step="0.01"
-                        value={selectedObject.opacity ?? 1}
-                        onChange={(e) => onUpdateObject({ opacity: Number(e.target.value) })}
+                        value={Number.isFinite(selectedObject.opacity) ? (selectedObject.opacity ?? 1) : 1}
+                        onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (Number.isFinite(val)) {
+                                onUpdateObject({ opacity: Math.max(0, Math.min(1, val)) });
+                            }
+                        }}
                         className="w-full accent-purple-500 cursor-pointer"
                     />
 
@@ -183,8 +210,13 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                                 <span className="text-slate-500 text-[10px]">크기</span>
                                 <input
                                     type="number"
-                                    value={selectedObject.fontSize || 36}
-                                    onChange={(e) => onUpdateObject({ fontSize: Number(e.target.value) })}
+                                    value={Number.isFinite(selectedObject.fontSize) ? (selectedObject.fontSize ?? 36) : 36}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (Number.isFinite(val)) {
+                                            onUpdateObject({ fontSize: Math.max(8, val) });
+                                        }
+                                    }}
                                     className="w-full bg-transparent text-white outline-none font-mono text-xs"
                                 />
                             </div>
@@ -283,8 +315,13 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                                     type="number"
                                     min="0"
                                     max="20"
-                                    value={selectedObject.strokeWidth || 0}
-                                    onChange={(e) => onUpdateObject({ strokeWidth: Number(e.target.value) })}
+                                    value={Number.isFinite(selectedObject.strokeWidth) ? (selectedObject.strokeWidth ?? 0) : 0}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (Number.isFinite(val)) {
+                                            onUpdateObject({ strokeWidth: Math.max(0, val) });
+                                        }
+                                    }}
                                     className="w-12 px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-center text-xs text-white"
                                 />
                             </div>
@@ -294,14 +331,19 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                             <div className="space-y-1">
                                 <div className="flex justify-between text-[11px] text-slate-400">
                                     <span>모서리 둥글기</span>
-                                    <span>{selectedObject.borderRadius || 16}px</span>
+                                    <span>{Number.isFinite(selectedObject.borderRadius) ? (selectedObject.borderRadius ?? 16) : 16}px</span>
                                 </div>
                                 <input
                                     type="range"
                                     min="0"
                                     max="100"
-                                    value={selectedObject.borderRadius || 16}
-                                    onChange={(e) => onUpdateObject({ borderRadius: Number(e.target.value) })}
+                                    value={Number.isFinite(selectedObject.borderRadius) ? (selectedObject.borderRadius ?? 16) : 16}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (Number.isFinite(val)) {
+                                            onUpdateObject({ borderRadius: Math.max(0, val) });
+                                        }
+                                    }}
                                     className="w-full accent-purple-500 cursor-pointer"
                                 />
                             </div>
@@ -336,14 +378,19 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                             <div>
                                 <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
                                     <span>밝기 (Brightness)</span>
-                                    <span>{filters.brightness}%</span>
+                                    <span>{Number.isFinite(filters.brightness) ? filters.brightness : 100}%</span>
                                 </div>
                                 <input
                                     type="range"
                                     min="50"
                                     max="150"
-                                    value={filters.brightness}
-                                    onChange={(e) => onUpdateObject({ filters: { ...filters, brightness: Number(e.target.value) } })}
+                                    value={Number.isFinite(filters.brightness) ? filters.brightness : 100}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (Number.isFinite(val)) {
+                                            onUpdateObject({ filters: { ...filters, brightness: val } });
+                                        }
+                                    }}
                                     className="w-full accent-purple-500 h-1"
                                 />
                             </div>
@@ -351,14 +398,19 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                             <div>
                                 <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
                                     <span>대비 (Contrast)</span>
-                                    <span>{filters.contrast}%</span>
+                                    <span>{Number.isFinite(filters.contrast) ? filters.contrast : 100}%</span>
                                 </div>
                                 <input
                                     type="range"
                                     min="50"
                                     max="150"
-                                    value={filters.contrast}
-                                    onChange={(e) => onUpdateObject({ filters: { ...filters, contrast: Number(e.target.value) } })}
+                                    value={Number.isFinite(filters.contrast) ? filters.contrast : 100}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (Number.isFinite(val)) {
+                                            onUpdateObject({ filters: { ...filters, contrast: val } });
+                                        }
+                                    }}
                                     className="w-full accent-purple-500 h-1"
                                 />
                             </div>
@@ -366,14 +418,19 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                             <div>
                                 <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
                                     <span>블러 (Blur)</span>
-                                    <span>{filters.blur}px</span>
+                                    <span>{Number.isFinite(filters.blur) ? filters.blur : 0}px</span>
                                 </div>
                                 <input
                                     type="range"
                                     min="0"
                                     max="20"
-                                    value={filters.blur}
-                                    onChange={(e) => onUpdateObject({ filters: { ...filters, blur: Number(e.target.value) } })}
+                                    value={Number.isFinite(filters.blur) ? filters.blur : 0}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (Number.isFinite(val)) {
+                                            onUpdateObject({ filters: { ...filters, blur: val } });
+                                        }
+                                    }}
                                     className="w-full accent-purple-500 h-1"
                                 />
                             </div>
@@ -382,32 +439,131 @@ export const CatvasPropertiesPanel: React.FC<CatvasPropertiesPanelProps> = ({
                 )}
 
                 {/* 6. Animation Config */}
-                <div className="space-y-2 pt-2 border-t border-slate-800">
-                    <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider">애니메이션 효과</span>
-                    <select
-                        value={selectedObject.animation?.type || 'none'}
-                        onChange={(e) => onUpdateObject({
-                            animation: {
-                                type: e.target.value as AnimationType,
-                                delay: selectedObject.animation?.delay || 0,
-                                duration: selectedObject.animation?.duration || 1,
-                                iterations: 1
-                            }
+                <div className="space-y-2.5 pt-2 border-t border-slate-800">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider">애니메이션 효과</span>
+                        {selectedObject.animation?.type && selectedObject.animation.type !== 'none' && (
+                            <button
+                                onClick={() => {
+                                    sound.click();
+                                    if (onPreviewAnimation) onPreviewAnimation();
+                                }}
+                                className="px-2 py-0.5 rounded bg-purple-600 hover:bg-purple-500 active:scale-95 text-white text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                                title="이 요소의 애니메이션 미리보기 재생"
+                            >
+                                <Play className="w-2.5 h-2.5 fill-current" />
+                                미리보기
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Quick Visual Animation Cards */}
+                    <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                            { type: 'none', label: '없음', icon: '🚫' },
+                            { type: 'fade-in', label: '페이드', icon: '✨' },
+                            { type: 'pop', label: '팝 (튀어오름)', icon: '💥' },
+                            { type: 'bounce', label: '바운스', icon: '🏀' },
+                            { type: 'slide-up', label: '슬라이드 ↑', icon: '⬆️' },
+                            { type: 'slide-down', label: '슬라이드 ↓', icon: '⬇️' },
+                            { type: 'slide-left', label: '슬라이드 ←', icon: '⬅️' },
+                            { type: 'slide-right', label: '슬라이드 →', icon: '➡️' },
+                            { type: 'zoom-in', label: '확대 등장', icon: '🔍' },
+                            { type: 'rotate', label: '회전 등장', icon: '🔄' },
+                            { type: 'typewriter', label: '타자기', icon: '⌨️' },
+                        ].map((item) => {
+                            const currentType = selectedObject.animation?.type;
+                            const isSelected = (!currentType || currentType === 'none') ? item.type === 'none' : currentType === item.type;
+                            return (
+                                <button
+                                    key={item.type}
+                                    onClick={() => {
+                                        sound.click();
+                                        if (item.type === 'none') {
+                                            onUpdateObject({
+                                                animation: {
+                                                    type: 'none',
+                                                    delay: 0,
+                                                    duration: 1,
+                                                    iterations: 1
+                                                }
+                                            });
+                                        } else {
+                                            onUpdateObject({
+                                                animation: {
+                                                    type: item.type as AnimationType,
+                                                    delay: selectedObject.animation?.delay || 0,
+                                                    duration: selectedObject.animation?.duration || 1,
+                                                    iterations: 1
+                                                }
+                                            });
+                                            if (onPreviewAnimation) {
+                                                setTimeout(() => onPreviewAnimation(), 50);
+                                            }
+                                        }
+                                    }}
+                                    className={`p-1.5 rounded-lg text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 border ${
+                                        isSelected 
+                                            ? 'bg-purple-600/30 border-purple-500 text-white shadow-sm shadow-purple-500/30 ring-1 ring-purple-400' 
+                                            : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                                    }`}
+                                >
+                                    <span className="text-xs">{item.icon}</span>
+                                    <span className="text-[10px] leading-tight line-clamp-1 font-medium">{item.label}</span>
+                                </button>
+                            );
                         })}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white text-xs outline-none"
-                    >
-                        <option value="none">없음</option>
-                        <option value="fade-in">서서히 나타나기 (Fade In)</option>
-                        <option value="pop">튀어나오기 (Pop)</option>
-                        <option value="bounce">바운스 (Bounce)</option>
-                        <option value="slide-up">아래에서 위로 (Slide Up)</option>
-                        <option value="slide-down">위에서 아래로 (Slide Down)</option>
-                        <option value="slide-left">오른쪽에서 왼쪽 (Slide Left)</option>
-                        <option value="slide-right">왼쪽에서 오른쪽 (Slide Right)</option>
-                        <option value="zoom-in">확대 등장 (Zoom In)</option>
-                        <option value="typewriter">타자기 효과 (Typewriter)</option>
-                        <option value="rotate">회전 (Rotate)</option>
-                    </select>
+                    </div>
+
+                    {/* Animation Controls when active */}
+                    {selectedObject.animation && selectedObject.animation.type !== 'none' && (
+                        <div className="space-y-2 p-2 rounded-lg bg-purple-950/20 border border-purple-900/30 text-xs text-slate-300">
+                            <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-slate-400">지속 시간: {Number.isFinite(selectedObject.animation.duration) ? selectedObject.animation.duration : 1}초</span>
+                                <input
+                                    type="range"
+                                    min="0.2"
+                                    max="3"
+                                    step="0.1"
+                                    value={Number.isFinite(selectedObject.animation.duration) ? (selectedObject.animation.duration ?? 1) : 1}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (Number.isFinite(val)) {
+                                            onUpdateObject({
+                                                animation: {
+                                                    ...selectedObject.animation!,
+                                                    duration: val
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    className="w-24 accent-purple-500 cursor-pointer"
+                                />
+                            </div>
+                            <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-slate-400">지연 시간: {Number.isFinite(selectedObject.animation.delay) ? selectedObject.animation.delay : 0}초</span>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="2"
+                                    step="0.1"
+                                    value={Number.isFinite(selectedObject.animation.delay) ? (selectedObject.animation.delay ?? 0) : 0}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        if (Number.isFinite(val)) {
+                                            onUpdateObject({
+                                                animation: {
+                                                    ...selectedObject.animation!,
+                                                    delay: val
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    className="w-24 accent-purple-500 cursor-pointer"
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* 7. Layer Order Actions */}

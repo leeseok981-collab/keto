@@ -107,6 +107,7 @@ export const CustomAuthModal: React.FC<CustomAuthModalProps> = ({ onSuccess, onC
       sound.buy?.();
       const customUser: CustomUser = { username: cleanUsername, isAdmin };
       localStorage.setItem('keto_custom_user', JSON.stringify(customUser));
+      localStorage.setItem('keto_current_user_pwd', password);
 
       if (isAdmin) {
         setSuccessMsg('👑 [어드민321] 관리자 계정이 생성되었습니다! 어드민 기능이 부여됩니다.');
@@ -163,6 +164,7 @@ export const CustomAuthModal: React.FC<CustomAuthModalProps> = ({ onSuccess, onC
       sound.click?.();
       const customUser: CustomUser = { username: cleanUsername, isAdmin };
       localStorage.setItem('keto_custom_user', JSON.stringify(customUser));
+      localStorage.setItem('keto_current_user_pwd', password);
 
       if (isAdmin) {
         setSuccessMsg('👑 어드민321 로그인 성공! 어드민 권한이 활성화되었습니다.');

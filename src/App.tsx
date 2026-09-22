@@ -679,9 +679,36 @@ export default function App() {
   // Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u) await loadUserData(u.uid);
-      else setAuthLoading(false);
+      if (u) {
+        setUser(u);
+        await loadUserData(u.uid);
+      } else {
+        // If Firebase Auth is null, check if customUser was stored
+        try {
+          const saved = localStorage.getItem('keto_custom_user');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && parsed.username) {
+              const customUserObj = {
+                uid: parsed.username,
+                email: parsed.username + '@keto.app',
+                displayName: parsed.username,
+                photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${parsed.username}`,
+                isAnonymous: false
+              } as any;
+              setUser(customUserObj);
+              setCustomUser(parsed);
+              await loadUserData(parsed.username);
+              setAuthLoading(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        setUser(null);
+        setAuthLoading(false);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -800,11 +827,37 @@ export default function App() {
         const loadedState = { ...DEFAULT_STATE, ...data };
         loadedState.lastSaveTime = Date.now();
         setState(loadedState as GameState);
+        setProfileSetup(false);
       } else {
-        setProfileSetup(true);
+        const isAdmin = uid.endsWith('어드민321');
+        const initialState: GameState = {
+          ...DEFAULT_STATE,
+          nickname: uid,
+          profilePic: `https://api.dicebear.com/7.x/bottts/svg?seed=${uid}`,
+          naro: isAdmin ? 999999 : 1000,
+          speed: isAdmin ? 1000 : 0
+        };
+        try {
+          await setDoc(docRef, {
+            ...initialState,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (saveErr) {
+          console.warn('Auto create user doc in Firestore:', saveErr);
+        }
+        setState(initialState);
+        setProfileSetup(false);
       }
     } catch (e) {
-      handleFirestoreError(e, OperationType.GET, `users/${uid}`);
+      console.warn('loadUserData fetch error:', e);
+      setState(prev => ({
+        ...prev,
+        nickname: prev.nickname || uid,
+        profilePic: prev.profilePic || `https://api.dicebear.com/7.x/bottts/svg?seed=${uid}`,
+        naro: uid.endsWith('어드민321') ? 999999 : (prev.naro || 1000)
+      }));
+      setProfileSetup(false);
     } finally {
       setAuthLoading(false);
     }
@@ -1158,17 +1211,52 @@ export default function App() {
       <>
         <DesktopOS
           user={user}
+          customUser={customUser}
           onLogin={handleGoogleLogin}
           isLoggingIn={isLoggingIn || authLoading}
           onOpenCustomAuth={() => setShowCustomAuthModal(true)}
+          onLogout={() => {
+            setUser(null);
+            setCustomUser(null);
+            localStorage.removeItem('keto_custom_user');
+            localStorage.removeItem('keto_current_user_pwd');
+            sessionStorage.removeItem('desktop_is_unlocked');
+            setShowCustomAuthModal(true);
+          }}
           onLaunch={() => {
-            if (!user && !customUser) {
+            let activeUser = user || customUser;
+            if (!activeUser) {
+              try {
+                const saved = localStorage.getItem('keto_custom_user');
+                if (saved) {
+                  const parsed = JSON.parse(saved);
+                  if (parsed && parsed.username) {
+                    const customUserObj = {
+                      uid: parsed.username,
+                      email: parsed.username + '@keto.app',
+                      displayName: parsed.username,
+                      photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${parsed.username}`,
+                      isAnonymous: false
+                    } as any;
+                    setCustomUser(parsed);
+                    setUser(customUserObj);
+                    activeUser = customUserObj;
+                    loadUserData(parsed.username);
+                  }
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }
+
+            if (!activeUser) {
               setShowCustomAuthModal(true);
               return;
             }
             if (appMode === 'loading') {
               setAppMode('lobby');
             }
+            setProfileSetup(false);
             setInDesktop(false);
           }}
           onOpenSpeedKeyboard2={() => {
@@ -1188,9 +1276,17 @@ export default function App() {
           isOpen={showCustomAuthModal}
           onSuccess={(u) => {
             setCustomUser(u);
+            const customUserObj = {
+              uid: u.username,
+              email: u.username + '@keto.app',
+              displayName: u.username,
+              photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${u.username}`,
+              isAnonymous: false
+            } as any;
+            setUser(customUserObj);
             setShowCustomAuthModal(false);
-            setAppMode('lobby');
-            setInDesktop(false);
+            setInDesktop(true);
+            sessionStorage.removeItem('desktop_is_unlocked');
           }}
           onCancel={customUser ? () => setShowCustomAuthModal(false) : undefined}
         />
@@ -1199,6 +1295,25 @@ export default function App() {
   }
   
   if (!user && !customUser) {
+    try {
+      const saved = localStorage.getItem('keto_custom_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.username) {
+          setCustomUser(parsed);
+          setUser({
+            uid: parsed.username,
+            email: parsed.username + '@keto.app',
+            displayName: parsed.username,
+            photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${parsed.username}`,
+            isAnonymous: false
+          } as any);
+          return null;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
     // If not in desktop and neither user nor customUser exists, return to desktop
     setInDesktop(true);
     return null;

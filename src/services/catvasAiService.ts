@@ -505,6 +505,124 @@ export class CatvasAiService {
         recognition.onerror = onError;
         return recognition;
     }
+
+    // 10. AI Natural Language Design Commands Parser & Executer
+    async parseDesignCommands(prompt: string, objectsSummary: string): Promise<any[]> {
+        const userKey = this.getClientApiKey();
+        try {
+            const data = await this.safeFetch('/api/gemini/catvas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'design-command',
+                    prompt,
+                    objectsSummary,
+                    clientApiKey: userKey
+                })
+            });
+            if (data?.commands && Array.isArray(data.commands)) {
+                return data.commands;
+            }
+        } catch (e) {
+            console.warn('AI command fetch fallback to local rule-based parser:', e);
+        }
+
+        // Rule-based fallback parser if offline or server API unavailable
+        const commands: any[] = [];
+        const lower = prompt.toLowerCase();
+
+        if (lower.includes('정리') || lower.includes('자동 배치') || lower.includes('정렬해')) {
+            commands.push({ action: 'autoTidy' });
+        }
+        if (lower.includes('가운데') || lower.includes('중앙')) {
+            commands.push({ action: 'align', mode: 'center', target: 'all' });
+        }
+        if (lower.includes('왼쪽') || lower.includes('좌측')) {
+            commands.push({ action: 'align', mode: 'left', target: 'all' });
+        }
+        if (lower.includes('오른쪽') || lower.includes('우측')) {
+            commands.push({ action: 'align', mode: 'right', target: 'all' });
+        }
+        if (lower.includes('빨간') || lower.includes('레드')) {
+            commands.push({ action: 'changeColor', color: '#ef4444', target: 'selected' });
+        }
+        if (lower.includes('파란') || lower.includes('블루')) {
+            commands.push({ action: 'changeColor', color: '#3b82f6', target: 'selected' });
+        }
+        if (lower.includes('노란') || lower.includes('옐로우')) {
+            commands.push({ action: 'changeColor', color: '#facc15', target: 'selected' });
+        }
+        if (lower.includes('크게') || lower.includes('키워')) {
+            commands.push({ action: 'resize', scale: 1.25, target: 'selected' });
+        }
+        if (lower.includes('작게') || lower.includes('줄여')) {
+            commands.push({ action: 'resize', scale: 0.8, target: 'selected' });
+        }
+
+        return commands.length > 0 ? commands : [{ action: 'autoTidy' }];
+    }
+
+    // 11. ✨ AI Auto-Tidy Engine (Smart Grid & Mathematical Spacing Auto Alignment)
+    generateAutoTidy(objects: any[], canvasWidth: number, canvasHeight: number): any[] {
+        if (!objects || objects.length === 0) return [];
+
+        const padding = Math.max(20, Math.round(canvasWidth * 0.05));
+        const availWidth = canvasWidth - padding * 2;
+        
+        // Group objects by functional types
+        const headings = objects.filter(o => o.type === 'text' && ((o.fontSize || 36) >= 32));
+        const bodyTexts = objects.filter(o => o.type === 'text' && ((o.fontSize || 36) < 32));
+        const mediaObjs = objects.filter(o => o.type === 'image' || o.type === 'video' || o.type === 'frame');
+        const shapes = objects.filter(o => o.type === 'shape' || o.type === 'qrcode' || o.type === 'barcode' || o.type === 'drawing');
+
+        let currentY = padding;
+
+        // Auto align headings at top
+        headings.forEach(h => {
+            h.x = Math.round((canvasWidth - h.width) / 2);
+            h.y = currentY;
+            currentY += h.height + 24;
+        });
+
+        // Grid layout for media objects
+        if (mediaObjs.length > 0) {
+            if (mediaObjs.length === 1) {
+                const m = mediaObjs[0];
+                m.x = Math.round((canvasWidth - m.width) / 2);
+                m.y = currentY;
+                currentY += m.height + 24;
+            } else {
+                const columns = mediaObjs.length <= 2 ? mediaObjs.length : 3;
+                const colW = Math.round((availWidth - (columns - 1) * 20) / columns);
+                mediaObjs.forEach((m, idx) => {
+                    const row = Math.floor(idx / columns);
+                    const col = idx % columns;
+                    m.width = colW;
+                    m.height = Math.round(colW * 0.5625); // 16:9 ratio
+                    m.x = padding + col * (colW + 20);
+                    m.y = currentY + row * (m.height + 20);
+                });
+                const totalRows = Math.ceil(mediaObjs.length / columns);
+                const sampleH = mediaObjs[0]?.height || 200;
+                currentY += totalRows * (sampleH + 20) + 10;
+            }
+        }
+
+        // Align body texts & shapes
+        bodyTexts.forEach(b => {
+            b.x = Math.round((canvasWidth - b.width) / 2);
+            b.y = currentY;
+            currentY += b.height + 16;
+        });
+
+        shapes.forEach(s => {
+            s.x = Math.round((canvasWidth - s.width) / 2);
+            s.y = currentY;
+            currentY += s.height + 16;
+        });
+
+        return objects;
+    }
 }
 
 export const catvasAiService = new CatvasAiService();

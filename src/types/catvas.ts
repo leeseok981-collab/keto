@@ -177,11 +177,15 @@ export interface CanvasObject {
     locked: boolean;
     animation?: AnimationConfig;
 
+    // Media/Video Properties
+    videoUrl?: string;
+    mediaUrl?: string;
+
     // 1. Text Properties
     text?: string;
     fontSize?: number;
     fontFamily?: string;
-    fontWeight?: 'normal' | 'bold' | '600' | '800';
+    fontWeight?: 'normal' | 'bold' | '600' | '800' | '900';
     fontStyle?: 'normal' | 'italic';
     textDecoration?: 'none' | 'underline' | 'line-through';
     textAlign?: 'left' | 'center' | 'right';
@@ -232,13 +236,12 @@ export interface CanvasObject {
     barcodeValue?: string;
 
     // 7. Video / Audio in Timeline
-    mediaUrl?: string;
-    videoUrl?: string;
     mediaDuration?: number; // seconds
     startTime?: number; // seconds in timeline
     endTime?: number; // seconds in timeline
     volume?: number; // 0 to 1
     mediaVolume?: number; // 0 to 1
+    mediaMuted?: boolean;
     isMuted?: boolean;
     playbackSpeed?: number;
     isPlaying?: boolean;
@@ -247,6 +250,92 @@ export interface CanvasObject {
 
     // 8. Group
     childrenIds?: string[];
+
+    // 9. Transform, Keyframes, Crop & Media Asset
+    keyframes?: Keyframe[];
+    transformPivot?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    mediaAssetId?: string;
+    cropRect?: { x: number; y: number; width: number; height: number };
+    flipH?: boolean;
+    flipV?: boolean;
+}
+
+export interface Keyframe {
+    id: string;
+    time: number; // in seconds
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    opacity?: number;
+    scale?: number;
+    easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+}
+
+export interface MediaAsset {
+    id: string;
+    type: 'video' | 'audio' | 'image';
+    name: string;
+    mimeType: string;
+    size: number;
+    sourceUrl: string;
+    blobKey?: string;
+    duration: number;
+    width: number;
+    height: number;
+    readyState: number;
+    networkState: number;
+    errorCode?: number;
+    errorMessage?: string;
+    createdAt: string;
+}
+
+export interface VideoDebugInfo {
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    extension: string;
+    objectUrlCreated: boolean;
+    objectUrl?: string;
+    readyState: number;
+    networkState: number;
+    duration: number;
+    videoWidth: number;
+    videoHeight: number;
+    errorCode?: number;
+    errorMessage?: string;
+    status: 'pending' | 'success' | 'error';
+    diagnosticMessage?: string;
+}
+
+export interface AiCommand {
+    action: 
+        | 'align' 
+        | 'resize' 
+        | 'move' 
+        | 'rotate' 
+        | 'opacity' 
+        | 'changeColor' 
+        | 'changeText' 
+        | 'changeBackground' 
+        | 'delete' 
+        | 'duplicate' 
+        | 'autoTidy' 
+        | 'createLayout';
+    target?: 'selected' | 'all' | 'heading' | 'subheading' | 'image' | 'video' | string;
+    mode?: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'distribute-h' | 'distribute-v';
+    scale?: number;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    opacity?: number;
+    color?: string;
+    text?: string;
+    templateType?: string;
+    prompt?: string;
 }
 
 export interface SubtitleItem {
@@ -330,7 +419,8 @@ export interface CanvasTemplate {
         | 'presentation' 
         | 'card-news' 
         | 'a4-doc' 
-        | 'wallpaper';
+        | 'wallpaper'
+        | 'video-vlog';
     previewUrl?: string;
     thumbnailUrl?: string;
     width: number;

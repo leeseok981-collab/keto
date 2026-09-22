@@ -1,7 +1,7 @@
 import { CanvasProject, CanvasTemplate, BrandKit } from '../types/catvas';
 
 const DB_NAME = 'CatvasStudioDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export interface MediaAsset {
     id: string;
@@ -9,6 +9,15 @@ export interface MediaAsset {
     type: 'image' | 'video' | 'audio' | 'gif';
     url: string;
     size?: string;
+    createdAt: string;
+}
+
+export interface StoredBlobItem {
+    id: string;
+    blob: Blob;
+    name?: string;
+    mimeType: string;
+    size: number;
     createdAt: string;
 }
 
@@ -43,6 +52,10 @@ class CatvasIndexedDB {
 
                 if (!db.objectStoreNames.contains('meta')) {
                     db.createObjectStore('meta', { keyPath: 'key' });
+                }
+
+                if (!db.objectStoreNames.contains('blobs')) {
+                    db.createObjectStore('blobs', { keyPath: 'id' });
                 }
             };
 
@@ -252,6 +265,63 @@ class CatvasIndexedDB {
             });
         } catch (e) {
             console.warn('IndexedDB removeMetaItem error:', e);
+        }
+    }
+
+    // Large Blob Store for Gigabyte-Scale Videos, Audio, & High-Res Media
+    async saveLargeBlob(id: string, blob: Blob | File, name?: string): Promise<string> {
+        const db = await this.getDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('blobs', 'readwrite');
+            const store = tx.objectStore('blobs');
+            const item: StoredBlobItem = {
+                id,
+                blob,
+                name: name || (blob as File).name || 'media-blob',
+                mimeType: blob.type || 'application/octet-stream',
+                size: blob.size,
+                createdAt: new Date().toISOString()
+            };
+            store.put(item);
+            tx.oncomplete = () => resolve(id);
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    async getBlob(id: string): Promise<Blob | null> {
+        try {
+            const db = await this.getDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('blobs', 'readonly');
+                const store = tx.objectStore('blobs');
+                const req = store.get(id);
+                req.onsuccess = () => resolve(req.result?.blob || null);
+                req.onerror = () => reject(req.error);
+            });
+        } catch (e) {
+            console.warn('getBlob error:', e);
+            return null;
+        }
+    }
+
+    async getBlobUrl(id: string): Promise<string | null> {
+        const blob = await this.getBlob(id);
+        if (!blob) return null;
+        return URL.createObjectURL(blob);
+    }
+
+    async deleteBlob(id: string): Promise<void> {
+        try {
+            const db = await this.getDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('blobs', 'readwrite');
+                const store = tx.objectStore('blobs');
+                store.delete(id);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        } catch (e) {
+            console.warn('deleteBlob error:', e);
         }
     }
 }

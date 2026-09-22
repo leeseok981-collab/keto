@@ -14,6 +14,7 @@ interface CatvasAiModalProps {
     onInsertGeneratedImage: (imageUrl: string) => void;
     onInsertGeneratedText: (text: string) => void;
     onInsertGeneratedVideo?: (videoUrl: string, duration: number, title: string) => void;
+    onApplyAiCommands?: (commands: any[]) => void;
     currentObjectsSummary: string;
 }
 
@@ -24,11 +25,16 @@ export const CatvasAiModal: React.FC<CatvasAiModalProps> = ({
     onInsertGeneratedImage,
     onInsertGeneratedText,
     onInsertGeneratedVideo,
+    onApplyAiCommands,
     currentObjectsSummary
 }) => {
-    const [tab, setTab] = useState<'video' | 'image' | 'text' | 'translate' | 'summary' | 'review'>(
+    const [tab, setTab] = useState<'video' | 'command' | 'image' | 'text' | 'translate' | 'summary' | 'review'>(
         (initialMode as any) || 'video'
     );
+    
+    // Command Assistant State
+    const [commandPrompt, setCommandPrompt] = useState('');
+    const [isExecutingCommand, setIsExecutingCommand] = useState(false);
     
     // Video Generation State
     const [videoPrompt, setVideoPrompt] = useState('');
@@ -64,6 +70,49 @@ export const CatvasAiModal: React.FC<CatvasAiModalProps> = ({
     // Design Critique State
     const [critiqueResult, setCritiqueResult] = useState<string | null>(null);
     const [isReviewing, setIsReviewing] = useState(false);
+
+    // Universal Insert Button Handler (Bottom-Right)
+    const canInsertCurrentTab = Boolean(
+        (tab === 'video' && generatedVideoUrl) ||
+        (tab === 'image' && generatedImageUrl) ||
+        (tab === 'text' && generatedText) ||
+        (tab === 'translate' && translatedResult) ||
+        (tab === 'review' && critiqueResult)
+    );
+
+    const getInsertButtonLabel = () => {
+        if (tab === 'video') return generatedVideoUrl ? '🎬 타임라인에 영상 삽입' : '영상 삽입 (대기중)';
+        if (tab === 'image') return generatedImageUrl ? '🎨 캔버스에 이미지 삽입' : '이미지 삽입 (대기중)';
+        if (tab === 'text') return generatedText ? '✍️ 캔버스에 카피 삽입' : '텍스트 삽입 (대기중)';
+        if (tab === 'translate') return translatedResult ? '🌐 번역문 캔버스 삽입' : '번역 삽입 (대기중)';
+        if (tab === 'review') return critiqueResult ? '📋 진단문 캔버스 삽입' : '진단 결과 삽입';
+        return '삽입';
+    };
+
+    const handleInsertCurrentTab = () => {
+        if (!canInsertCurrentTab) return;
+        sound.buy();
+
+        if (tab === 'video' && generatedVideoUrl) {
+            if (onInsertGeneratedVideo) {
+                onInsertGeneratedVideo(generatedVideoUrl, videoMeta?.duration || videoDuration, videoMeta?.title || 'AI 생성 비디오');
+            }
+            onClose();
+        } else if (tab === 'image' && generatedImageUrl) {
+            onInsertGeneratedImage(generatedImageUrl);
+            onClose();
+        } else if (tab === 'text' && generatedText) {
+            const cleanText = generatedText.split('\n')[0].replace(/^[0-9.-]\s*/, '').replace(/"/g, '');
+            onInsertGeneratedText(cleanText || generatedText);
+            onClose();
+        } else if (tab === 'translate' && translatedResult) {
+            onInsertGeneratedText(translatedResult);
+            onClose();
+        } else if (tab === 'review' && critiqueResult) {
+            onInsertGeneratedText(critiqueResult);
+            onClose();
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -160,6 +209,25 @@ export const CatvasAiModal: React.FC<CatvasAiModalProps> = ({
         }
     };
 
+    // Command execution handler
+    const handleExecuteCommand = async (customPrompt?: string) => {
+        const targetPrompt = customPrompt || commandPrompt;
+        if (!targetPrompt.trim()) return;
+        sound.click();
+        setIsExecutingCommand(true);
+        try {
+            const cmds = await catvasAiService.parseDesignCommands(targetPrompt, currentObjectsSummary);
+            if (onApplyAiCommands) {
+                onApplyAiCommands(cmds);
+            }
+            onClose();
+        } catch (e: any) {
+            alert('AI 명령어 실행 중 오류가 발생했습니다: ' + (e?.message || e));
+        } finally {
+            setIsExecutingCommand(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 select-none font-sans animate-in fade-in duration-150">
             <div className="bg-slate-900 border border-slate-700/80 w-full max-w-4xl h-[88vh] max-h-[760px] rounded-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/10">
@@ -187,6 +255,14 @@ export const CatvasAiModal: React.FC<CatvasAiModalProps> = ({
 
                 {/* Nav Tabs */}
                 <div className="flex items-center gap-1.5 px-5 py-2 bg-slate-950/40 border-b border-slate-800/80 overflow-x-auto scrollbar-none">
+                    <button 
+                        onClick={() => { sound.click(); setTab('command'); }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                            tab === 'command' ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md shadow-amber-500/20' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        }`}
+                    >
+                        <Wand2 className="w-3.5 h-3.5" /> ✨ AI 디자인 명령 및 자동 정리
+                    </button>
                     <button 
                         onClick={() => { sound.click(); setTab('video'); }}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
@@ -231,6 +307,74 @@ export const CatvasAiModal: React.FC<CatvasAiModalProps> = ({
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto p-5 text-slate-200">
+                    {/* TAB 0: AI Design Commands & Auto-Tidy */}
+                    {tab === 'command' && (
+                        <div className="flex flex-col gap-4 h-full">
+                            <div className="bg-amber-950/30 border border-amber-500/30 p-4 rounded-xl text-amber-200 text-xs leading-relaxed flex items-start gap-3">
+                                <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <div className="font-bold text-sm text-amber-300 mb-1">✨ AI 자연어 디자인 어시스턴트</div>
+                                    <div>
+                                        "모든 요소 가운데 정렬해줘", "제목 글씨색 빨간색으로 변경해줘", "선택 요소 20% 크게" 등 자연어로 캔버스를 조작하거나 **[✨ AI 자동 정리]** 버튼으로 배치와 여백을 자동 피팅하세요!
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-semibold text-slate-300">디자인 명령 프롬프트 입력</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={commandPrompt}
+                                        onChange={(e) => setCommandPrompt(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') handleExecuteCommand(); }}
+                                        placeholder="예: 캔버스 내 모든 이미지와 텍스트를 정돈되게 자동 정리해줘..."
+                                        className="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                                    />
+                                    <button
+                                        onClick={() => handleExecuteCommand()}
+                                        disabled={isExecutingCommand || !commandPrompt.trim()}
+                                        className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                                    >
+                                        {isExecutingCommand ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                                        명령 실행
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Quick Command Suggestions */}
+                            <div className="space-y-2">
+                                <span className="text-xs font-semibold text-slate-400 block">추천 quick 명령 칩</span>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        onClick={() => handleExecuteCommand('캔버스 요소 AI 자동 정리 및 최적 배치')}
+                                        className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 border border-amber-500/40 text-amber-300 hover:border-amber-400 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> ✨ AI 자동 정리 (Auto-Tidy)
+                                    </button>
+                                    <button
+                                        onClick={() => handleExecuteCommand('모든 요소를 가로 가운데 정렬해줘')}
+                                        className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition-all cursor-pointer"
+                                    >
+                                        📐 모든 요소 가로 가운데 정렬
+                                    </button>
+                                    <button
+                                        onClick={() => handleExecuteCommand('선택한 요소 크기를 25% 키워줘')}
+                                        className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition-all cursor-pointer"
+                                    >
+                                        🔍 선택 요소 25% 크기 확대
+                                    </button>
+                                    <button
+                                        onClick={() => handleExecuteCommand('글자 색상을 시선강탈 노란색으로 변경해줘')}
+                                        className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition-all cursor-pointer"
+                                    >
+                                        🎨 텍스트 색상 비비드 옐로우 변경
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* TAB 1: AI Video Generation */}
                     {tab === 'video' && (
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 h-full">
@@ -663,6 +807,32 @@ export const CatvasAiModal: React.FC<CatvasAiModalProps> = ({
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* Bottom Footer Bar with Bottom-Right Insert Button */}
+                <div className="px-5 py-3 bg-slate-950/95 border-t border-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span className="hidden sm:inline">AI 스튜디오에서 생성된 영상, 이미지, 카피를 프로젝트에 바로 추가하세요.</span>
+                        <span className="sm:hidden">생성물 바로 삽입 가능</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                        <button
+                            onClick={() => { sound.click(); onClose(); }}
+                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-all cursor-pointer"
+                        >
+                            닫기
+                        </button>
+                        <button
+                            id="catvas-ai-bottom-right-insert-btn"
+                            disabled={!canInsertCurrentTab}
+                            onClick={handleInsertCurrentTab}
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 disabled:border-slate-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 disabled:shadow-none transition-all cursor-pointer border border-white/10"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>{getInsertButtonLabel()}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

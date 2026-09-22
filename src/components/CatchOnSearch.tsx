@@ -80,8 +80,14 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
     };
 
     const openRealGoogle = (targetQuery?: string) => {
-        const q = targetQuery || submittedQuery || query || '구글';
-        window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank');
+        sound.click();
+        const raw = targetQuery !== undefined ? targetQuery : (submittedQuery || query);
+        const q = raw?.trim();
+        if (q) {
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank');
+        } else {
+            window.open('https://www.google.com', '_blank');
+        }
     };
 
     const openRealNaver = (targetQuery?: string) => {
@@ -196,13 +202,28 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
                     <Globe className="w-3.5 h-3.5 text-slate-400" />
                     <span className="font-medium">https://www.catchon.search/{submittedQuery ? `?q=${encodeURIComponent(submittedQuery)}` : ''}</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                     <button 
                         onClick={() => openRealGoogle()} 
-                        className="text-[11px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 px-2.5 py-1 rounded-full border border-blue-200 flex items-center gap-1 transition-colors"
-                        title="실제 구글 새 탭으로 열기"
+                        className="text-xs font-black bg-blue-600 text-white hover:bg-blue-700 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="원래 구글(Google) 검색엔진으로 이동"
                     >
-                        Google 연동 <ExternalLink className="w-3 h-3" />
+                        🌐 원래 검색엔진(구글)으로 이동 <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Direct Original Engine Banner */}
+            <div className="bg-blue-50/90 border-b border-blue-100 px-4 py-2 flex items-center justify-between text-xs text-blue-900 select-none">
+                <span className="font-medium flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-blue-600" /> 원래 검색엔진(Google)을 직접 이용하고 싶으신가요?
+                </span>
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => openRealGoogle()}
+                        className="font-bold text-blue-700 hover:text-blue-900 underline flex items-center gap-1 cursor-pointer"
+                    >
+                        구글 원래 검색엔진 바로가기 <ExternalLink className="w-3 h-3" />
                     </button>
                 </div>
             </div>
@@ -294,16 +315,23 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
                         </div>
 
                         {/* Search Action Buttons */}
-                        <div className="flex items-center gap-3 mt-6 select-none">
+                        <div className="flex flex-wrap items-center justify-center gap-2.5 mt-6 select-none">
                             <button 
                                 onClick={() => handleSearch()}
-                                className="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition-colors cursor-pointer border border-slate-200"
+                                className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                             >
-                                캐치온 검색
+                                <Search className="w-4 h-4" /> 캐치온 검색
+                            </button>
+                            <button 
+                                onClick={() => openRealGoogle(query)}
+                                className="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold px-5 py-2.5 rounded-xl text-sm transition-colors cursor-pointer border border-slate-300 flex items-center gap-1.5"
+                                title="구글 공식 검색 사이트로 이동"
+                            >
+                                <Globe className="w-4 h-4 text-blue-600" /> 구글로 (Google)
                             </button>
                             <button 
                                 onClick={handleLucky}
-                                className="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition-colors cursor-pointer border border-slate-200"
+                                className="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer border border-slate-200"
                             >
                                 I&apos;m Feeling Lucky
                             </button>
@@ -401,9 +429,9 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
                             <div className="flex items-center gap-2 select-none">
                                 <button 
                                     onClick={() => openRealGoogle()} 
-                                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-1 font-semibold"
+                                    className="text-xs bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5 font-bold shadow-sm transition-all cursor-pointer"
                                 >
-                                    Google에서 열기 <ExternalLink className="w-3 h-3" />
+                                    🌐 원래 Google 검색결과로 이동 <ExternalLink className="w-3.5 h-3.5" />
                                 </button>
                             </div>
                         </div>
