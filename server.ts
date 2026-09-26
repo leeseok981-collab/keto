@@ -25,46 +25,105 @@ async function startServer() {
     });
   };
 
-  // Helper with exponential backoff & model fallback for 429 / 503 / high demand / rate limits / quota limits
+  // Valid standard Gemini models (ultra-fast & high availability first)
+  const DEFAULT_TEXT_MODELS = [
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-3.8-flash"
+  ];
+
+  // Temporary cooldown tracking for models returning 503 high demand or unavailable
+  const modelCooldownUntil = new Map<string, number>();
+
+  const isModelInCooldown = (model: string): boolean => {
+    const until = modelCooldownUntil.get(model);
+    if (!until) return false;
+    if (Date.now() > until) {
+      modelCooldownUntil.delete(model);
+      return false;
+    }
+    return true;
+  };
+
+  const markModelCooldown = (model: string, durationMs: number = 60000) => {
+    modelCooldownUntil.set(model, Date.now() + durationMs);
+  };
+
+  const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+    let timer: NodeJS.Timeout;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error(`Model request timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+    return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+  };
+
+  // Helper with exponential backoff & fast model failover for 503 (high demand) / 429 (rate limits) / timeouts
   const generateWithFallback = async (
     aiInstance: GoogleGenAI,
     modelsToTry: string[],
     params: any
   ) => {
+    // Put models that are NOT currently in cooldown first to avoid hitting saturated models
+    const activeModels = [...modelsToTry].sort((a, b) => {
+      const aCool = isModelInCooldown(a) ? 1 : 0;
+      const bCool = isModelInCooldown(b) ? 1 : 0;
+      return aCool - bCool;
+    });
+
     let lastError: any = null;
-    for (const model of modelsToTry) {
-      for (let attempt = 0; attempt < 3; attempt++) {
+
+    for (const model of activeModels) {
+      // If a model was already cooling down or this is fallback, attempt once
+      const maxAttempts = isModelInCooldown(model) ? 1 : 2;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
-          const res = await aiInstance.models.generateContent({
-            ...params,
-            model,
-          });
+          const res = await withTimeout(
+            aiInstance.models.generateContent({
+              ...params,
+              model,
+            }),
+            8000
+          );
+          // On successful generation, clear any existing cooldown
+          modelCooldownUntil.delete(model);
           return res;
         } catch (err: any) {
           lastError = err;
           const errMsg = err?.message || String(err);
-          console.warn(`[Gemini API] Request on model ${model} failed (attempt ${attempt + 1}): ${errMsg}`);
 
-          const isTransient = 
-            errMsg.includes('503') || 
+          const isHighDemandOrUnavailable =
+            errMsg.includes('503') ||
+            errMsg.includes('high demand') ||
+            errMsg.includes('UNAVAILABLE') ||
+            errMsg.includes('timed out') ||
+            err.status === 'UNAVAILABLE' ||
+            err.status === 503;
+
+          const isRateLimit =
             errMsg.includes('429') ||
-            errMsg.includes('high demand') || 
-            errMsg.includes('UNAVAILABLE') || 
             errMsg.includes('RESOURCE_EXHAUSTED') ||
             errMsg.includes('Rate exceeded') ||
             errMsg.includes('Quota exceeded') ||
             errMsg.includes('quota') ||
-            err.status === 'UNAVAILABLE' ||
-            err.status === 429 ||
-            err.status === 503;
+            err.status === 429;
 
-          if (isTransient && attempt < 2) {
-            // Increased backoff for rate limits
-            const delay = (attempt + 1) * 2000;
+          if (isHighDemandOrUnavailable) {
+            // Model is saturated or slow. Mark cooldown and IMMEDIATELY failover to next model without wasting retries
+            markModelCooldown(model, 60000);
+            console.warn(`[Gemini API] Model ${model} is unavailable or high demand (503/timeout). Switching immediately to fallback model.`);
+            break;
+          }
+
+          if (isRateLimit && attempt < maxAttempts - 1) {
+            const delay = (attempt + 1) * 1500;
             await new Promise((resolve) => setTimeout(resolve, delay));
             continue;
           }
-          // Break to next fallback model
+
+          console.warn(`[Gemini API] Request on model ${model} failed (attempt ${attempt + 1}): ${errMsg}`);
           break;
         }
       }
@@ -137,7 +196,7 @@ async function startServer() {
 
         const response = await generateWithFallback(
           activeAi,
-          ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+          DEFAULT_TEXT_MODELS,
           {
             contents: `${systemInstruction}\n\n[톤: ${tone || '전문적이고 세련됨'}]\n\n내용:\n${userPrompt}\n\n${context ? `[추가 맥락]: ${context}` : ''}`,
           }
@@ -145,11 +204,11 @@ async function startServer() {
 
         return res.json({ result: response.text });
       } else if (mode === 'image') {
-        // AI Image Generation with Gemini Flash Image & Lite Fallback
+        // AI Image Generation with Gemini Flash Lite Image by default
         try {
           const response = await generateWithFallback(
             activeAi,
-            ["gemini-3.1-flash-image", "gemini-3.1-flash-lite-image"],
+            ["gemini-3.1-flash-lite-image", "gemini-3.1-flash-image"],
             {
               contents: `Generate a high quality visual asset suitable for graphic design, thumbnail, or poster based on prompt: "${prompt}". Style: ${tone || 'vibrant modern graphic design'}.`,
             }
@@ -191,7 +250,7 @@ async function startServer() {
         try {
           const response = await generateWithFallback(
             activeAi,
-            ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+            DEFAULT_TEXT_MODELS,
             {
               contents: `${systemInstruction}\n\n[비디오 프롬프트: ${prompt}]\n[스타일: ${tone || 'cinematic 4K'}]\n[화면 비율: ${req.body.aspectRatio || '16:9'}]\n\n다음 JSON 구조로 응답하세요 (코드블록 없이):
 {
@@ -258,7 +317,7 @@ async function startServer() {
 
       const response = await generateWithFallback(
         ai,
-        ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+        DEFAULT_TEXT_MODELS,
         {
           contents: `You are an AI assistant. Answer concisely and helpfully: "${userInput}".`,
         }
@@ -306,7 +365,7 @@ async function startServer() {
 
       const response = await generateWithFallback(
         ai,
-        ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+        DEFAULT_TEXT_MODELS,
         {
           contents,
           config: {
@@ -327,6 +386,117 @@ async function startServer() {
         });
       }
       res.status(500).json({ error: err.message || "AI 대화 처리 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 🎓 AI Learning (캐링) 맞춤 학습 & 문제 생성 & AI 해설 엔드포인트
+  app.post("/api/gemini/learning", async (req, res) => {
+    try {
+      const ai = getGeminiAI();
+      const { mode, subject, gradeLevel, grade, count = 10, chapter, difficulty, recentMistakes, question, correctAnswer, userAnswer, explanation, depth, originalQuestion } = req.body;
+
+      if (!ai) {
+        return res.status(200).json({ status: "LOCAL_FALLBACK" });
+      }
+
+      if (mode === 'generate_questions') {
+        const gradeText = gradeLevel === 'elementary' ? `초등학교 ${grade}학년` : gradeLevel === 'high' ? `고등학교 ${grade}학년` : `중학교 ${grade}학년`;
+        const prompt = `당신은 대한민국 최고의 초·중·고 교육 평가 전문가입니다.
+학생 정보: [학년: ${gradeText}], [과목: ${subject}], [희망 단원: ${chapter || '종합 핵심'}], [난이도: ${difficulty || '보통'}]
+${recentMistakes && recentMistakes.length > 0 ? `[학생의 최근 취약 개념/오답]: ${recentMistakes.join(', ')}` : ''}
+
+학생 수준에 맞춘 고품질 학습 문제 ${count}개를 생성하세요.
+문제 종류는 객관식(multiple_choice, 보기 4개), 주관식(short_answer), O/X(ox), 빈칸 채우기(fill_blank), 계산 문제(calc), 영어 단어(english_word) 등을 골고루 섞어주세요.
+
+반드시 다음 JSON 배열 형식으로만 응답하세요 (코드 블록이나 불필요한 서두 없이 순수 JSON):
+[
+  {
+    "subject": "${subject}",
+    "chapter": "단원명",
+    "type": "multiple_choice",
+    "difficulty": "medium",
+    "question": "문제 내용",
+    "options": ["보기1", "보기2", "보기3", "보기4"],
+    "correctAnswer": "정답",
+    "explanation": "학생이 쉽게 이해할 수 있는 친절하고 논리적인 정답 해설",
+    "hint": "힌트 1문장"
+  }
+]`;
+
+        let questions = [];
+        try {
+          const response = await generateWithFallback(
+            ai,
+            DEFAULT_TEXT_MODELS,
+            { contents: prompt }
+          );
+
+          const raw = (response.text || "").replace(/```json/g, '').replace(/```/g, '').trim();
+          questions = JSON.parse(raw);
+        } catch (parseErr: any) {
+          console.warn("[Learning API] Questions generation fallback triggered:", parseErr?.message || parseErr);
+          // Return empty list so client seamlessly utilizes intelligent curriculum generator
+          return res.json({ questions: [] });
+        }
+
+        return res.json({ questions });
+      } else if (mode === 'explain') {
+        const prompt = `당신은 친절하고 뛰어난 AI 학습 멘토입니다.
+문제: "${question}"
+과목/단원: ${subject} / ${chapter}
+학생이 적은 오답: "${userAnswer}"
+실제 정답: "${correctAnswer}"
+기본 해설: "${explanation}"
+
+학생에게 [${depth === 'easy' ? '초보자도 이해할 수 있는 매우 친절하고 쉬운 비유와 설명' : '단계별 논리적 풀이와 오답 함정 분석 상세 해설'}]을 한국어로 작성해주세요.`;
+
+        try {
+          const response = await generateWithFallback(
+            ai,
+            DEFAULT_TEXT_MODELS,
+            { contents: prompt }
+          );
+
+          return res.json({ explanation: response.text });
+        } catch (explainErr: any) {
+          console.warn("[Learning API] Explain fallback triggered:", explainErr?.message || explainErr);
+          return res.json({ explanation: null });
+        }
+      } else if (mode === 'similar_questions') {
+        const prompt = `기존 문제: "${originalQuestion}" (정답: ${correctAnswer}, 과목: ${subject}, 단원: ${chapter})
+위 문제와 동일한 학습 개념을 점검하되, 숫자나 지문, 보기를 변형한 비슷한 쌍둥이 문제 3개를 다음 JSON 배열로 생성하세요:
+[
+  {
+    "type": "multiple_choice",
+    "question": "변형된 문제 텍스트",
+    "options": ["보기1", "보기2", "보기3", "보기4"],
+    "correctAnswer": "정답",
+    "explanation": "해설"
+  }
+]`;
+
+        let questions = [];
+        try {
+          const response = await generateWithFallback(
+            ai,
+            DEFAULT_TEXT_MODELS,
+            { contents: prompt }
+          );
+
+          const raw = (response.text || "").replace(/```json/g, '').replace(/```/g, '').trim();
+          questions = JSON.parse(raw);
+        } catch (e: any) {
+          console.warn("[Learning API] Similar questions fallback triggered:", e?.message || e);
+          return res.json({ questions: [] });
+        }
+
+        return res.json({ questions });
+      }
+
+      res.status(400).json({ error: "Invalid learning mode" });
+    } catch (err: any) {
+      console.error("[Learning API Error]:", err);
+      res.status(500).json({ error: err.message || "Learning API failed" });
     }
   });
 

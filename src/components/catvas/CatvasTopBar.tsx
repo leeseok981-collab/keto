@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
     FilePlus, FolderOpen, Save, Undo2, Redo2, Play, Share2, Download, 
     Sparkles, ZoomIn, ZoomOut, Check, RefreshCw, Layers, ShieldCheck, 
-    X, LogIn, User, Ratio, Film, Palette, Users
+    X, LogIn, User, Ratio, Film, Palette, Users, Blocks, GraduationCap, 
+    BarChart3, Cpu, ChevronDown, HelpCircle, Copy, Trash2, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { CanvasProject, PresetCanvasSize, CANVAS_PRESET_SIZES } from '../../types/catvas';
 import { sound } from '../../utils/sound';
@@ -26,6 +27,14 @@ interface CatvasTopBarProps {
     onClose: () => void;
     user?: any;
     onLogin?: () => void;
+    onOpenPluginManager?: () => void;
+    onOpenPlugin?: (pluginId: string) => void;
+    onAddText?: () => void;
+    onAddShape?: (shapeType: string) => void;
+    onDeleteSelected?: () => void;
+    onDuplicateSelected?: () => void;
+    onBringForward?: () => void;
+    onSendBackward?: () => void;
 }
 
 export const CatvasTopBar: React.FC<CatvasTopBarProps> = ({
@@ -45,23 +54,50 @@ export const CatvasTopBar: React.FC<CatvasTopBarProps> = ({
     onOpenAiStudio,
     onClose,
     user,
-    onLogin
+    onLogin,
+    onOpenPluginManager,
+    onOpenPlugin,
+    onAddText,
+    onAddShape,
+    onDeleteSelected,
+    onDuplicateSelected,
+    onBringForward,
+    onSendBackward
 }) => {
     const [isEditingName, setIsEditingName] = useState(false);
     const [tempName, setTempName] = useState(project.name);
     const [showRatioMenu, setShowRatioMenu] = useState(false);
     const [isMultiModalOpen, setIsMultiModalOpen] = useState(false);
+    const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const [currentRoomCode, setCurrentRoomCode] = useState<string | null>(() => {
         try {
             return localStorage.getItem('catvas_current_active_room');
         } catch { return null; }
     });
 
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setActiveDropdown(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const handleSaveName = () => {
         setIsEditingName(false);
         if (tempName.trim()) {
             onUpdateProjectName(tempName.trim());
         }
+    };
+
+    const handleToggleDropdown = (menuName: string) => {
+        sound.click();
+        setActiveDropdown(activeDropdown === menuName ? null : menuName);
     };
 
     return (
@@ -84,6 +120,303 @@ export const CatvasTopBar: React.FC<CatvasTopBarProps> = ({
                 </div>
 
                 <div className="h-4 w-px bg-slate-800" />
+
+                {/* Top Menubar: File, Edit, View, Object, Layer, Media, AI, Plugins, Help */}
+                <div ref={menuRef} className="hidden xl:flex items-center gap-0.5 text-xs text-slate-300 relative">
+                    {/* File Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('file')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors ${activeDropdown === 'file' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            File
+                        </button>
+                        {activeDropdown === 'file' && (
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-[11px]">
+                                <button onClick={() => { setActiveDropdown(null); onNewProject(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center justify-between">
+                                    <span>새 프로젝트</span>
+                                </button>
+                                <button onClick={() => { setActiveDropdown(null); onSaveProject(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center justify-between">
+                                    <span>저장</span>
+                                    <span className="text-[9px] text-slate-500">Ctrl+S</span>
+                                </button>
+                                <button onClick={() => { setActiveDropdown(null); onOpenExport(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center justify-between">
+                                    <span>내보내기</span>
+                                </button>
+                                <div className="h-px bg-slate-800 my-0.5" />
+                                <button onClick={() => { setActiveDropdown(null); onClose(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-rose-950 text-left text-rose-300">
+                                    <span>종료</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Edit Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('edit')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors ${activeDropdown === 'edit' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            Edit
+                        </button>
+                        {activeDropdown === 'edit' && (
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-[11px]">
+                                <button onClick={() => { setActiveDropdown(null); onUndo(); }} disabled={!canUndo} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center justify-between disabled:opacity-40">
+                                    <span>실행 취소</span>
+                                    <span className="text-[9px] text-slate-500">Ctrl+Z</span>
+                                </button>
+                                <button onClick={() => { setActiveDropdown(null); onRedo(); }} disabled={!canRedo} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center justify-between disabled:opacity-40">
+                                    <span>다시 실행</span>
+                                    <span className="text-[9px] text-slate-500">Ctrl+Y</span>
+                                </button>
+                                {onDuplicateSelected && (
+                                    <button onClick={() => { setActiveDropdown(null); onDuplicateSelected(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200">
+                                        <span>선택 요소 복제</span>
+                                    </button>
+                                )}
+                                {onDeleteSelected && (
+                                    <button onClick={() => { setActiveDropdown(null); onDeleteSelected(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-rose-400">
+                                        <span>삭제</span>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* View Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('view')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors ${activeDropdown === 'view' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            View
+                        </button>
+                        {activeDropdown === 'view' && (
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-[11px]">
+                                <button onClick={() => { onChangeZoom(Math.min(2.5, zoom + 0.1)); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center justify-between">
+                                    <span>확대</span>
+                                    <span className="text-[9px] text-slate-500">+</span>
+                                </button>
+                                <button onClick={() => { onChangeZoom(Math.max(0.2, zoom - 0.1)); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center justify-between">
+                                    <span>축소</span>
+                                    <span className="text-[9px] text-slate-500">-</span>
+                                </button>
+                                {onOpenPresentation && (
+                                    <button onClick={() => { setActiveDropdown(null); onOpenPresentation(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-indigo-300 flex items-center justify-between">
+                                        <span>전체화면 발표</span>
+                                        <span className="text-[9px] text-slate-500">F2</span>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Object Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('object')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors ${activeDropdown === 'object' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            Object
+                        </button>
+                        {activeDropdown === 'object' && (
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-[11px]">
+                                {onAddText && (
+                                    <button onClick={() => { setActiveDropdown(null); onAddText(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200">
+                                        <span>텍스트 상자 추가</span>
+                                    </button>
+                                )}
+                                {onAddShape && (
+                                    <>
+                                        <button onClick={() => { setActiveDropdown(null); onAddShape('rect'); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200">
+                                            <span>사각형 도형 추가</span>
+                                        </button>
+                                        <button onClick={() => { setActiveDropdown(null); onAddShape('circle'); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200">
+                                            <span>원형 도형 추가</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Layer Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('layer')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors ${activeDropdown === 'layer' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            Layer
+                        </button>
+                        {activeDropdown === 'layer' && (
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-[11px]">
+                                {onBringForward && (
+                                    <button onClick={() => { setActiveDropdown(null); onBringForward(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center gap-1.5">
+                                        <ArrowUp className="w-3 h-3 text-indigo-400" />
+                                        <span>앞으로 가져오기</span>
+                                    </button>
+                                )}
+                                {onSendBackward && (
+                                    <button onClick={() => { setActiveDropdown(null); onSendBackward(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center gap-1.5">
+                                        <ArrowDown className="w-3 h-3 text-indigo-400" />
+                                        <span>뒤로 보내기</span>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Media Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('media')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors ${activeDropdown === 'media' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            Media
+                        </button>
+                        {activeDropdown === 'media' && (
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-[11px]">
+                                <button onClick={() => { setActiveDropdown(null); onOpenAiStudio(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200">
+                                    <span>AI 미디어 생성 스튜디오</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* AI Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('ai')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors ${activeDropdown === 'ai' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            AI
+                        </button>
+                        {activeDropdown === 'ai' && (
+                            <div className="absolute top-full left-0 mt-1 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-[11px]">
+                                <button onClick={() => { setActiveDropdown(null); onOpenAiStudio(); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center gap-1.5">
+                                    <Sparkles className="w-3 h-3 text-yellow-300" />
+                                    <span>Gemini AI 스튜디오</span>
+                                </button>
+                                {onOpenPlugin && (
+                                    <>
+                                        <button onClick={() => { setActiveDropdown(null); onOpenPlugin('ai-project-studio'); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-indigo-300 flex items-center gap-1.5">
+                                            <GraduationCap className="w-3 h-3" />
+                                            <span>AI Project Studio</span>
+                                        </button>
+                                        <button onClick={() => { setActiveDropdown(null); onOpenPlugin('multi-ai-studio'); }} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-cyan-300 flex items-center gap-1.5">
+                                            <Cpu className="w-3 h-3" />
+                                            <span>Multi AI Studio</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Plugins Menu (CORE REQUIREMENT) */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('plugins')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors font-bold text-indigo-300 flex items-center gap-1 ${activeDropdown === 'plugins' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            <Blocks className="w-3 h-3" />
+                            <span>Plugins</span>
+                        </button>
+                        {activeDropdown === 'plugins' && (
+                            <div className="absolute top-full left-0 mt-1 w-64 bg-slate-900 border border-indigo-500/40 rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-[11px]">
+                                <div className="text-[10px] font-bold text-indigo-400 px-2 py-1 border-b border-slate-800 flex items-center justify-between">
+                                    <span>Canvas 확장 플러그인</span>
+                                    <span className="text-[9px] text-slate-500">v1.0.0</span>
+                                </div>
+
+                                {onOpenPluginManager && (
+                                    <button 
+                                        onClick={() => { setActiveDropdown(null); onOpenPluginManager(); }} 
+                                        className="px-2.5 py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/40 text-left text-indigo-200 font-bold flex items-center gap-2 border border-indigo-500/30 transition-colors"
+                                    >
+                                        <Blocks className="w-3.5 h-3.5 text-indigo-400" />
+                                        <div className="flex flex-col">
+                                            <span>플러그인 관리자 (Plugin Manager)</span>
+                                            <span className="text-[9px] font-normal text-indigo-300">설치 및 권한 관리</span>
+                                        </div>
+                                    </button>
+                                )}
+
+                                {onOpenPlugin && (
+                                    <>
+                                        <button 
+                                            onClick={() => { setActiveDropdown(null); onOpenPlugin('ai-project-studio'); }} 
+                                            className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center gap-2 transition-colors"
+                                        >
+                                            <GraduationCap className="w-3.5 h-3.5 text-purple-400" />
+                                            <div>
+                                                <div className="font-semibold text-white">AI Project Studio</div>
+                                                <div className="text-[9px] text-slate-400">교육 프로젝트 제작 도구</div>
+                                            </div>
+                                        </button>
+
+                                        <button 
+                                            onClick={() => { setActiveDropdown(null); onOpenPlugin('data-studio'); }} 
+                                            className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center gap-2 transition-colors"
+                                        >
+                                            <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+                                            <div>
+                                                <div className="font-semibold text-white">Data Studio</div>
+                                                <div className="text-[9px] text-slate-400">데이터 시각화 & 차트 제작</div>
+                                            </div>
+                                        </button>
+
+                                        <button 
+                                            onClick={() => { setActiveDropdown(null); onOpenPlugin('ai-design-assistant'); }} 
+                                            className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center gap-2 transition-colors"
+                                        >
+                                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                            <div>
+                                                <div className="font-semibold text-white">AI Design Assistant</div>
+                                                <div className="text-[9px] text-slate-400">레이아웃 검사 & 자동 보정</div>
+                                            </div>
+                                        </button>
+
+                                        <button 
+                                            onClick={() => { setActiveDropdown(null); onOpenPlugin('multi-ai-studio'); }} 
+                                            className="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-left text-slate-200 flex items-center gap-2 transition-colors"
+                                        >
+                                            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                                            <div>
+                                                <div className="font-semibold text-white">Multi AI Studio</div>
+                                                <div className="text-[9px] text-slate-400">최대 20개 병렬 AI 작업실</div>
+                                            </div>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Help Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => handleToggleDropdown('help')}
+                            className={`px-2 py-1 rounded hover:bg-slate-800 transition-colors ${activeDropdown === 'help' ? 'bg-slate-800 text-white' : ''}`}
+                        >
+                            Help
+                        </button>
+                        {activeDropdown === 'help' && (
+                            <div className="absolute top-full left-0 mt-1 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 flex flex-col gap-1 text-[11px]">
+                                <div className="font-bold text-white mb-0.5">캐버스 단축키 안내</div>
+                                <div className="text-slate-400 text-[10px] space-y-1">
+                                    <div>• Ctrl + S: 프로젝트 저장</div>
+                                    <div>• Ctrl + Z: 실행 취소</div>
+                                    <div>• Ctrl + Y: 다시 실행</div>
+                                    <div>• F2: 슬라이드 전체화면</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="h-4 w-px bg-slate-800" />
+
 
                 {/* Project Title Input */}
                 <div className="flex items-center gap-1.5">
@@ -204,6 +537,18 @@ export const CatvasTopBar: React.FC<CatvasTopBarProps> = ({
                         <ZoomIn className="w-3.5 h-3.5" />
                     </button>
                 </div>
+
+                {/* 🔌 Plugin System Trigger */}
+                {onOpenPluginManager && (
+                    <button
+                        onClick={() => { sound.click(); onOpenPluginManager(); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:opacity-95 text-xs font-bold text-white shadow-md shadow-indigo-900/30 transition-all cursor-pointer border border-indigo-400/40"
+                        title="Canvas 플러그인 관리자 (AI Project Studio, Data Studio, Design Assistant 등)"
+                    >
+                        <Blocks className="w-3.5 h-3.5 text-indigo-200" />
+                        <span className="hidden sm:inline">플러그인</span>
+                    </button>
+                )}
 
                 {/* 👥 Multi-Collaboration Trigger */}
                 <button

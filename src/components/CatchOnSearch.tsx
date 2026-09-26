@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
     Search, Mic, Camera, X, ExternalLink, Globe, Sparkles, 
     ArrowLeft, RotateCw, Home, Compass, Bookmark, Clock, 
-    Image as ImageIcon, Newspaper, Video, MapPin, ShoppingBag
+    Image as ImageIcon, Newspaper, Video, MapPin, ShoppingBag,
+    DollarSign, ShieldAlert, Terminal, Zap, Crown
 } from 'lucide-react';
 import { sound } from '../utils/sound';
+import { walletService, formatKRW } from '../services/walletService';
 
 interface CatchOnSearchProps {
     onClose: () => void;
@@ -39,6 +41,56 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // Unified OS Wallet Integration
+    const [virtualCash, setVirtualCash] = useState<number>(() => walletService.getBalance());
+    const [isVipHacker, setIsVipHacker] = useState<boolean>(() => {
+        try {
+            return localStorage.getItem('cacking_catchon_vip') === 'true';
+        } catch { return false; }
+    });
+    const [customRank1, setCustomRank1] = useState<string>(() => {
+        try {
+            return localStorage.getItem('cacking_catchon_rank1') || '';
+        } catch { return ''; }
+    });
+    const [cheatNotice, setCheatNotice] = useState<string>('');
+
+    useEffect(() => {
+        const unsub = walletService.subscribe((walletData) => {
+            setVirtualCash(walletData.balance);
+        });
+        return () => unsub();
+    }, []);
+
+    useEffect(() => {
+        const handleCashInjected = (e: any) => {
+            const addedAmt = e.detail?.amount || 100000;
+            walletService.addMoney(addedAmt, '캐킹 치트 지원금', 'other');
+            setCheatNotice(`⚡ 캐킹 치트 연동: +${addedAmt.toLocaleString()}원 지급됨!`);
+            setTimeout(() => setCheatNotice(''), 4000);
+        };
+        const handleVipToggled = (e: any) => {
+            setIsVipHacker(e.detail?.active ?? true);
+            setCheatNotice(e.detail?.active ? '👑 캐킹 치트: [VIP 해커 멤버십] 활성화!' : '캐킹 치트: VIP 모드 해제됨');
+            setTimeout(() => setCheatNotice(''), 4000);
+        };
+        const handleRankInjected = (e: any) => {
+            setCustomRank1(e.detail?.keyword || '');
+            setCheatNotice(`⚡ 캐킹 인젝션: 실시간 검색어 1위 변조됨 -> "${e.detail?.keyword}"`);
+            setTimeout(() => setCheatNotice(''), 4000);
+        };
+
+        window.addEventListener('cacking-cash-injected', handleCashInjected);
+        window.addEventListener('cacking-vip-toggled', handleVipToggled);
+        window.addEventListener('cacking-rank-injected', handleRankInjected);
+
+        return () => {
+            window.removeEventListener('cacking-cash-injected', handleCashInjected);
+            window.removeEventListener('cacking-vip-toggled', handleVipToggled);
+            window.removeEventListener('cacking-rank-injected', handleRankInjected);
+        };
+    }, [virtualCash]);
+
     useEffect(() => {
         try {
             const saved = localStorage.getItem('catchon_search_history');
@@ -64,6 +116,37 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
         const target = (searchWord !== undefined ? searchWord : query).trim();
         if (!target) return;
         sound.click();
+
+        // Special Slash Commands hooked to Cacking
+        if (target.startsWith('/')) {
+            const cmd = target.toLowerCase();
+            if (cmd === '/godmode') {
+                sound.buy();
+                walletService.addMoney(1000000, 'GODMODE 치트 보상', 'other');
+                setIsVipHacker(true);
+                localStorage.setItem('cacking_catchon_vip', 'true');
+                setCheatNotice('🔥 [치트 발동] GODMODE 활성화: +1,000,000원 지급 및 VIP 해커 권한 획득!');
+                setSubmittedQuery('치트 명령: /godmode 성공');
+                return;
+            } else if (cmd === '/matrix') {
+                sound.type();
+                window.dispatchEvent(new CustomEvent('cacking-matrix-toggle', { detail: { active: true } }));
+                setCheatNotice('🟢 [치트 발동] 매트릭스 비 효과가 데스크톱에 활성화되었습니다!');
+                setSubmittedQuery('치트 명령: /matrix 실행됨');
+                return;
+            } else if (cmd === '/cacking') {
+                sound.click();
+                setCheatNotice('💻 캐킹 시스템: 가상 OS 시스템 실험 도구와 실시간 동기화 중입니다.');
+                setSubmittedQuery('캐킹(Cacking) 연동 상태: 정상');
+                return;
+            } else if (cmd === '/help') {
+                sound.click();
+                setCheatNotice('💡 사용 가능한 가상 치트 명령어: /godmode, /matrix, /cacking');
+                setSubmittedQuery('가상 콘솔 명령어 목록');
+                return;
+            }
+        }
+
         setSubmittedQuery(target);
         setQuery(target);
         setShowSuggestions(false);
@@ -202,16 +285,42 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
                     <Globe className="w-3.5 h-3.5 text-slate-400" />
                     <span className="font-medium">https://www.catchon.search/{submittedQuery ? `?q=${encodeURIComponent(submittedQuery)}` : ''}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
+                    {/* VIP Hacker Status Badge */}
+                    {isVipHacker && (
+                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-100 border border-purple-300 text-purple-800 text-[11px] font-black shadow-sm animate-pulse">
+                            <Crown className="w-3.5 h-3.5 text-purple-600" />
+                            <span>VIP HACKER</span>
+                        </div>
+                    )}
+
+                    {/* Virtual Cash Wallet */}
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold shadow-sm">
+                        <DollarSign className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{virtualCash.toLocaleString()}원</span>
+                    </div>
+
                     <button 
                         onClick={() => openRealGoogle()} 
                         className="text-xs font-black bg-blue-600 text-white hover:bg-blue-700 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
                         title="원래 구글(Google) 검색엔진으로 이동"
                     >
-                        🌐 원래 검색엔진(구글)으로 이동 <ExternalLink className="w-3.5 h-3.5" />
+                        🌐 원래 검색엔진 <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
+
+            {/* Cheat Notification Bar */}
+            {cheatNotice && (
+                <div className="bg-emerald-600 text-white px-4 py-1.5 text-xs font-bold flex items-center justify-between shadow-inner animate-pulse">
+                    <span className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-yellow-300" /> {cheatNotice}
+                    </span>
+                    <button onClick={() => setCheatNotice('')} className="p-0.5 hover:bg-emerald-700 rounded">
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            )}
 
             {/* Direct Original Engine Banner */}
             <div className="bg-blue-50/90 border-b border-blue-100 px-4 py-2 flex items-center justify-between text-xs text-blue-900 select-none">
@@ -378,6 +487,37 @@ export function CatchOnSearch({ onClose }: CatchOnSearchProps) {
                                 </div>
                                 <span className="text-xs font-semibold text-slate-700">스피드 2</span>
                             </button>
+                        </div>
+
+                        {/* Real-time Trending Keywords (Cacking Ranking Injection Hook) */}
+                        <div className="w-full max-w-md mt-6 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                <span className="flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-blue-600" /> 실시간 급상승 검색어
+                                </span>
+                                <span className="text-[10px] text-slate-400">실시간 반영</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <button
+                                    onClick={() => handleSearch(customRank1 || DEFAULT_TRENDS[0])}
+                                    className="p-2 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-left flex items-center gap-2 transition-all cursor-pointer shadow-sm group"
+                                >
+                                    <span className="w-4 h-4 rounded-full bg-rose-500 text-white font-black text-[10px] flex items-center justify-center shrink-0">1</span>
+                                    <span className={`truncate font-bold ${customRank1 ? 'text-purple-600' : 'text-slate-800'}`}>
+                                        {customRank1 || DEFAULT_TRENDS[0]}
+                                    </span>
+                                </button>
+                                {DEFAULT_TRENDS.slice(1, 5).map((t, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleSearch(t)}
+                                        className="p-2 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-left flex items-center gap-2 transition-all cursor-pointer shadow-sm group"
+                                    >
+                                        <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0">{idx + 2}</span>
+                                        <span className="truncate text-slate-700 group-hover:text-blue-600 font-medium">{t}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 ) : (

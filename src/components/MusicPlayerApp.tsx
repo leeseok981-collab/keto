@@ -64,6 +64,145 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
     const safePlaylist = playlist && Array.isArray(playlist) && playlist.length > 0 ? playlist : SAMPLE_TRACKS_100;
     const activeTrack = currentTrack || safePlaylist[0];
 
+    // Local state for time, playing, volume, mute
+    const [localCurrentTime, setLocalCurrentTime] = useState<number>(currentTime || 0);
+    const [localVolume, setLocalVolume] = useState<number>(volume !== undefined ? volume : 0.8);
+    const [localIsMuted, setLocalIsMuted] = useState<boolean>(isMuted || false);
+    const [localIsPlaying, setLocalIsPlaying] = useState<boolean>(isPlaying || false);
+
+    const audioCtxRef = useRef<AudioContext | null>(null);
+    const synthTimerRef = useRef<any>(null);
+    const progressTimerRef = useRef<any>(null);
+
+    useEffect(() => {
+        if (isPlaying !== undefined) setLocalIsPlaying(isPlaying);
+    }, [isPlaying]);
+
+    useEffect(() => {
+        if (volume !== undefined) setLocalVolume(volume);
+    }, [volume]);
+
+    useEffect(() => {
+        if (isMuted !== undefined) setLocalIsMuted(isMuted);
+    }, [isMuted]);
+
+    useEffect(() => {
+        setLocalCurrentTime(0);
+    }, [activeTrack.id]);
+
+    // Web Audio Synthesizer & Time Advancement Loop
+    useEffect(() => {
+        if (localIsPlaying) {
+            // 1. Progress Timer (1 sec increment)
+            progressTimerRef.current = setInterval(() => {
+                setLocalCurrentTime(prev => {
+                    const dur = duration || activeTrack.duration || 180;
+                    if (prev + 1 >= dur) {
+                        if (onNextTrack) onNextTrack();
+                        return 0;
+                    }
+                    return prev + 1;
+                });
+            }, 1000);
+
+            // 2. Web Audio Procedural Synth
+            try {
+                const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+                if (!audioCtxRef.current) {
+                    audioCtxRef.current = new AudioCtx();
+                }
+                const ctx = audioCtxRef.current;
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+
+                let noteIdx = 0;
+                const tempo = activeTrack.tempo || 120;
+                const noteIntervalMs = Math.max(120, Math.floor(60000 / tempo));
+                const freqs = activeTrack.noteFreqs && activeTrack.noteFreqs.length > 0 
+                    ? activeTrack.noteFreqs 
+                    : [261.63, 329.63, 392.00, 523.25];
+
+                synthTimerRef.current = setInterval(() => {
+                    if (!ctx || ctx.state === 'closed') return;
+                    if (localIsMuted || localVolume <= 0.001) return;
+
+                    const now = ctx.currentTime;
+                    const freq = freqs[noteIdx % freqs.length];
+                    noteIdx++;
+
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    if (activeTrack.genre === 'Chiptune') osc.type = 'square';
+                    else if (activeTrack.genre === 'Synthwave' || activeTrack.genre === 'Electronic') osc.type = 'sawtooth';
+                    else if (activeTrack.genre === 'Jazz' || activeTrack.genre === 'Classical') osc.type = 'triangle';
+                    else osc.type = 'sine';
+
+                    osc.frequency.setValueAtTime(freq, now);
+                    const vol = localVolume * 0.12;
+                    gain.gain.setValueAtTime(vol, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                }, noteIntervalMs);
+            } catch (e) {
+                console.error("Audio synth error:", e);
+            }
+        } else {
+            if (synthTimerRef.current) clearInterval(synthTimerRef.current);
+            if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+        }
+
+        return () => {
+            if (synthTimerRef.current) clearInterval(synthTimerRef.current);
+            if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+        };
+    }, [localIsPlaying, activeTrack.id, localIsMuted, localVolume]);
+
+    const unlockAudioCtx = () => {
+        try {
+            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            if (!audioCtxRef.current) {
+                audioCtxRef.current = new AudioCtx();
+            }
+            if (audioCtxRef.current.state === 'suspended') {
+                audioCtxRef.current.resume();
+            }
+        } catch (e) {
+            console.error("Failed to unlock AudioCtx:", e);
+        }
+    };
+
+    const handleTogglePlayLocal = () => {
+        unlockAudioCtx();
+        const nextState = !localIsPlaying;
+        setLocalIsPlaying(nextState);
+        if (onTogglePlay) onTogglePlay();
+        sound.click();
+    };
+
+    const handleVolumeChangeLocal = (newVol: number) => {
+        setLocalVolume(newVol);
+        if (onVolumeChange) onVolumeChange(newVol);
+    };
+
+    const handleToggleMuteLocal = () => {
+        const nextMuted = !localIsMuted;
+        setLocalIsMuted(nextMuted);
+        if (onToggleMute) onToggleMute();
+        sound.click();
+    };
+
+    const handleSeekLocal = (targetTime: number) => {
+        setLocalCurrentTime(targetTime);
+        if (onSeek) onSeek(targetTime);
+    };
+
     const formatTime = (secs: number) => {
         if (isNaN(secs) || secs < 0) return '0:00';
         const m = Math.floor(secs / 60);
@@ -89,12 +228,12 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
                 theme === 'mac' ? 'bg-slate-800/50 border-white/10' : 'bg-slate-900/80 border-slate-800'
             }`}>
                 <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs tracking-wider">
-                    <Disc className={`w-4 h-4 ${isPlaying ? 'animate-spin' : ''}`} />
+                    <Disc className={`w-4 h-4 ${localIsPlaying ? 'animate-spin' : ''}`} />
                     <span>음악 플레이어 스튜디오</span>
                 </div>
 
                 <div className="text-xs font-semibold text-slate-300 truncate max-w-[200px] sm:max-w-xs text-center">
-                    🎵 {currentTrack.title} - {currentTrack.artist}
+                    🎵 {activeTrack?.title || '트랙 선택 안됨'} - {activeTrack?.artist || '아티스트'}
                 </div>
             </div>
 
@@ -104,13 +243,13 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
                 <div className="md:col-span-5 p-6 border-b md:border-b-0 md:border-r border-slate-800/80 flex flex-col justify-between items-center text-center bg-gradient-to-b from-slate-900/60 to-slate-950/80">
                     {/* Album Art Vinyl */}
                     <div className="relative group my-auto">
-                        <div className={`w-44 h-44 sm:w-52 sm:h-52 rounded-2xl bg-gradient-to-br ${activeTrack.coverColor} shadow-2xl flex items-center justify-center p-4 border border-white/20 transition-transform duration-500 ${isPlaying ? 'scale-105' : ''}`}>
+                        <div className={`w-44 h-44 sm:w-52 sm:h-52 rounded-2xl bg-gradient-to-br ${activeTrack.coverColor} shadow-2xl flex items-center justify-center p-4 border border-white/20 transition-transform duration-500 ${localIsPlaying ? 'scale-105' : ''}`}>
                             <div className="w-full h-full rounded-full border-4 border-white/20 flex items-center justify-center bg-black/40 backdrop-blur-sm relative overflow-hidden">
-                                <Disc className={`w-24 h-24 text-white/80 ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }} />
+                                <Disc className={`w-24 h-24 text-white/80 ${localIsPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }} />
                                 <div className="absolute w-8 h-8 rounded-full bg-slate-900 border-2 border-white/50" />
                             </div>
                         </div>
-                        {isPlaying && (
+                        {localIsPlaying && (
                             <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500 text-slate-950 animate-pulse shadow-lg">
                                 재생 중
                             </span>
@@ -138,17 +277,17 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
                                 onClick={(e) => {
                                     const rect = e.currentTarget.getBoundingClientRect();
                                     const pct = (e.clientX - rect.left) / rect.width;
-                                    if (onSeek) onSeek(pct * (duration || activeTrack.duration));
+                                    handleSeekLocal(Math.floor(pct * (duration || activeTrack.duration)));
                                 }}
                                 className="w-full h-2 bg-slate-800 hover:h-3 rounded-full cursor-pointer relative overflow-hidden transition-all group"
                             >
                                 <div 
                                     className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
-                                    style={{ width: `${((currentTime / (duration || activeTrack.duration)) * 100) || 0}%` }}
+                                    style={{ width: `${((localCurrentTime / (duration || activeTrack.duration)) * 100) || 0}%` }}
                                 />
                             </div>
                             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-                                <span>{formatTime(currentTime)}</span>
+                                <span>{formatTime(localCurrentTime)}</span>
                                 <span>{formatTime(duration || activeTrack.duration)}</span>
                             </div>
                         </div>
@@ -177,11 +316,11 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
 
                             {/* Play / Pause */}
                             <button 
-                                onClick={onTogglePlay}
+                                onClick={handleTogglePlayLocal}
                                 className="p-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer font-black"
-                                title={isPlaying ? "일시정지" : "재생"}
+                                title={localIsPlaying ? "일시정지" : "재생"}
                             >
-                                {isPlaying ? <Pause className="w-5 h-5 fill-slate-950" /> : <Play className="w-5 h-5 fill-slate-950 ml-0.5" />}
+                                {localIsPlaying ? <Pause className="w-5 h-5 fill-slate-950" /> : <Play className="w-5 h-5 fill-slate-950 ml-0.5" />}
                             </button>
 
                             {/* Next */}
@@ -210,16 +349,16 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
 
                         {/* Volume Control Slider */}
                         <div className="flex items-center gap-2 pt-2 max-w-[200px] mx-auto">
-                            <button onClick={onToggleMute} className="text-slate-400 hover:text-white cursor-pointer">
-                                {isMuted || volume === 0 ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
+                            <button onClick={handleToggleMuteLocal} className="text-slate-400 hover:text-white cursor-pointer">
+                                {localIsMuted || localVolume === 0 ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
                             </button>
                             <input 
                                 type="range" 
                                 min="0" 
                                 max="1" 
                                 step="0.01" 
-                                value={isMuted ? 0 : volume}
-                                onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+                                value={localIsMuted ? 0 : localVolume}
+                                onChange={(e) => handleVolumeChangeLocal(parseFloat(e.target.value))}
                                 className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
                             />
                         </div>
@@ -233,7 +372,7 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
                         <div className="flex items-center justify-between">
                             <h3 className="text-xs font-bold text-slate-300 flex items-center gap-2">
                                 <List className="w-4 h-4 text-cyan-400" />
-                                <span>재생목록 (총 {playlist.length}곡)</span>
+                                <span>재생목록 (총 {safePlaylist.length}곡)</span>
                             </h3>
                             <span className="text-[10px] text-slate-400 font-mono">
                                 {filteredPlaylist.length}개 트랙 표시 중
@@ -279,7 +418,11 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
                                 return (
                                     <div 
                                         key={track.id}
-                                        onClick={() => onPlayTrack(track)}
+                                        onClick={() => {
+                                            unlockAudioCtx();
+                                            setLocalIsPlaying(true);
+                                            if (onPlayTrack) onPlayTrack(track);
+                                        }}
                                         className={`group flex items-center justify-between p-2.5 rounded-xl transition-all cursor-pointer ${
                                             isCurrent 
                                                 ? 'bg-cyan-500/15 border border-cyan-500/40 text-cyan-300' 
@@ -288,7 +431,7 @@ export const MusicPlayerApp: React.FC<MusicPlayerAppProps> = ({
                                     >
                                         <div className="flex items-center gap-3 min-w-0">
                                             <span className="w-5 text-center text-[10px] font-mono text-slate-500 group-hover:text-slate-300">
-                                                {isCurrent && isPlaying ? (
+                                                {isCurrent && localIsPlaying ? (
                                                     <span className="text-cyan-400 font-bold animate-pulse">▶</span>
                                                 ) : (
                                                     idx + 1

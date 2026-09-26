@@ -133,3 +133,101 @@ export function vfsToDesktopItems(vfsNodes: VFSNode[], desktopFolderId: string):
             y: node.y
         }));
 }
+
+// Ensure specific folder path in VFS (e.g. C:/Users/User/Documents/AI Project Studio/Climate_Project)
+export function ensureVfsDirectory(fullPath: string, username: string = 'User'): VFSNode {
+    const nodes = loadVFSNodes(username);
+    const normalized = fullPath.replace(/\\/g, '/').replace(/\/$/, '');
+    const existing = nodes.find(n => n.path.toLowerCase() === normalized.toLowerCase() && n.type === 'folder');
+    if (existing) return existing;
+
+    const parts = normalized.split('/');
+    let currentPath = '';
+    let parentId = '';
+
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        currentPath = i === 0 ? part : `${currentPath}/${part}`;
+        let found = nodes.find(n => n.path.toLowerCase() === currentPath.toLowerCase() && n.type === 'folder');
+
+        if (!found) {
+            const newNode: VFSNode = {
+                id: `vfs-dir-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                name: part,
+                path: currentPath,
+                type: 'folder',
+                parentId: parentId || undefined,
+                updatedAt: new Date().toISOString().slice(0, 10),
+                isSystemFolder: false
+            };
+            nodes.push(newNode);
+            found = newNode;
+        }
+        parentId = found.id;
+    }
+
+    saveVFSNodes(nodes);
+    return nodes.find(n => n.path.toLowerCase() === normalized.toLowerCase())!;
+}
+
+// Write or update file in VFS
+export function writeVfsFile(
+    dirPath: string, 
+    fileName: string, 
+    content: string, 
+    appType: string = 'catvas',
+    username: string = 'User'
+): VFSNode {
+    const dirNode = ensureVfsDirectory(dirPath, username);
+    const nodes = loadVFSNodes(username);
+    const normalizedDir = dirNode.path.replace(/\\/g, '/').replace(/\/$/, '');
+    const filePath = `${normalizedDir}/${fileName}`;
+    const now = new Date().toISOString().slice(0, 10);
+    const sizeInKb = Math.max(1, Math.round(new Blob([content]).size / 1024));
+
+    const existingIdx = nodes.findIndex(n => n.path.toLowerCase() === filePath.toLowerCase());
+    if (existingIdx >= 0) {
+        nodes[existingIdx] = {
+            ...nodes[existingIdx],
+            content,
+            size: `${sizeInKb} KB`,
+            updatedAt: now,
+            appType
+        };
+        saveVFSNodes(nodes);
+        return nodes[existingIdx];
+    } else {
+        const newNode: VFSNode = {
+            id: `vfs-file-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            name: fileName,
+            path: filePath,
+            type: fileName.endsWith('.json') || fileName.endsWith('.txt') ? 'text' : 'file',
+            appType,
+            content,
+            size: `${sizeInKb} KB`,
+            parentId: dirNode.id,
+            folderId: dirNode.id,
+            updatedAt: now
+        };
+        nodes.push(newNode);
+        saveVFSNodes(nodes);
+        return newNode;
+    }
+}
+
+// Read file from VFS
+export function readVfsFile(fullPath: string, username: string = 'User'): string | null {
+    const nodes = loadVFSNodes(username);
+    const normalized = fullPath.replace(/\\/g, '/').toLowerCase();
+    const node = nodes.find(n => n.path.toLowerCase() === normalized && n.type !== 'folder');
+    return node ? (node.content || null) : null;
+}
+
+// List files inside directory
+export function listVfsFiles(dirPath: string, username: string = 'User'): VFSNode[] {
+    const nodes = loadVFSNodes(username);
+    const normalized = dirPath.replace(/\\/g, '/').replace(/\/$/, '').toLowerCase();
+    const dirNode = nodes.find(n => n.path.toLowerCase() === normalized && n.type === 'folder');
+    if (!dirNode) return [];
+    return nodes.filter(n => n.parentId === dirNode.id || n.folderId === dirNode.id);
+}

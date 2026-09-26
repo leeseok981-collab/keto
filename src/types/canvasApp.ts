@@ -8,7 +8,8 @@ export type CanvasAppView =
     | 'CANVAS_TEMPLATES'
     | 'CANVAS_PROFILE'
     | 'CANVAS_SETTINGS'
-    | 'CANVAS_MULTI';
+    | 'CANVAS_MULTI'
+    | 'CANVAS_PLUGINS';
 
 export interface CanvasUser {
     id: string;

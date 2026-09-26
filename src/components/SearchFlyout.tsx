@@ -4,7 +4,7 @@ import {
     Trash2, Film, Image as ImageIcon, Gamepad2, Sparkles, 
     MousePointer, Palette, Moon, User, Monitor, Volume2, 
     Bell, Lock, Cpu, ArrowRight, CornerDownLeft, Music,
-    Calendar as CalendarIcon, Terminal
+    Calendar as CalendarIcon, Terminal, GraduationCap, Globe, Clock
 } from 'lucide-react';
 import { DesktopItem } from '../DesktopOS';
 import { SettingsCategory } from './SettingsApp';
@@ -45,117 +45,48 @@ export const SearchFlyout: React.FC<SearchFlyoutProps> = ({
         }
     }, [isOpen]);
 
-    // System Apps Registry
-    const systemApps = useMemo(() => [
-        {
-            id: 'app-notepad',
-            name: '메모장',
-            sub: '텍스트 편집 및 빠른 메모 작성',
-            type: 'app',
-            appType: 'notepad',
-            icon: FileText,
-            color: 'text-emerald-400 bg-emerald-950/50 border-emerald-500/30'
-        },
-        {
-            id: 'app-calc',
-            name: '계산기',
-            sub: '사칙연산 및 계산 도구',
-            type: 'app',
-            appType: 'calc',
-            icon: AppWindow,
-            color: 'text-blue-400 bg-blue-950/50 border-blue-500/30'
-        },
-        {
-            id: 'app-catchon',
-            name: '캐치온 (CatchOn)',
-            sub: '인터넷 검색 및 웹 브라우저',
-            type: 'app',
-            appType: 'catchon',
-            icon: AppWindow,
-            color: 'text-cyan-400 bg-cyan-950/50 border-cyan-500/30'
-        },
-        {
-            id: 'app-paint',
-            name: '그림판 (Paint)',
-            sub: '자유 드로잉 및 이미지 스케치',
-            type: 'app',
-            appType: 'paint',
-            icon: Palette,
-            color: 'text-pink-400 bg-pink-950/50 border-pink-500/30'
-        },
-        {
-            id: 'app-canvas',
-            name: '캐버스 (Canvas)',
-            sub: 'UI 디자인 및 캔버스 스튜디오',
-            type: 'app',
-            appType: 'canvas',
-            icon: Sparkles,
-            color: 'text-purple-400 bg-purple-950/50 border-purple-500/30'
-        },
-        {
-            id: 'app-screenshot',
-            name: '스크린샷 (Screenshot)',
-            sub: '화면 캡처 및 저장',
-            type: 'app',
-            appType: 'screenshot',
-            icon: AppWindow,
-            color: 'text-amber-400 bg-amber-950/50 border-amber-500/30'
-        },
-        {
-            id: 'app-ai-chat',
-            name: 'AI 대화 (AI Chat)',
-            sub: '인공지능 어시스턴트 대화',
-            type: 'app',
-            appType: 'ai_chat',
-            icon: Sparkles,
-            color: 'text-indigo-400 bg-indigo-950/50 border-indigo-500/30'
-        },
-        {
-            id: 'app-game',
-            name: '캐트 (KETO 게임)',
-            sub: '스피드 러너 및 월드 모험 레이스',
-            type: 'app',
-            appType: 'game',
-            icon: Gamepad2,
-            color: 'text-rose-400 bg-rose-950/50 border-rose-500/30'
-        },
-        {
-            id: 'app-trash',
-            name: '휴지통 (Recycle Bin)',
-            sub: '삭제된 파일 보관 및 복원',
-            type: 'app',
-            appType: 'trash',
-            icon: Trash2,
-            color: 'text-rose-400 bg-rose-950/50 border-rose-500/30'
-        },
-        {
-            id: 'app-calendar',
-            name: '달력',
-            sub: '연도/월별 일일 일정 및 메모 관리',
-            type: 'app',
-            appType: 'calendar',
-            icon: CalendarIcon,
-            color: 'text-amber-400 bg-amber-950/50 border-amber-500/30'
-        },
-        {
-            id: 'app-terminal',
-            name: '터미널',
-            sub: '가상 파일 시스템 명령 프롬프트 및 커스텀 셸',
-            type: 'app',
-            appType: 'terminal',
-            icon: Terminal,
-            color: 'text-emerald-400 bg-emerald-950/50 border-emerald-500/30'
-        },
-        {
-            id: 'app-settings',
-            name: '설정 (Settings)',
-            sub: '마우스, 배경화면, 사운드, 계정 등 종합 설정',
-            type: 'app',
-            appType: 'settings',
-            icon: Settings,
-            color: 'text-slate-300 bg-slate-800 border-slate-700'
-        }
-    ], []);
+    // Only installed apps from desktopItems are searchable
+    const systemApps = useMemo(() => {
+        const appIcons: Record<string, any> = {
+            notepad: FileText,
+            calculator: AppWindow,
+            catchon: AppWindow,
+            catore: AppWindow,
+            cacking: Terminal,
+            browser: Globe,
+            photos: ImageIcon,
+            taskmgr: Cpu,
+            clock: Clock,
+            power: Lock,
+            catvas: Sparkles,
+            ailearning: GraduationCap,
+            screenshot: AppWindow,
+            paint: Palette,
+            aichat: Sparkles,
+            catto: Gamepad2,
+            music: Music,
+            calendar: CalendarIcon,
+            terminal: Terminal,
+            settings: Settings,
+            trash: Trash2
+        };
+
+        return desktopItems
+            .filter(item => item.type === 'app')
+            .map(item => {
+                const appType = item.appType || 'app';
+                const IconComponent = appIcons[appType] || AppWindow;
+                return {
+                    id: item.id,
+                    name: item.name,
+                    sub: `${item.name} 실행`,
+                    type: 'app',
+                    appType: appType,
+                    icon: IconComponent,
+                    color: 'text-cyan-400 bg-slate-800 border-slate-700'
+                };
+            });
+    }, [desktopItems]);
 
     // Settings Quick Links
     const settingsLinks = useMemo(() => [

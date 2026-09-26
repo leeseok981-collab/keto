@@ -1,6 +1,6 @@
 {
   "name": "KETO",
-  "description": "KETO 데스크톱/OS 시뮬레이터와 다양한 기능을 경험해보세요!",
+  "description": "KETO 데스크톱/OS 시뮬레이터와 AI Learning 전문 맞춤 학습 플랫폼",
   "requestFramePermissions": ["microphone", "camera"],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

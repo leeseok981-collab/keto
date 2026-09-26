@@ -12,6 +12,7 @@ import { CanvasTemplatesPage } from './CanvasTemplatesPage';
 import { CanvasProfilePage } from './CanvasProfilePage';
 import { CanvasSettingsPage } from './CanvasSettingsPage';
 import { CanvasMultiJoinPage } from './CanvasMultiJoinPage';
+import { CanvasPluginsPage } from './CanvasPluginsPage';
 import { CanvasNewDesignModal } from './CanvasNewDesignModal';
 import { CatvasEditor } from '../CatvasEditor';
 import { sound } from '../../utils/sound';
@@ -207,6 +208,15 @@ export const CanvasApp: React.FC<CanvasAppProps> = ({
                             userName={user?.name || ''}
                             onJoinSuccess={(roomCode, project) => {
                                 handleOpenProject(project);
+                            }}
+                        />
+                    )}
+
+                    {currentView === 'CANVAS_PLUGINS' && (
+                        <CanvasPluginsPage
+                            onOpenEditor={handleDirectNewCanvas}
+                            onLaunchPluginInEditor={(pluginId) => {
+                                handleDirectNewCanvas();
                             }}
                         />
                     )}

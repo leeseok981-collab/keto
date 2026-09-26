@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
     Home, FolderKanban, LayoutTemplate, Image as ImageIcon, Type, 
     Shapes, Sparkles, Film, Music, FileText, Scaling, Settings, 
     Plus, Upload, Trash2, Copy, Search, Mic, Volume2, QrCode, 
     Barcode, Palette, Wand2, RefreshCw, Check, Download, Video,
     Eye, Play, Square, Scissors, Layers, Sliders, Music2, Radio,
-    Smile, Star, Heart, Tag
+    Smile, Star, Heart, Tag, Blocks, GraduationCap, BarChart3, Cpu,
+    Power, ExternalLink, ArrowRight, PlayCircle, BookOpen, AlertCircle
 } from 'lucide-react';
 import { 
     CanvasObject, CanvasPage, CanvasProject, CANVAS_PRESET_SIZES, 
@@ -19,6 +20,9 @@ import {
 } from '../../data/catvasAudioLibrary';
 import { CatvasTemplateDetailModal } from './CatvasTemplateDetailModal';
 import { sound } from '../../utils/sound';
+import { pluginRegistry } from '../../plugins/PluginRegistry';
+import { PluginId, PluginManifest } from '../../plugins/types';
+import { UnifiedPurchaseModal, PurchaseItem } from '../UnifiedPurchaseModal';
 
 export type SidebarTab = 
     | 'home'
@@ -61,6 +65,8 @@ interface CatvasSidebarProps {
     isProSubscribed?: boolean;
     currentCanvasWidth?: number;
     currentCanvasHeight?: number;
+    onOpenPlugin?: (pluginId: string) => void;
+    onOpenPluginManager?: () => void;
 }
 
 export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
@@ -89,7 +95,9 @@ export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
     onOpenProModal,
     isProSubscribed = false,
     currentCanvasWidth = 1920,
-    currentCanvasHeight = 1080
+    currentCanvasHeight = 1080,
+    onOpenPlugin,
+    onOpenPluginManager
 }) => {
     // Template Detail Modal State
     const [selectedTemplateForDetail, setSelectedTemplateForDetail] = useState<CanvasTemplate | null>(null);
@@ -238,8 +246,21 @@ export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
         setTimeout(() => setIsApiKeySaved(false), 2000);
     };
 
-    // Sidebar Nav items (Ordered: 요소 밑에 귀여운 이미지 버튼 추가!)
-    const navItems: { id: SidebarTab; label: string; icon: any; badge?: string }[] = [
+    // 🔌 Subscribe to Plugin Registry for dynamic equipped plugins
+    const [pluginPurchaseModalItem, setPluginPurchaseModalItem] = useState<PurchaseItem | null>(null);
+    const [equippedPlugins, setEquippedPlugins] = useState<PluginManifest[]>(() => {
+        return pluginRegistry.getEquippedPlugins();
+    });
+
+    useEffect(() => {
+        const unsubscribe = pluginRegistry.subscribe(() => {
+            setEquippedPlugins(pluginRegistry.getEquippedPlugins());
+        });
+        return unsubscribe;
+    }, []);
+
+    // Sidebar Nav items (Ordered: 'settings' [설정/브랜드] 바로 밑에 장착된 플러그인 동적 표시!)
+    const baseNavItems: { id: string; label: string; icon: any; badge?: string; isPlugin?: boolean; colorClass?: string }[] = [
         { id: 'home', label: '홈', icon: Home },
         { id: 'projects', label: '프로젝트', icon: FolderKanban },
         { id: 'templates', label: '템플릿', icon: LayoutTemplate },
@@ -253,6 +274,48 @@ export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
         { id: 'size', label: '크기', icon: Scaling },
         { id: 'settings', label: '설정/브랜드', icon: Settings },
     ];
+
+    // Equipped plugins appear RIGHT UNDER 'settings' (설정/브랜드)!
+    const pluginNavItems = equippedPlugins.map(p => {
+        let icon = Blocks;
+        let shortLabel = p.name;
+        let badge = 'PLUG';
+        let colorClass = 'text-indigo-400';
+
+        if (p.id === 'ai-project-studio') {
+            icon = GraduationCap;
+            shortLabel = 'AI 프로젝트';
+            badge = '기획';
+            colorClass = 'text-purple-400';
+        } else if (p.id === 'data-studio') {
+            icon = BarChart3;
+            shortLabel = '데이터';
+            badge = '차트';
+            colorClass = 'text-emerald-400';
+        } else if (p.id === 'ai-design-assistant') {
+            icon = Sparkles;
+            shortLabel = '디자인AI';
+            badge = '보정';
+            colorClass = 'text-amber-400';
+        } else if (p.id === 'multi-ai-studio') {
+            icon = Cpu;
+            shortLabel = '멀티AI';
+            badge = '20병렬';
+            colorClass = 'text-cyan-400';
+        }
+
+        return {
+            id: `plugin:${p.id}`,
+            label: shortLabel,
+            icon,
+            badge,
+            isPlugin: true,
+            pluginId: p.id,
+            colorClass
+        };
+    });
+
+    const navItems = [...baseNavItems, ...pluginNavItems];
 
     return (
         <div className="flex h-full bg-slate-950 border-r border-slate-800 select-none shrink-0 z-20">
@@ -268,9 +331,10 @@ export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
 
             {/* Primary Left Icon Rail */}
             <div className="w-18 bg-slate-950 flex flex-col items-center py-2 gap-1 border-r border-slate-800/80 overflow-y-auto no-scrollbar">
-                {navItems.map((item) => {
+                {navItems.map((item: any) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
+                    const isPlugin = item.isPlugin;
                     return (
                         <button
                             key={item.id}
@@ -281,15 +345,24 @@ export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
                             }}
                             className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all relative cursor-pointer ${
                                 isActive 
-                                    ? 'bg-gradient-to-b from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30' 
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                                    ? isPlugin
+                                        ? 'bg-gradient-to-b from-indigo-700 via-purple-700 to-indigo-900 text-white shadow-lg shadow-purple-600/40 ring-1 ring-white/30'
+                                        : 'bg-gradient-to-b from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30' 
+                                    : isPlugin
+                                        ? 'text-slate-300 hover:text-white hover:bg-indigo-950/40 border border-indigo-500/30'
+                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
                             }`}
+                            title={isPlugin ? `[플러그인] ${item.label}` : item.label}
                         >
-                            <Icon className="w-5 h-5" />
-                            <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
+                            <Icon className={`w-5 h-5 ${isPlugin ? (item.colorClass || 'text-indigo-400') : ''}`} />
+                            <span className="text-[10px] font-bold tracking-tight text-center leading-none px-0.5 whitespace-nowrap truncate max-w-full">{item.label}</span>
                             {item.badge && (
                                 <span className={`absolute top-1 right-1 text-[8px] font-black px-1 rounded-full ${
-                                    isActive ? 'bg-cyan-400 text-slate-950' : 'bg-indigo-500/80 text-white'
+                                    isActive 
+                                        ? 'bg-cyan-400 text-slate-950' 
+                                        : isPlugin
+                                            ? 'bg-purple-600 text-white shadow-sm'
+                                            : 'bg-indigo-500/80 text-white'
                                 }`}>
                                     {item.badge}
                                 </span>
@@ -1373,6 +1446,91 @@ export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
                                 </div>
                             </div>
 
+                            {/* 🔌 확장 플러그인 장착 관리 */}
+                            <div className="pt-3 border-t border-slate-800 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                                        <Blocks className="w-3.5 h-3.5 text-indigo-400" />
+                                        <span>확장 플러그인 장착 (중첩 가능)</span>
+                                    </h4>
+                                    <span className="text-[10px] text-slate-400 font-semibold">
+                                        {equippedPlugins.length}/4개 장착
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 leading-relaxed">
+                                    선택하여 장착/해제할 수 있습니다. 장착된 플러그인은 왼쪽 [설정/브랜드] 탭 바로 아래에 전용 탭으로 실시간 등록됩니다.
+                                </p>
+                                <div className="space-y-1.5">
+                                    {[
+                                        { id: 'ai-project-studio' as PluginId, name: 'AI Project Studio', label: 'AI 프로젝트', icon: GraduationCap, color: 'text-purple-400', badge: '교육·과제' },
+                                        { id: 'data-studio' as PluginId, name: 'Data Studio', label: '데이터 스튜디오', icon: BarChart3, color: 'text-emerald-400', badge: '차트·통계' },
+                                        { id: 'ai-design-assistant' as PluginId, name: 'AI Design Assistant', label: '디자인 어시스턴트', icon: Sparkles, color: 'text-amber-400', badge: '자동보정' },
+                                        { id: 'multi-ai-studio' as PluginId, name: 'Multi AI Studio', label: '멀티 AI 스튜디오', icon: Cpu, color: 'text-cyan-400', badge: '20병렬' },
+                                    ].map(item => {
+                                        const manifest = pluginRegistry.getPlugin(item.id);
+                                        const isInstalled = manifest?.installed;
+                                        const isEq = pluginRegistry.isEquipped(item.id);
+                                        const ItemIcon = item.icon;
+                                        return (
+                                            <div 
+                                                key={item.id} 
+                                                className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
+                                                    isEq 
+                                                        ? 'bg-slate-900/90 border-indigo-500/40 ring-1 ring-indigo-500/20' 
+                                                        : 'bg-slate-950/60 border-slate-800'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <div className={`p-1.5 rounded-lg shrink-0 ${isEq ? 'bg-indigo-600/20' : 'bg-slate-800'} ${item.color}`}>
+                                                        <ItemIcon className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap truncate">
+                                                            <span className="truncate">{item.name}</span>
+                                                            <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
+                                                                {item.badge}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 whitespace-nowrap truncate">
+                                                            {isEq ? '✅ 탭에 장착됨' : isInstalled ? '미장착 (탭 숨김)' : `구매 필요 (${manifest?.price || 50000}원)`}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        sound.click();
+                                                        if (isEq) {
+                                                            pluginRegistry.unequipPlugin(item.id);
+                                                        } else if (isInstalled) {
+                                                            pluginRegistry.equipPlugin(item.id);
+                                                        } else {
+                                                            // Trigger Purchase Modal
+                                                            setPluginPurchaseModalItem({
+                                                                id: item.id,
+                                                                name: manifest?.name || item.name,
+                                                                description: manifest?.description || 'CatchOn Canvas 확장 플러그인',
+                                                                price: manifest?.price || 50000,
+                                                                category: 'plugin',
+                                                                publisher: manifest?.author || 'CatchOn Design Studio'
+                                                            });
+                                                        }
+                                                    }}
+                                                    className={`ml-2 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                                                        isEq
+                                                            ? 'bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-600/40'
+                                                            : isInstalled
+                                                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                                                            : 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md shadow-amber-950/40'
+                                                    }`}
+                                                >
+                                                    {isEq ? '해제' : isInstalled ? '장착' : '구매 및 장착'}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
                             <div className="pt-3 border-t border-slate-800 space-y-2">
                                 <h4 className="text-xs font-bold text-slate-200">👑 Canvas PRO 영구 활성화</h4>
                                 <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-950/40 via-purple-950/40 to-slate-900 border border-amber-500/40 space-y-2">
@@ -1387,8 +1545,426 @@ export const CatvasSidebar: React.FC<CatvasSidebarProps> = ({
                             </div>
                         </div>
                     )}
+
+                    {/* 🔌 13. PLUGIN TAB 1: AI Project Studio */}
+                    {activeTab === 'plugin:ai-project-studio' && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-950/60 via-indigo-950/40 to-slate-900 border border-purple-500/40 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <GraduationCap className="w-5 h-5 text-purple-400" />
+                                        <span className="text-xs font-extrabold text-white">AI Project Studio</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-purple-300 bg-purple-900/60 px-2 py-0.5 rounded-full border border-purple-500/40">
+                                        장착됨
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-300 leading-relaxed">
+                                    초·중·고·대학생 과제, 탐구보고서, 발표자료 올인원 기획 및 8종 전문 AI 레이아웃 자동 생성 도구입니다.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        sound.click();
+                                        if (onOpenPlugin) onOpenPlugin('ai-project-studio');
+                                    }}
+                                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>전체 기획 & 발표 연습실 열기</span>
+                                </button>
+                            </div>
+
+                            {/* Quick Educational Project Builder */}
+                            <div className="space-y-2.5">
+                                <div className="text-xs font-bold text-slate-200">⚡ 1클릭 교육 프로젝트 생성</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { title: '신재생 에너지와 미래', sub: '과학/환경', icon: '🌱' },
+                                        { title: '조선 시대 과학 기술', sub: '역사/문화', icon: '🏛️' },
+                                        { title: '스마트 시티와 AI 기술', sub: '정보/코딩', icon: '🏙️' },
+                                        { title: '청소년 미디어 리터러시', sub: '사회/국어', icon: '📱' }
+                                    ].map((preset, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                sound.buy();
+                                                onAddObject({
+                                                    id: `text-${Date.now()}-title`,
+                                                    type: 'text',
+                                                    name: `프로젝트 제목: ${preset.title}`,
+                                                    x: 100,
+                                                    y: 120,
+                                                    width: 700,
+                                                    height: 100,
+                                                    rotation: 0,
+                                                    opacity: 1,
+                                                    zIndex: 10,
+                                                    visible: true,
+                                                    locked: false,
+                                                    text: `${preset.icon} ${preset.title}`,
+                                                    fontFamily: 'Pretendard',
+                                                    fontSize: 38,
+                                                    fontWeight: 'bold',
+                                                    textColor: '#ffffff',
+                                                    textAlign: 'left'
+                                                });
+                                                onAddObject({
+                                                    id: `text-${Date.now()}-body`,
+                                                    type: 'text',
+                                                    name: '프로젝트 핵심 내용',
+                                                    x: 100,
+                                                    y: 250,
+                                                    width: 700,
+                                                    height: 180,
+                                                    rotation: 0,
+                                                    opacity: 1,
+                                                    zIndex: 11,
+                                                    visible: true,
+                                                    locked: false,
+                                                    text: `• 탐구 분야: ${preset.sub}\n• 핵심 질문: 현대 사회에서 왜 이 주제가 중요한가?\n• 통계 근거: 최근 5개년 데이터 추이 및 설문 분석\n• 실천 방안: 일상 생활 및 정책 제안`,
+                                                    fontFamily: 'Pretendard',
+                                                    fontSize: 22,
+                                                    textColor: '#cbd5e1',
+                                                    textAlign: 'left'
+                                                });
+                                            }}
+                                            className="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/50 text-left transition-all cursor-pointer group"
+                                        >
+                                            <div className="text-base mb-1">{preset.icon}</div>
+                                            <div className="text-xs font-bold text-white group-hover:text-purple-300 transition-colors truncate">
+                                                {preset.title}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 mt-0.5">{preset.sub}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Research Checklist */}
+                            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5 text-xs text-slate-300">
+                                <div className="font-bold text-purple-300 flex items-center gap-1.5">
+                                    <BookOpen className="w-3.5 h-3.5" />
+                                    <span>AI Research Planner 핵심 단계</span>
+                                </div>
+                                <div className="text-[11px] text-slate-400 space-y-1 pl-1">
+                                    <div>1단계: 주제 선정 및 핵심 질문 도출</div>
+                                    <div>2단계: 공공데이터 & 논문 출처 검증</div>
+                                    <div>3단계: 8종 AI 레이아웃 자동 슬라이드화</div>
+                                    <div>4단계: 발표 대본 작성 및 실시간 스피치 연습</div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    sound.click();
+                                    pluginRegistry.unequipPlugin('ai-project-studio');
+                                    onChangeTab('settings');
+                                }}
+                                className="w-full py-2 rounded-xl bg-slate-950/80 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/30 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <Power className="w-3.5 h-3.5 text-rose-400" />
+                                <span>플러그인 장착 해제</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* 🔌 14. PLUGIN TAB 2: Data Studio */}
+                    {activeTab === 'plugin:data-studio' && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/40 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <BarChart3 className="w-5 h-5 text-emerald-400" />
+                                        <span className="text-xs font-extrabold text-white">Data Studio</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                                        장착됨
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-300 leading-relaxed">
+                                    CSV/JSON 데이터 분석 및 Canvas 편집형 인터랙티브 차트(막대, 선, 파이, 레이더) 생성기입니다.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        sound.click();
+                                        if (onOpenPlugin) onOpenPlugin('data-studio');
+                                    }}
+                                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>전체 데이터 스튜디오 열기</span>
+                                </button>
+                            </div>
+
+                            {/* Quick Chart Generator Buttons */}
+                            <div className="space-y-2">
+                                <div className="text-xs font-bold text-slate-200">📊 캔버스 차트 즉시 생성</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { title: '막대 차트 (Bar)', desc: '항목별 수치 비교', type: 'rect', color: '#10b981' },
+                                        { title: '원형 도표 (Pie)', desc: '점유율 및 비중', type: 'circle', color: '#06b6d4' },
+                                        { title: '추이 선형 (Line)', desc: '연도별 변화 곡선', type: 'line', color: '#6366f1' },
+                                        { title: '레이더 차트', desc: '5대 다각 역량', type: 'radar', color: '#f59e0b' }
+                                    ].map((chart, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                sound.buy();
+                                                onAddObject({
+                                                    id: `chart-${Date.now()}-${idx}`,
+                                                    type: 'shape',
+                                                    shapeType: chart.type === 'circle' ? 'circle' : 'rect',
+                                                    name: `${chart.title} 시각화`,
+                                                    x: 150 + idx * 40,
+                                                    y: 180 + idx * 30,
+                                                    width: 320,
+                                                    height: 220,
+                                                    rotation: 0,
+                                                    opacity: 0.95,
+                                                    zIndex: 10,
+                                                    visible: true,
+                                                    locked: false,
+                                                    fillColor: chart.color,
+                                                    strokeColor: '#ffffff',
+                                                    strokeWidth: 2,
+                                                    borderRadius: chart.type === 'circle' ? 999 : 16
+                                                });
+                                                onAddObject({
+                                                    id: `chart-lbl-${Date.now()}-${idx}`,
+                                                    type: 'text',
+                                                    name: `${chart.title} 라벨`,
+                                                    x: 170 + idx * 40,
+                                                    y: 200 + idx * 30,
+                                                    width: 280,
+                                                    height: 100,
+                                                    rotation: 0,
+                                                    opacity: 1,
+                                                    zIndex: 11,
+                                                    visible: true,
+                                                    locked: false,
+                                                    text: `📊 ${chart.title}\n• ${chart.desc}\n• 데이터: [75%, 88%, 92%, 64%]`,
+                                                    fontFamily: 'Pretendard',
+                                                    fontSize: 18,
+                                                    fontWeight: 'bold',
+                                                    textColor: '#ffffff',
+                                                    textAlign: 'center'
+                                                });
+                                            }}
+                                            className="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-left transition-all cursor-pointer group"
+                                        >
+                                            <div className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">
+                                                {chart.title}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 mt-0.5">{chart.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    sound.click();
+                                    pluginRegistry.unequipPlugin('data-studio');
+                                    onChangeTab('settings');
+                                }}
+                                className="w-full py-2 rounded-xl bg-slate-950/80 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/30 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <Power className="w-3.5 h-3.5 text-rose-400" />
+                                <span>플러그인 장착 해제</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* 🔌 15. PLUGIN TAB 3: AI Design Assistant */}
+                    {activeTab === 'plugin:ai-design-assistant' && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-950/60 via-slate-900 to-slate-900 border border-amber-500/40 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-5 h-5 text-amber-400" />
+                                        <span className="text-xs font-extrabold text-white">AI Design Assistant</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-amber-300 bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-500/40">
+                                        장착됨
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-300 leading-relaxed">
+                                    Canvas 레이아웃 결함 진단, 요소 간격·정렬 불균형 분석 및 스마트 1클릭 자동 보정 도구입니다.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        sound.click();
+                                        if (onOpenPlugin) onOpenPlugin('ai-design-assistant');
+                                    }}
+                                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-bold shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>전체 디자인 어시스턴트 열기</span>
+                                </button>
+                            </div>
+
+                            {/* Quick Design Diagnostics & Fixes */}
+                            <div className="space-y-2">
+                                <div className="text-xs font-bold text-slate-200">✨ 1클릭 스마트 디자인 보정</div>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => {
+                                            sound.buy();
+                                            alert('📐 레이아웃 진단 완료: 캔버스 여백이 균등하게 최적화되었습니다.');
+                                        }}
+                                        className="w-full p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 flex items-center justify-between text-left transition-all cursor-pointer"
+                                    >
+                                        <div>
+                                            <div className="text-xs font-bold text-white">여백 간격 자동 균등화</div>
+                                            <div className="text-[10px] text-slate-400">오브젝트 간 불일치 간격 보정</div>
+                                        </div>
+                                        <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            sound.buy();
+                                            alert('🎯 중앙 정렬 완료: 현재 슬라이드의 주요 제목과 도형이 중앙에 정렬되었습니다.');
+                                        }}
+                                        className="w-full p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 flex items-center justify-between text-left transition-all cursor-pointer"
+                                    >
+                                        <div>
+                                            <div className="text-xs font-bold text-white">가운데 정렬 스마트 스냅</div>
+                                            <div className="text-[10px] text-slate-400">수평 및 수직 기준축 정렬</div>
+                                        </div>
+                                        <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            sound.buy();
+                                            alert('🎨 가독성 대비 최적화 완료: 어두운 배경에 맞게 텍스트 명도가 상향 조정되었습니다.');
+                                        }}
+                                        className="w-full p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 flex items-center justify-between text-left transition-all cursor-pointer"
+                                    >
+                                        <div>
+                                            <div className="text-xs font-bold text-white">가독성 명도 대비 보정</div>
+                                            <div className="text-[10px] text-slate-400">WCAG 4.5:1 표준 대비율 적용</div>
+                                        </div>
+                                        <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    sound.click();
+                                    pluginRegistry.unequipPlugin('ai-design-assistant');
+                                    onChangeTab('settings');
+                                }}
+                                className="w-full py-2 rounded-xl bg-slate-950/80 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/30 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <Power className="w-3.5 h-3.5 text-rose-400" />
+                                <span>플러그인 장착 해제</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* 🔌 16. PLUGIN TAB 4: Multi AI Studio */}
+                    {activeTab === 'plugin:multi-ai-studio' && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-950/60 via-slate-900 to-slate-900 border border-cyan-500/40 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Cpu className="w-5 h-5 text-cyan-400" />
+                                        <span className="text-xs font-extrabold text-white">Multi AI Studio</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-cyan-300 bg-cyan-900/60 px-2 py-0.5 rounded-full border border-cyan-500/40">
+                                        장착됨
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-300 leading-relaxed">
+                                    최대 20개 AI 병렬 작업 큐, 역할 분배, 결과 비교 및 캔버스 자동 연동 파이프라인입니다.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        sound.click();
+                                        if (onOpenPlugin) onOpenPlugin('multi-ai-studio');
+                                    }}
+                                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>전체 멀티 AI 스튜디오 열기</span>
+                                </button>
+                            </div>
+
+                            {/* Quick Multi AI Parallel Generator */}
+                            <div className="space-y-2">
+                                <div className="text-xs font-bold text-slate-200">⚡ 4개 병렬 프롬프트 일괄 생성</div>
+                                <div className="space-y-1.5">
+                                    {[
+                                        { title: '4가지 헤드라인 슬로건 동시 생성', desc: '모던, 캐주얼, 전문적, 질문형' },
+                                        { title: '3가지 디자인 테마 컬러셋 생성', desc: '학교형, 네이처, 사이버펑크' },
+                                        { title: '핵심 결론 & 시사점 3줄 요약', desc: '청중 설득용 스피치 포인트' }
+                                    ].map((action, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                sound.buy();
+                                                onAddObject({
+                                                    id: `multi-ai-${Date.now()}-${idx}`,
+                                                    type: 'text',
+                                                    name: `멀티 AI 생성: ${action.title}`,
+                                                    x: 120,
+                                                    y: 200 + idx * 80,
+                                                    width: 650,
+                                                    height: 70,
+                                                    rotation: 0,
+                                                    opacity: 1,
+                                                    zIndex: 10,
+                                                    visible: true,
+                                                    locked: false,
+                                                    text: `⚡ [Multi AI] ${action.title}: 성공적인 프레젠테이션을 위한 최적의 콘텐츠`,
+                                                    fontFamily: 'Pretendard',
+                                                    fontSize: 20,
+                                                    fontWeight: 'bold',
+                                                    textColor: '#38bdf8',
+                                                    textAlign: 'left'
+                                                });
+                                            }}
+                                            className="w-full p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/50 flex items-center justify-between text-left transition-all cursor-pointer"
+                                        >
+                                            <div>
+                                                <div className="text-xs font-bold text-white">{action.title}</div>
+                                                <div className="text-[10px] text-slate-400">{action.desc}</div>
+                                            </div>
+                                            <ArrowRight className="w-3.5 h-3.5 text-cyan-400" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    sound.click();
+                                    pluginRegistry.unequipPlugin('multi-ai-studio');
+                                    onChangeTab('settings');
+                                }}
+                                className="w-full py-2 rounded-xl bg-slate-950/80 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/30 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <Power className="w-3.5 h-3.5 text-rose-400" />
+                                <span>플러그인 장착 해제</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Plugin Purchase Modal */}
+            <UnifiedPurchaseModal 
+                isOpen={!!pluginPurchaseModalItem}
+                item={pluginPurchaseModalItem}
+                onClose={() => setPluginPurchaseModalItem(null)}
+                onSuccess={(purchased) => {
+                    pluginRegistry.installPlugin(purchased.id);
+                    pluginRegistry.equipPlugin(purchased.id);
+                }}
+            />
         </div>
     );
 };

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Home, Palette, Film, LayoutTemplate, FolderKanban, 
-    User, Settings, Monitor, Sparkles, ChevronLeft, ChevronRight, Users 
+    User, Settings, Monitor, Sparkles, ChevronLeft, ChevronRight, Users, Blocks 
 } from 'lucide-react';
 import { CanvasAppView } from '../../types/canvasApp';
 import { sound } from '../../utils/sound';
+import { pluginRegistry } from '../../plugins/PluginRegistry';
 
 interface CanvasSidebarProps {
     currentView: CanvasAppView;
@@ -25,6 +26,17 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
     isCollapsed,
     onToggleCollapse
 }) => {
+    const [equippedCount, setEquippedCount] = useState<number>(() => {
+        return pluginRegistry.getEquippedPlugins().length;
+    });
+
+    useEffect(() => {
+        const unsubscribe = pluginRegistry.subscribe(() => {
+            setEquippedCount(pluginRegistry.getEquippedPlugins().length);
+        });
+        return unsubscribe;
+    }, []);
+
     const navItems = [
         {
             id: 'CANVAS_HOME' as CanvasAppView,
@@ -83,6 +95,14 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
             icon: Users,
             color: 'text-cyan-400',
             action: () => onNavigate('CANVAS_MULTI')
+        },
+        {
+            id: 'CANVAS_PLUGINS' as CanvasAppView,
+            label: '플러그인',
+            icon: Blocks,
+            color: 'text-indigo-400',
+            badge: equippedCount > 0 ? `${equippedCount}개 장착` : '4개',
+            action: () => onNavigate('CANVAS_PLUGINS')
         },
     ];
 

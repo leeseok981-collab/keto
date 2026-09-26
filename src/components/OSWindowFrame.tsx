@@ -12,6 +12,7 @@ interface OSWindowFrameProps {
     defaultHeight?: string | number;
     defaultX?: number;
     defaultY?: number;
+    defaultMaximized?: boolean;
     theme?: 'windows' | 'mac';
     className?: string;
     headerExtra?: React.ReactNode;
@@ -27,11 +28,12 @@ export const OSWindowFrame: React.FC<OSWindowFrameProps> = ({
     defaultHeight = '580px',
     defaultX,
     defaultY,
+    defaultMaximized = false,
     theme = 'windows',
     className = '',
     headerExtra
 }) => {
-    const [isMaximized, setIsMaximized] = useState(false);
+    const [isMaximized, setIsMaximized] = useState(defaultMaximized);
     const [isMinimized, setIsMinimized] = useState(false);
 
     // Initial centered or random offset position
@@ -144,7 +146,7 @@ export const OSWindowFrame: React.FC<OSWindowFrameProps> = ({
                 <div className="flex items-center gap-2">
                     {headerExtra}
 
-                    <div className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-white/10">
+                    <div className="flex items-center gap-1 bg-slate-800/90 p-1 rounded-xl border border-white/15 shadow-sm">
                         {/* 최소화 버튼 */}
                         <button
                             onClick={(e) => {
@@ -153,7 +155,7 @@ export const OSWindowFrame: React.FC<OSWindowFrameProps> = ({
                                 if (onMinimize) onMinimize();
                                 else setIsMinimized(true);
                             }}
-                            className="p-1 hover:bg-white/15 text-slate-300 hover:text-white rounded transition-colors cursor-pointer"
+                            className="p-1.5 hover:bg-white/20 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center justify-center"
                             title="최소화 (-)"
                         >
                             <Minus className="w-3.5 h-3.5" />
@@ -166,7 +168,7 @@ export const OSWindowFrame: React.FC<OSWindowFrameProps> = ({
                                 sound.click();
                                 setIsMaximized(prev => !prev);
                             }}
-                            className="p-1 hover:bg-white/15 text-slate-300 hover:text-white rounded transition-colors cursor-pointer"
+                            className="p-1.5 hover:bg-white/20 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center justify-center"
                             title={isMaximized ? "이전 크기로 복원" : "전체 화면 (□)"}
                         >
                             {isMaximized ? <Copy className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
@@ -179,8 +181,8 @@ export const OSWindowFrame: React.FC<OSWindowFrameProps> = ({
                                 sound.wrong();
                                 onClose();
                             }}
-                            className="p-1 hover:bg-rose-600 text-slate-300 hover:text-white rounded transition-colors cursor-pointer"
-                            title="닫기 (X)"
+                            className="p-1.5 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                            title="닫기 (✕)"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
     CanvasObject, CanvasPage, CanvasProject, PresetCanvasSize, 
     CANVAS_PRESET_SIZES, SubtitleItem, VideoClipItem, VideoDebugInfo, MediaAsset 
@@ -16,6 +16,15 @@ import { CatvasVideoDebugger } from './catvas/CatvasVideoDebugger';
 import { catvasAiService } from '../services/catvasAiService';
 import { CatvasMediaSplitter } from '../utils/catvasMediaSplitter';
 import { sound } from '../utils/sound';
+import { pluginRegistry } from '../plugins/PluginRegistry';
+import { createCanvasPluginAPI } from '../plugins/createCanvasPluginAPI';
+import { PluginManagerModal } from '../plugins/components/PluginManagerModal';
+import { PluginPermissionModal } from '../plugins/components/PluginPermissionModal';
+import { AIProjectStudioModal } from '../plugins/components/AIProjectStudio/AIProjectStudioModal';
+import { DataStudioModal } from '../plugins/components/DataStudio/DataStudioModal';
+import { DesignAssistantModal } from '../plugins/components/DesignAssistant/DesignAssistantModal';
+import { MultiAIStudioModal } from '../plugins/components/MultiAIStudio/MultiAIStudioModal';
+import { PluginManifest } from '../plugins/types';
 
 interface CatvasEditorProps {
     onClose: () => void;
@@ -140,6 +149,12 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({
     const [isFullscreenPresentation, setIsFullscreenPresentation] = useState(false);
     const [videoDebugInfo, setVideoDebugInfo] = useState<VideoDebugInfo | null>(null);
     const [isVideoDebuggerOpen, setIsVideoDebuggerOpen] = useState(false);
+
+    // Plugin System State
+    const [isPluginManagerOpen, setIsPluginManagerOpen] = useState(false);
+    const [activePluginModal, setActivePluginModal] = useState<string | null>(null);
+    const [pluginToAuthorize, setPluginToAuthorize] = useState<PluginManifest | null>(null);
+    const [pluginNotification, setPluginNotification] = useState<{ message: string; type: string } | null>(null);
 
     // Global F2 shortcut to toggle Fullscreen Presentation
     useEffect(() => {
@@ -282,6 +297,37 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({
             onSaveToDesktop(`${project.name}.catvas`, JSON.stringify(project), undefined, 'catvas');
         }
         alert(`💾 프로젝트 [${project.name}]이(가) 안전하게 저장되었습니다!`);
+    };
+
+    // Plugin API Context instance
+    const pluginApi = useMemo(() => {
+        return createCanvasPluginAPI({
+            project,
+            selectedId,
+            currentPageIndex,
+            onRecordChange: recordChange,
+            onSelectId: (id) => setSelectedId(id),
+            onSaveProject: handleSaveProject,
+            onUndo: handleUndo,
+            onRedo: handleRedo,
+            onShowNotification: (message, type) => {
+                setPluginNotification({ message, type: type || 'info' });
+                setTimeout(() => setPluginNotification(null), 3500);
+            }
+        }, (activePluginModal as any) || 'ai-project-studio');
+    }, [project, selectedId, currentPageIndex, recordChange, activePluginModal, historyIndex]);
+
+    const handleOpenPlugin = (pluginId: string) => {
+        sound.click();
+        const manifest = pluginRegistry.getPlugin(pluginId);
+        if (!manifest) return;
+
+        if (!pluginRegistry.isPluginEnabled(pluginId)) {
+            setPluginToAuthorize(manifest);
+            return;
+        }
+
+        setActivePluginModal(pluginId);
     };
 
     // New Blank Project
@@ -1000,6 +1046,63 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({
                 }}
                 user={user}
                 onLogin={onLogin}
+                onOpenPluginManager={() => setIsPluginManagerOpen(true)}
+                onOpenPlugin={handleOpenPlugin}
+                onAddText={() => {
+                    handleAddObject({
+                        id: `txt-${Date.now()}`,
+                        type: 'text',
+                        name: '새 텍스트 상자',
+                        x: (project.canvas.width - 400) / 2,
+                        y: (project.canvas.height - 100) / 2,
+                        width: 400,
+                        height: 80,
+                        rotation: 0,
+                        opacity: 1,
+                        zIndex: activePage.objects.length + 1,
+                        visible: true,
+                        locked: false,
+                        text: '새 텍스트 내용',
+                        fontFamily: 'Pretendard',
+                        fontSize: 32,
+                        fontWeight: 'bold',
+                        textColor: '#ffffff',
+                        textAlign: 'center'
+                    });
+                }}
+                onAddShape={(shapeType) => {
+                    handleAddObject({
+                        id: `shape-${Date.now()}`,
+                        type: 'shape',
+                        shapeType: shapeType === 'circle' ? 'circle' : 'rect',
+                        name: shapeType === 'circle' ? '원형 도형' : '사각형 도형',
+                        x: (project.canvas.width - 240) / 2,
+                        y: (project.canvas.height - 240) / 2,
+                        width: 240,
+                        height: 240,
+                        rotation: 0,
+                        opacity: 1,
+                        zIndex: activePage.objects.length + 1,
+                        visible: true,
+                        locked: false,
+                        fillColor: '#6366f1',
+                        strokeColor: '#818cf8',
+                        strokeWidth: 2,
+                        borderRadius: shapeType === 'circle' ? 999 : 12
+                    });
+                }}
+                onDeleteSelected={() => {
+                    if (selectedId) handleDeleteObject(selectedId);
+                }}
+                onDuplicateSelected={() => {
+                    if (selectedId) handleDuplicateObject(selectedId);
+                }}
+                onBringForward={() => {
+                    if (selectedId) handleReorderObject(selectedId, 'up');
+                }}
+                onSendBackward={() => {
+                    if (selectedId) handleReorderObject(selectedId, 'down');
+                }}
             />
 
             {/* 2. MIDDLE WORKSPACE AREA */}
@@ -1011,6 +1114,8 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({
                         setActiveSidebarTab(tab);
                         setIsDrawingMode(tab === 'draw');
                     }}
+                    onOpenPlugin={handleOpenPlugin}
+                    onOpenPluginManager={() => setIsPluginManagerOpen(true)}
                     project={project}
                     recentProjects={savedProjectsList}
                     onAddObject={handleAddObject}
@@ -1253,6 +1358,71 @@ export const CatvasEditor: React.FC<CatvasEditorProps> = ({
                 onClose={() => setIsVideoDebuggerOpen(false)}
                 debugInfo={videoDebugInfo}
             />
+
+            {/* 🔌 8. CANVAS PLUGIN SYSTEM MODALS */}
+            {/* Plugin Manager */}
+            <PluginManagerModal
+                isOpen={isPluginManagerOpen}
+                onClose={() => setIsPluginManagerOpen(false)}
+                onLaunchPlugin={handleOpenPlugin}
+            />
+
+            {/* Plugin Permission Authorization Modal */}
+            {pluginToAuthorize && (
+                <PluginPermissionModal
+                    isOpen={!!pluginToAuthorize}
+                    plugin={pluginToAuthorize}
+                    onConfirm={() => {
+                        pluginRegistry.installPlugin(pluginToAuthorize.id);
+                        const targetId = pluginToAuthorize.id;
+                        setPluginToAuthorize(null);
+                        setActivePluginModal(targetId);
+                    }}
+                    onCancel={() => setPluginToAuthorize(null)}
+                />
+            )}
+
+            {/* Plugin 1: AI Project Studio */}
+            <AIProjectStudioModal
+                isOpen={activePluginModal === 'ai-project-studio'}
+                onClose={() => setActivePluginModal(null)}
+                pluginApi={pluginApi}
+            />
+
+            {/* Plugin 2: Data Studio */}
+            <DataStudioModal
+                isOpen={activePluginModal === 'data-studio'}
+                onClose={() => setActivePluginModal(null)}
+                pluginApi={pluginApi}
+            />
+
+            {/* Plugin 3: AI Design Assistant */}
+            <DesignAssistantModal
+                isOpen={activePluginModal === 'ai-design-assistant'}
+                onClose={() => setActivePluginModal(null)}
+                pluginApi={pluginApi}
+            />
+
+            {/* Plugin 4: Multi AI Studio */}
+            <MultiAIStudioModal
+                isOpen={activePluginModal === 'multi-ai-studio'}
+                onClose={() => setActivePluginModal(null)}
+                pluginApi={pluginApi}
+                onOpenPlugin={handleOpenPlugin}
+            />
+
+            {/* Plugin Notification Toast */}
+            {pluginNotification && (
+                <div className={`fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold animate-in slide-in-from-bottom-3 duration-200 flex items-center gap-2 ${
+                    pluginNotification.type === 'error'
+                        ? 'bg-rose-950 border-rose-500 text-rose-200'
+                        : pluginNotification.type === 'warning'
+                        ? 'bg-amber-950 border-amber-500 text-amber-200'
+                        : 'bg-indigo-950 border-indigo-500 text-indigo-200'
+                }`}>
+                    <span>{pluginNotification.message}</span>
+                </div>
+            )}
         </div>
     );
 };

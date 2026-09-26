@@ -16,6 +16,8 @@ import { DEFAULT_WINDOWS_WALLPAPER, DEFAULT_MAC_WALLPAPER } from './WallpaperMod
 import { LANGUAGES_100 } from '../data/languages';
 import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
+import { setAppLanguage, getCurrentLanguage } from '../utils/i18n';
+import { dualMonitorSync, DualMonitorState } from '../utils/dualMonitorSync';
 
 export type SettingsCategory = 
     | 'mouse' 
@@ -38,6 +40,9 @@ export interface SystemSettings {
     doNotDisturb: boolean;
     autoLockMinutes: number; // 0 (disabled), 1, 3, 5, 10, 30
     accentColor: string; // 'cyan' | 'purple' | 'emerald' | 'rose' | 'amber'
+    dualMonitorEnabled?: boolean;
+    dualMonitorMode?: 'split' | 'popup';
+    dualMonitorSubApp?: 'stocks' | 'catchon' | 'music' | 'notepad' | 'canvas' | 'widgets';
 }
 
 export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
@@ -48,7 +53,10 @@ export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
     notificationSound: true,
     doNotDisturb: false,
     autoLockMinutes: 0,
-    accentColor: 'cyan'
+    accentColor: 'cyan',
+    dualMonitorEnabled: false,
+    dualMonitorMode: 'split',
+    dualMonitorSubApp: 'stocks'
 };
 
 interface SettingsAppProps {
@@ -727,6 +735,134 @@ export const SettingsApp: React.FC<SettingsAppProps> = ({
                                         <span>전체화면 전환</span>
                                     </button>
                                 </div>
+
+                                {/* 🖥️🖥️ 듀얼 모니터 (2모니터) 설정 */}
+                                <div className="p-5 bg-gradient-to-br from-cyan-950/40 via-slate-850 to-slate-900 rounded-2xl border border-cyan-500/30 space-y-4 shadow-xl">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold">
+                                                <Monitor className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                                                    🖥️🖥️ 듀얼 모니터 (2모니터) 플레이 설정
+                                                </h4>
+                                                <p className="text-xs text-cyan-200/80 mt-0.5">
+                                                    실제 2개의 물리 모니터 또는 가상 화면 분할로 멀티 디스플레이 운영이 가능합니다.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                className="sr-only peer" 
+                                                checked={!!systemSettings.dualMonitorEnabled} 
+                                                onChange={() => {
+                                                    sound.click();
+                                                    const nextVal = !systemSettings.dualMonitorEnabled;
+                                                    onUpdateSystemSettings({
+                                                        ...systemSettings,
+                                                        dualMonitorEnabled: nextVal
+                                                    });
+                                                    dualMonitorSync.updateState({ enabled: nextVal });
+                                                }} 
+                                            />
+                                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                                        </label>
+                                    </div>
+
+                                    {systemSettings.dualMonitorEnabled && (
+                                        <div className="space-y-4 pt-2 border-t border-slate-700/80">
+                                            {/* Mode Selector */}
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-300 block">모니터 작동 모드 선택</label>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            sound.click();
+                                                            onUpdateSystemSettings({
+                                                                ...systemSettings,
+                                                                dualMonitorMode: 'split'
+                                                            });
+                                                            dualMonitorSync.updateState({ mode: 'split' });
+                                                        }}
+                                                        className={`p-3 rounded-xl border text-left transition ${
+                                                            systemSettings.dualMonitorMode === 'split' || !systemSettings.dualMonitorMode
+                                                                ? 'bg-cyan-950/60 border-cyan-400 text-cyan-200 ring-2 ring-cyan-500/30'
+                                                                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750'
+                                                        }`}
+                                                    >
+                                                        <div className="font-bold text-xs text-white">가상 분할 화면 모드 (Split)</div>
+                                                        <div className="text-[10px] text-slate-400 mt-1">
+                                                            단일 창 내부를 메인 모니터와 2번 서브 모니터로 나눕니다.
+                                                        </div>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            sound.click();
+                                                            onUpdateSystemSettings({
+                                                                ...systemSettings,
+                                                                dualMonitorMode: 'popup'
+                                                            });
+                                                            dualMonitorSync.updateState({ mode: 'popup' });
+                                                            dualMonitorSync.openSecondaryWindow();
+                                                        }}
+                                                        className={`p-3 rounded-xl border text-left transition ${
+                                                            systemSettings.dualMonitorMode === 'popup'
+                                                                ? 'bg-indigo-950/60 border-indigo-400 text-indigo-200 ring-2 ring-indigo-500/30'
+                                                                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750'
+                                                        }`}
+                                                    >
+                                                        <div className="font-bold text-xs text-white flex items-center justify-between">
+                                                            <span>실제 2번 모니터 창 팝업 (Popup)</span>
+                                                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 mt-1">
+                                                            독립 팝업 창을 띄워 실제 물리 2번 모니터로 이동해 플레이합니다!
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Sub App Selector */}
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-300 block">2번 모니터 전용 실행 서브 앱</label>
+                                                <select
+                                                    value={systemSettings.dualMonitorSubApp || 'stocks'}
+                                                    onChange={(e) => {
+                                                        const app = e.target.value as any;
+                                                        sound.click();
+                                                        onUpdateSystemSettings({
+                                                            ...systemSettings,
+                                                            dualMonitorSubApp: app
+                                                        });
+                                                        dualMonitorSync.updateState({ subApp: app });
+                                                    }}
+                                                    className="w-full bg-slate-800 text-xs text-white p-2.5 rounded-xl outline-none border border-slate-700 font-bold"
+                                                >
+                                                    <option value="stocks">📈 가상 증시 실시간 시세 전광판</option>
+                                                    <option value="catchon">🔍 캐트 브라우저 & 검색</option>
+                                                    <option value="music">🎵 냥이 뮤직 플레이어</option>
+                                                    <option value="widgets">📊 서브 디스플레이 상태 대시보드</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Action to trigger secondary popup window directly */}
+                                            <button
+                                                onClick={() => {
+                                                    sound.fanfare();
+                                                    dualMonitorSync.openSecondaryWindow();
+                                                }}
+                                                className="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-xl text-xs font-extrabold transition shadow-lg shadow-cyan-950 flex items-center justify-center gap-2"
+                                            >
+                                                <Sparkles className="w-4 h-4 text-amber-300" />
+                                                <span>실제 2번 모니터 팝업 창 즉시 열기 (독립 창 연동)</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -1082,7 +1218,7 @@ export const SettingsApp: React.FC<SettingsAppProps> = ({
                                                 onClick={() => {
                                                     sound.buy();
                                                     setSelectedLang(lang.code);
-                                                    localStorage.setItem('catchos_selected_lang', lang.code);
+                                                    setAppLanguage(lang.code);
                                                     setLangSavedMsg(`'${lang.nativeName}' 언어로 변경되었습니다!`);
                                                     setTimeout(() => setLangSavedMsg(''), 3000);
                                                 }}

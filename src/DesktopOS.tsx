@@ -9,8 +9,15 @@ import {
     CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
     FolderPlus, Monitor, Video, ShieldCheck, Calculator, Cat,
     PlaySquare, Code, Apple, Layout, Scissors, Palette, MousePointer, Sliders,
-    Camera, Bot, Plus, Settings, Lock, CornerDownLeft
+    Camera, Bot, Plus, Settings, Lock, CornerDownLeft, GraduationCap,
+    Compass, Activity, Flame, Fish, Trees, Utensils, BookOpen, Tv, Smartphone,
+    Zap, Swords, Shield, Grid, Navigation, Wallet
 } from 'lucide-react';
+import { KetoBankApp } from './components/KetoBankApp';
+import { CailusAppWindow } from './components/CailusAppWindow';
+import { SecondaryMonitorView } from './components/SecondaryMonitorView';
+import { dualMonitorSync } from './utils/dualMonitorSync';
+import { walletService, formatKRWSymbol } from './services/walletService';
 import JSZip from 'jszip';
 import { sound, setMasterVolume, getMasterVolume } from './utils/sound';
 import { CatchOnSearch } from './components/CatchOnSearch';
@@ -45,8 +52,36 @@ import { TerminalApp } from './components/TerminalApp';
 import { CatvasProModal } from './components/catvas/CatvasProModal';
 import { SystemHelpModal } from './components/SystemHelpModal';
 import { OSWindowFrame } from './components/OSWindowFrame';
+import { AILearningApp } from './components/AILearningApp';
+import { CatoreStoreApp } from './components/CatoreStoreApp';
+import { CackingApp } from './components/CackingApp';
+import { BrowserApp } from './components/BrowserApp';
+import { PhotosApp } from './components/PhotosApp';
+import { TaskManagerApp } from './components/TaskManagerApp';
+import { ClockApp } from './components/ClockApp';
+import { PowerApp } from './components/PowerApp';
+import { appRegistry, OFFICIAL_APP_CATALOG } from './services/appRegistry';
+import { t, getCurrentLanguage, SupportedLanguage } from './utils/i18n';
+import { BlueTower } from './BlueTower';
+import SurvivorGame from './SurvivorGame';
+import { FishingGame } from './FishingGame';
+import { GardenGame } from './GardenGame';
+import { EatClickerGame } from './EatClickerGame';
+import BlogSystem from './BlogSystem';
+import { ChannelView } from './ChannelSystem';
+import { KETOPhone } from './components/KETOPhone';
 import { SAMPLE_TRACKS_100, Track } from './data/musicTracks';
 import { loadVFSNodes, saveVFSNodes, VFSNode, vfsToDesktopItems } from './utils/vfs';
+
+import { GameCenterApp } from './components/GameCenterApp';
+import { SpeedKeyboardEscape } from './components/games/SpeedKeyboardEscape';
+import { PixelSurvivor } from './components/games/PixelSurvivor';
+import { NeonRunner } from './components/games/NeonRunner';
+import { DungeonCore } from './components/games/DungeonCore';
+import { MiniTycoon } from './components/games/MiniTycoon';
+import { BlockPuzzle } from './components/games/BlockPuzzle';
+import { RhythmBeat } from './components/games/RhythmBeat';
+import { SpaceDefender } from './components/games/SpaceDefender';
 
 export type DesktopItemType = 'app' | 'text' | 'file' | 'video' | 'image' | 'audio' | 'game' | 'zip' | 'folder';
 
@@ -54,7 +89,7 @@ export interface DesktopItem {
     id: string;
     name: string;
     type: DesktopItemType;
-    appType?: 'catto' | 'notepad' | 'catchon' | 'calculator' | 'catvas' | 'screenshot' | 'paint' | 'aichat' | 'phone' | 'trash' | 'settings' | 'music' | 'calendar' | 'terminal';
+    appType?: string;
     content?: string;
     fileUrl?: string;
     size?: string;
@@ -74,58 +109,181 @@ export const isPermanentItem = (item?: DesktopItem | null) => {
     return item.id === 'app-trash' || item.appType === 'trash';
 };
 
-// 바탕화면 기본 앱: 메모장, 계산기, 캐치온, 캐버스 (설정 앱은 기본 바탕화면에서 제외)
-const DEFAULT_DESKTOP_ITEMS: DesktopItem[] = [
-    {
-        id: 'app-notepad',
-        name: '메모장',
-        type: 'app',
-        appType: 'notepad',
-        updatedAt: '2026-09-18'
-    },
-    {
-        id: 'app-calculator',
-        name: '계산기',
-        type: 'app',
-        appType: 'calculator',
-        updatedAt: '2026-09-18'
-    },
-    {
-        id: 'app-catchon',
-        name: '캐치온',
-        type: 'app',
-        appType: 'catchon',
-        updatedAt: '2026-09-18'
-    },
-    {
-        id: 'app-catto',
-        name: '캐트 (KETO 게임)',
-        type: 'app',
-        appType: 'catto',
-        updatedAt: '2026-09-20'
-    },
-    {
-        id: 'app-aichat',
-        name: '캐트 AI',
-        type: 'app',
-        appType: 'aichat',
-        updatedAt: '2026-09-20'
-    },
-    {
-        id: 'app-catvas',
-        name: '캐버스',
-        type: 'app',
-        appType: 'catvas',
-        updatedAt: '2026-09-19'
-    },
-    {
-        id: 'app-trash',
-        name: '휴지통',
-        type: 'app',
-        appType: 'trash',
-        updatedAt: '2026-09-20'
+// OS 테마 및 언어에 따른 기본 설치 앱 목록 생성
+export const getSystemCoreApps = (theme: 'windows' | 'mac', lang: SupportedLanguage): DesktopItem[] => {
+    const isMac = theme === 'mac';
+    const now = '2026-09-25';
+
+    return [
+        {
+            id: 'app-explorer',
+            name: isMac ? t('os.finder', 'Finder') : t('os.fileExplorer', '파일 탐색기'),
+            type: 'app',
+            appType: 'explorer',
+            updatedAt: now
+        },
+        {
+            id: 'app-settings',
+            name: isMac ? t('os.systemSettings', '시스템 설정') : t('os.settings', '설정'),
+            type: 'app',
+            appType: 'settings',
+            updatedAt: now
+        },
+        {
+            id: 'app-calculator',
+            name: t('os.calculator', '계산기'),
+            type: 'app',
+            appType: 'calculator',
+            updatedAt: now
+        },
+        {
+            id: 'app-notepad',
+            name: isMac ? t('os.textedit', '텍스트 편집기') : t('os.notepad', '메모장'),
+            type: 'app',
+            appType: 'notepad',
+            updatedAt: now
+        },
+        {
+            id: 'app-browser',
+            name: isMac ? t('os.safari', 'Safari') : t('os.browser', '브라우저'),
+            type: 'app',
+            appType: 'browser',
+            updatedAt: now
+        },
+        {
+            id: 'app-photos',
+            name: t('os.photos', '사진'),
+            type: 'app',
+            appType: 'photos',
+            updatedAt: now
+        },
+        {
+            id: 'app-calendar',
+            name: t('os.calendar', '캘린더'),
+            type: 'app',
+            appType: 'calendar',
+            updatedAt: now
+        },
+        {
+            id: 'app-terminal',
+            name: t('os.terminal', '터미널'),
+            type: 'app',
+            appType: 'terminal',
+            updatedAt: now
+        },
+        {
+            id: 'app-screenshot',
+            name: isMac ? t('os.screenshot', '스크린샷') : t('os.captureTool', '캡처 도구'),
+            type: 'app',
+            appType: 'screenshot',
+            updatedAt: now
+        },
+        {
+            id: 'app-taskmgr',
+            name: isMac ? t('os.activityMonitor', '활성 상태 보기') : t('os.taskManager', '작업 관리자'),
+            type: 'app',
+            appType: 'taskmgr',
+            updatedAt: now
+        },
+        {
+            id: 'app-clock',
+            name: t('os.clock', '시계'),
+            type: 'app',
+            appType: 'clock',
+            updatedAt: now
+        },
+        {
+            id: 'app-trash',
+            name: t('os.trash', '휴지통'),
+            type: 'app',
+            appType: 'trash',
+            updatedAt: now
+        },
+        {
+            id: 'app-power',
+            name: t('os.power', '전원'),
+            type: 'app',
+            appType: 'power',
+            updatedAt: now
+        },
+        // 공통 필수 앱
+        {
+            id: 'app-catchon',
+            name: t('os.catchon', '캐치온'),
+            type: 'app',
+            appType: 'catchon',
+            updatedAt: now
+        },
+        {
+            id: 'app-catore',
+            name: t('os.catore', '캐토어'),
+            type: 'app',
+            appType: 'catore',
+            updatedAt: now
+        }
+    ];
+};
+
+// 기본 바탕화면 아이템 생성 (요청 사항: 기본 상태에서는 휴지통, 브라우저, 설정만 배치)
+export const getDefaultDesktopApps = (
+    themeParam: 'windows' | 'mac',
+    langParam: SupportedLanguage
+): DesktopItem[] => {
+    const isMac = themeParam === 'mac';
+    const now = '2026-09-25';
+
+    return [
+        {
+            id: 'app-trash',
+            name: t('os.trash', '휴지통'),
+            type: 'app',
+            appType: 'trash',
+            updatedAt: now
+        },
+        {
+            id: 'app-browser',
+            name: isMac ? t('os.safari', 'Safari') : t('os.browser', '브라우저'),
+            type: 'app',
+            appType: 'browser',
+            updatedAt: now
+        },
+        {
+            id: 'app-settings',
+            name: isMac ? t('os.systemSettings', '시스템 설정') : t('os.settings', '설정'),
+            type: 'app',
+            appType: 'settings',
+            updatedAt: now
+        },
+        {
+            id: 'app-keto-bank',
+            name: 'KETO Bank',
+            type: 'app',
+            appType: 'ketoBank',
+            updatedAt: now
+        }
+    ];
+};
+
+export const generateAllDesktopItems = (
+    themeParam: 'windows' | 'mac', 
+    langParam: SupportedLanguage, 
+    existingUserItems: DesktopItem[] = []
+): DesktopItem[] => {
+    const defaultApps = getDefaultDesktopApps(themeParam, langParam);
+    if (!existingUserItems || existingUserItems.length === 0) {
+        return defaultApps;
     }
-];
+
+    // Combine default apps with user added desktop shortcuts and user files
+    const result = [...existingUserItems];
+    defaultApps.forEach(def => {
+        if (!result.some(r => r.appType === def.appType || r.id === def.id)) {
+            result.unshift(def);
+        }
+    });
+
+    return result;
+};
 
 export const downloadToWindows = (filename: string, content: string | Blob) => {
     const blob = typeof content === 'string' ? new Blob([content], { type: 'text/plain;charset=utf-8' }) : content;
@@ -164,93 +322,121 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     onOpenCustomAuth,
     onLogout
 }) => {
-    // Desktop items state (Strictly persisted in localStorage)
+    // Desktop Theme: 'windows' | 'mac'
+    const [theme, setTheme] = useState<'windows' | 'mac'>(() => {
+        try {
+            const saved = localStorage.getItem('desktop_os_theme');
+            return saved === 'mac' ? 'mac' : 'windows';
+        } catch { return 'windows'; }
+    });
+
+    // Reactive Current Language State (Global i18n Sync)
+    const [currentLang, setCurrentLang] = useState<SupportedLanguage>(() => getCurrentLanguage());
+
+    // Desktop items state (Strictly persisted and initialized with Trash, Browser, Settings)
     const [items, setItems] = useState<DesktopItem[]>(() => {
         try {
-            const saved = localStorage.getItem('desktop_os_items_v5') || localStorage.getItem('desktop_os_items_v4');
-                const coreApps: DesktopItem[] = [
-                    {
-                        id: 'app-notepad',
-                        name: '메모장',
-                        type: 'app',
-                        appType: 'notepad',
-                        updatedAt: '2026-09-18'
-                    },
-                    {
-                        id: 'app-calculator',
-                        name: '계산기',
-                        type: 'app',
-                        appType: 'calculator',
-                        updatedAt: '2026-09-18'
-                    },
-                    {
-                        id: 'app-catchon',
-                        name: '캐치온',
-                        type: 'app',
-                        appType: 'catchon',
-                        updatedAt: '2026-09-18'
-                    },
-                    {
-                        id: 'app-catto',
-                        name: '캐트',
-                        type: 'app',
-                        appType: 'catto',
-                        updatedAt: '2026-09-20'
-                    },
-                    {
-                        id: 'app-catvas',
-                        name: '캐버스',
-                        type: 'app',
-                        appType: 'catvas',
-                        updatedAt: '2026-09-19'
-                    },
-                    {
-                        id: 'app-trash',
-                        name: '휴지통',
-                        type: 'app',
-                        appType: 'trash',
-                        updatedAt: '2026-09-20'
-                    },
-                    {
-                        id: 'app-settings',
-                        name: '설정',
-                        type: 'app',
-                        appType: 'settings',
-                        updatedAt: '2026-09-20'
-                    }
-                ];
-
-            try {
-                localStorage.removeItem('kainc_rpg_saved_account_v1');
-            } catch (e) {}
-
+            const saved = localStorage.getItem('desktop_os_items_v8');
             if (saved) {
-                let parsed: DesktopItem[] = JSON.parse(saved);
-                // 구버전 아이템 정리, 캐튜 삭제
-                parsed = parsed
-                    .filter(it => 
-                        it.id !== 'app-capture' && 
-                        (it as any).appType !== 'capture' && 
-                        it.id !== 'app-speed2' && 
-                        it.id !== 'app-karaoke' && 
-                        (it as any).appType !== 'karaoke' &&
-                        it.id !== 'app-kainc-rpg' &&
-                        (it as any).appType !== 'rpg' &&
-                        it.name !== '카인크 RPG' &&
-                        it.id !== 'app-catube' &&
-                        (it as any).appType !== 'catube' &&
-                        it.name !== '캐튜'
-                    );
-                
-                // 사용자가 만든 다른 파일이나 폴더들 보존
-                const userCreatedItems = parsed.filter(it => !coreApps.some(ca => ca.id === it.id));
-                return [...coreApps, ...userCreatedItems];
+                const parsed: DesktopItem[] = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                }
             }
         } catch (e) {
             console.error(e);
         }
-        return DEFAULT_DESKTOP_ITEMS;
+        return getDefaultDesktopApps(
+            localStorage.getItem('desktop_os_theme') === 'mac' ? 'mac' : 'windows',
+            getCurrentLanguage()
+        );
     });
+
+    // Save items to localStorage whenever they change
+    useEffect(() => {
+        try {
+            localStorage.setItem('desktop_os_items_v8', JSON.stringify(items));
+        } catch (e) {
+            console.error(e);
+        }
+    }, [items]);
+
+    // Check if an app shortcut exists on desktop
+    const isAppOnDesktop = (appType: string) => {
+        return items.some(i => i.appType === appType && !i.folderId);
+    };
+
+    // Add / Remove app shortcut to/from desktop
+    const handleToggleDesktopShortcut = (appType: string, appName: string) => {
+        sound.click();
+        if (isAppOnDesktop(appType)) {
+            if (appType === 'trash') {
+                sound.wrong();
+                alert('휴지통은 기본 필수 시스템 앱이므로 바탕화면에서 삭제할 수 없습니다.');
+                return;
+            }
+            setItems(prev => prev.filter(i => i.appType !== appType));
+        } else {
+            const newItem: DesktopItem = {
+                id: `app-shortcut-${appType}-${Date.now()}`,
+                name: appName,
+                type: 'app',
+                appType: appType,
+                updatedAt: new Date().toLocaleDateString()
+            };
+            setItems(prev => [...prev, newItem]);
+        }
+    };
+
+    // Re-sync desktop item names whenever language or theme changes
+    useEffect(() => {
+        const handleLangChanged = (e: any) => {
+            const newLang = (e.detail?.lang as SupportedLanguage) || getCurrentLanguage();
+            setCurrentLang(newLang);
+            const isMac = theme === 'mac';
+            setItems(prev => prev.map(item => {
+                if (item.type === 'app') {
+                    if (item.appType === 'trash' || item.id === 'app-trash') {
+                        return { ...item, name: t('os.trash', '휴지통') };
+                    }
+                    if (item.appType === 'browser' || item.id === 'app-browser') {
+                        return { ...item, name: isMac ? t('os.safari', 'Safari') : t('os.browser', '브라우저') };
+                    }
+                    if (item.appType === 'settings' || item.id === 'app-settings') {
+                        return { ...item, name: isMac ? t('os.systemSettings', '시스템 설정') : t('os.settings', '설정') };
+                    }
+                }
+                return item;
+            }));
+        };
+
+        const handleMatrixToggle = (e: any) => {
+            setIsMatrixActive(e.detail?.active ?? true);
+        };
+
+        const handleGlitchToggle = (e: any) => {
+            setIsGlitchActive(e.detail?.active ?? true);
+        };
+
+        const handleAppUninstalled = (e: any) => {
+            const appType = e.detail?.appType;
+            if (appType) {
+                setItems(prev => prev.filter(i => i.appType !== appType));
+            }
+        };
+
+        window.addEventListener('catchos-language-changed', handleLangChanged);
+        window.addEventListener('cacking-matrix-toggle', handleMatrixToggle);
+        window.addEventListener('cacking-glitch-toggle', handleGlitchToggle);
+        window.addEventListener('catchos-app-uninstalled', handleAppUninstalled);
+
+        return () => {
+            window.removeEventListener('catchos-language-changed', handleLangChanged);
+            window.removeEventListener('cacking-matrix-toggle', handleMatrixToggle);
+            window.removeEventListener('cacking-glitch-toggle', handleGlitchToggle);
+            window.removeEventListener('catchos-app-uninstalled', handleAppUninstalled);
+        };
+    }, [theme]);
 
     // Multi-selection with Ctrl key
     const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
@@ -265,6 +451,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showCatchOn, setShowCatchOn] = useState(false);
     const [showCalculator, setShowCalculator] = useState(false);
     const [showCatvas, setShowCatvas] = useState(false);
+    const [showAILearning, setShowAILearning] = useState(false);
+    const [isAILearningMaximized, setIsAILearningMaximized] = useState(false);
+    const [isAILearningMinimized, setIsAILearningMinimized] = useState(false);
     const [showMouseSettings, setShowMouseSettings] = useState(false);
     const [showScreenshot, setShowScreenshot] = useState(false);
     const [showPaint, setShowPaint] = useState(false);
@@ -274,12 +463,58 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [settingsCategory, setSettingsCategory] = useState<SettingsCategory>('mouse');
     const [showSearchFlyout, setShowSearchFlyout] = useState(false);
 
+    // New Virtual OS Default & Special App Windows
+    const [showKetoBank, setShowKetoBank] = useState(false);
+    const [showCailusApp, setShowCailusApp] = useState(false);
+    const [taskbarBalance, setTaskbarBalance] = useState<number>(() => walletService.getBalance());
+
+    useEffect(() => {
+        const unsub = walletService.subscribe((walletData) => {
+            setTaskbarBalance(walletData.balance);
+        });
+        return () => unsub();
+    }, []);
+
+    const [showCatore, setShowCatore] = useState(false);
+    const [showCacking, setShowCacking] = useState(false);
+    const [showBrowser, setShowBrowser] = useState(false);
+    const [showPhotos, setShowPhotos] = useState(false);
+    const [showTaskManager, setShowTaskManager] = useState(false);
+    const [showClock, setShowClock] = useState(false);
+    const [showPower, setShowPower] = useState(false);
+
+    // Official Game Center & Games Window States
+    const [showGameCenter, setShowGameCenter] = useState(false);
+    const [showSpeedKeyboard, setShowSpeedKeyboard] = useState(false);
+    const [showPixelSurvivor, setShowPixelSurvivor] = useState(false);
+    const [showNeonRunner, setShowNeonRunner] = useState(false);
+    const [showDungeonCore, setShowDungeonCore] = useState(false);
+    const [showMiniTycoon, setShowMiniTycoon] = useState(false);
+    const [showBlockPuzzle, setShowBlockPuzzle] = useState(false);
+    const [showRhythmBeat, setShowRhythmBeat] = useState(false);
+    const [showSpaceDefender, setShowSpaceDefender] = useState(false);
+
+    // Helper to close any app window and cleanly return to the desktop background
+    const closeAppToDesktop = (closeStateFn: () => void) => {
+        closeStateFn();
+        setShowStartMenu(false);
+        setShowSearchFlyout(false);
+        setShowCalendarTray(false);
+        setContextMenu(null);
+        setFocusedWindow(null);
+    };
+
+    // Cyber Visual Effects States (Glitch, Matrix Rain, BSOD)
+    const [isGlitchActive, setIsGlitchActive] = useState(false);
+    const [isMatrixActive, setIsMatrixActive] = useState(false);
+    const [isBSODActive, setIsBSODActive] = useState(false);
+
     // Folder Select Modal State
     const [isFolderSelectOpen, setIsFolderSelectOpen] = useState(false);
     const [itemToMoveForFolderSelect, setItemToMoveForFolderSelect] = useState<DesktopItem | null>(null);
 
     // Focused window & taskbar context menu
-    const [focusedWindow, setFocusedWindow] = useState<string>('catvas');
+    const [focusedWindow, setFocusedWindow] = useState<string>('catore');
     const [taskbarContextMenu, setTaskbarContextMenu] = useState<{
         x: number;
         y: number;
@@ -379,13 +614,13 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showHelpModal, setShowHelpModal] = useState(false);
 
     const handleAddBalance = (amount: number) => {
-        setCattoBalance(prev => prev + amount);
+        walletService.addMoney(amount, '가상 충전 보상', 'other');
     };
 
     const handleToggleProSubscription = (subscribed: boolean) => {
         setIsProSubscribed(subscribed);
         if (subscribed) {
-            setCattoBalance(prev => Math.max(0, prev - 15000));
+            walletService.spendMoney(15000, 'KETO OS PRO 월정액 구독', 'store');
         }
     };
 
@@ -492,12 +727,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     // Power & Black Screen State (Shut down mode)
     const [isPoweredOff, setIsPoweredOff] = useState(false);
     const [isBooting, setIsBooting] = useState(false);
-
-    // Desktop Theme: 'windows' | 'mac'
-    const [theme, setTheme] = useState<'windows' | 'mac'>(() => {
-        const saved = localStorage.getItem('desktop_os_theme');
-        return saved === 'mac' ? 'mac' : 'windows';
-    });
 
     // Custom Wallpaper state (Persisted in IndexedDB & localStorage)
     const [customWallpaper, setCustomWallpaper] = useState<string | null>(() => {
@@ -718,21 +947,36 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const handleItemDoubleClick = (item: DesktopItem) => {
         if (item.type === 'app') {
             if (item.appType === 'notepad') handleOpenNotepad();
-            else if (item.appType === 'calculator') { sound.click(); setShowCalculator(true); }
-            else if (item.appType === 'catchon') {
+            else if (item.appType === 'calculator') { sound.click(); setShowCalculator(true); setFocusedWindow('calculator'); }
+            else if (item.appType === 'catchon') { sound.click(); setShowCatchOn(true); setFocusedWindow('catchon'); }
+            else if (item.appType === 'catore') { sound.click(); setShowCatore(true); setFocusedWindow('catore'); }
+            else if (item.appType === 'cacking') { sound.click(); setShowCacking(true); setFocusedWindow('cacking'); }
+            else if (item.appType === 'browser') { sound.click(); setShowBrowser(true); setFocusedWindow('browser'); }
+            else if (item.appType === 'photos') { sound.click(); setShowPhotos(true); setFocusedWindow('photos'); }
+            else if (item.appType === 'taskmgr') { sound.click(); setShowTaskManager(true); setFocusedWindow('taskmgr'); }
+            else if (item.appType === 'clock') { sound.click(); setShowClock(true); setFocusedWindow('clock'); }
+            else if (item.appType === 'power') { sound.click(); setShowPower(true); setFocusedWindow('power'); }
+            else if (item.appType === 'explorer') {
                 sound.click();
-                setShowCatchOn(true);
+                handleOpenFolder({
+                    id: 'folder-root',
+                    name: theme === 'mac' ? t('os.finder', 'Finder') : t('os.fileExplorer', '파일 탐색기'),
+                    type: 'folder',
+                    updatedAt: new Date().toLocaleDateString()
+                });
             }
             else if (item.appType === 'catto') { sound.click(); onLaunch(); }
-            else if (item.appType === 'catvas') { sound.click(); setShowCatvas(true); }
-            else if (item.appType === 'screenshot') { sound.click(); setShowScreenshot(true); }
-            else if (item.appType === 'paint') { sound.click(); setShowPaint(true); }
-            else if (item.appType === 'aichat') { sound.click(); setShowAIChat(true); }
-            else if (item.appType === 'trash' || item.id === 'app-trash') { sound.click(); setShowTrashBinApp(true); }
-            else if (item.appType === 'settings' || item.id === 'app-settings') { sound.click(); setShowSettingsApp(true); }
-            else if (item.appType === 'music' || item.id === 'app-music') { sound.click(); setIsMusicPlayerOpen(true); }
-            else if (item.appType === 'calendar' || item.id === 'app-calendar') { sound.click(); setIsCalendarAppOpen(true); }
-            else if (item.appType === 'terminal' || item.id === 'app-terminal') { sound.click(); setIsTerminalAppOpen(true); }
+            else if (item.appType === 'catvas') { sound.click(); setShowCatvas(true); setFocusedWindow('catvas'); }
+            else if (item.appType === 'ailearning' || item.id === 'app-ailearning') { sound.click(); setShowAILearning(true); setFocusedWindow('ailearning'); }
+            else if (item.appType === 'screenshot') { sound.click(); setShowScreenshot(true); setFocusedWindow('screenshot'); }
+            else if (item.appType === 'paint') { sound.click(); setShowPaint(true); setFocusedWindow('paint'); }
+            else if (item.appType === 'aichat') { sound.click(); setShowAIChat(true); setFocusedWindow('aichat'); }
+            else if (item.appType === 'trash' || item.id === 'app-trash') { sound.click(); setShowTrashBinApp(true); setFocusedWindow('trash'); }
+            else if (item.appType === 'settings' || item.id === 'app-settings') { sound.click(); setShowSettingsApp(true); setFocusedWindow('settings'); }
+            else if (item.appType === 'music' || item.id === 'app-music') { sound.click(); setIsMusicPlayerOpen(true); setFocusedWindow('music'); }
+            else if (item.appType === 'calendar' || item.id === 'app-calendar') { sound.click(); setIsCalendarAppOpen(true); setFocusedWindow('calendar'); }
+            else if (item.appType === 'terminal' || item.id === 'app-terminal') { sound.click(); setIsTerminalAppOpen(true); setFocusedWindow('terminal'); }
+            else if (item.appType === 'cailus') { sound.click(); setShowCailusApp(true); setFocusedWindow('cailus'); }
             else { sound.click(); onLaunch(); }
         } else if (item.type === 'game') {
             sound.click();
@@ -1125,14 +1369,32 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     // App launcher from global Search Flyout
     const handleLaunchAppFromSearch = (appType: string) => {
         sound.click();
-        if (appType === 'catchon') {
+        if (appType === 'ketoBank' || appType === 'ketobank' || appType === 'wallet') {
+            setShowKetoBank(true);
+        } else if (appType === 'catchon') {
             setShowCatchOn(true);
+        } else if (appType === 'catore') {
+            setShowCatore(true);
+        } else if (appType === 'cacking') {
+            setShowCacking(true);
+        } else if (appType === 'browser') {
+            setShowBrowser(true);
+        } else if (appType === 'photos') {
+            setShowPhotos(true);
+        } else if (appType === 'taskmgr') {
+            setShowTaskManager(true);
+        } else if (appType === 'clock') {
+            setShowClock(true);
+        } else if (appType === 'power') {
+            setShowPower(true);
         } else if (appType === 'calculator') {
             setShowCalculator(true);
         } else if (appType === 'notepad') {
             handleOpenNotepad();
         } else if (appType === 'catvas') {
             setShowCatvas(true);
+        } else if (appType === 'ailearning') {
+            setShowAILearning(true);
         } else if (appType === 'catto') {
             onLaunch();
         } else if (appType === 'screenshot') {
@@ -1151,6 +1413,24 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             setIsCalendarAppOpen(true);
         } else if (appType === 'terminal') {
             setIsTerminalAppOpen(true);
+        } else if (appType === 'gamecenter') {
+            setShowGameCenter(true);
+        } else if (appType === 'speedkeyboard') {
+            setShowSpeedKeyboard(true);
+        } else if (appType === 'pixelsurvivor') {
+            setShowPixelSurvivor(true);
+        } else if (appType === 'neonrunner') {
+            setShowNeonRunner(true);
+        } else if (appType === 'dungeoncore') {
+            setShowDungeonCore(true);
+        } else if (appType === 'minitycoon') {
+            setShowMiniTycoon(true);
+        } else if (appType === 'blockpuzzle') {
+            setShowBlockPuzzle(true);
+        } else if (appType === 'rhythmbeat') {
+            setShowRhythmBeat(true);
+        } else if (appType === 'spacedefender') {
+            setShowSpaceDefender(true);
         } else if (appType === 'mouse') {
             setSettingsCategory('mouse');
             setShowSettingsApp(true);
@@ -1403,7 +1683,29 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     }
 
     // Filter desktop-level items (not placed in subfolders)
-    const desktopItems = items.filter(item => !item.folderId);
+    // CRITICAL: Non-installed apps are completely excluded (no text, no icon, does not exist on desktop).
+    const coreAppTypes = [
+        'explorer', 'settings', 'calculator', 'notepad', 'browser', 
+        'photos', 'calendar', 'terminal', 'screenshot', 'taskmgr', 
+        'clock', 'trash', 'power', 'catchon', 'catore'
+    ];
+    const installedPkgs = appRegistry.getInstalledAppPackages();
+    const installedAppTypes = installedPkgs.map(p => p.appType);
+
+    const desktopItems = items.filter(item => {
+        if (!item || !item.id) return false;
+        if (item.folderId) return false;
+        if (item.type === 'app') {
+            if (!item.appType) return false;
+            // Must be a core system app OR an installed package
+            const isCoreApp = coreAppTypes.includes(item.appType);
+            const isInstalledPackage = installedAppTypes.includes(item.appType);
+            if (!isCoreApp && !isInstalledPackage) return false; // Not installed -> 100% invisible & non-existent
+            return true;
+        }
+        if (!item.name || item.name.trim() === '') return false;
+        return true; // User files/folders
+    });
 
     // Wallpaper: if user specified a custom wallpaper, use it; otherwise use authentic default wallpaper based on current theme
     const activeWallpaperUrl = customWallpaper || (theme === 'mac' ? DEFAULT_MAC_WALLPAPER : DEFAULT_WINDOWS_WALLPAPER);
@@ -1429,6 +1731,21 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             icon: <Palette className="w-3.5 h-3.5 text-purple-400" />,
             onClose: () => setShowCatvas(false),
             onFocus: () => setFocusedWindow('catvas')
+        });
+    }
+    if (showAILearning) {
+        runningApps.push({
+            id: 'ailearning',
+            name: 'AI Learning',
+            icon: <GraduationCap className="w-3.5 h-3.5 text-blue-400" />,
+            onClose: () => {
+                setShowAILearning(false);
+                setIsAILearningMinimized(false);
+            },
+            onFocus: () => {
+                setFocusedWindow('ailearning');
+                setIsAILearningMinimized(false);
+            }
         });
     }
     if (isMusicPlayerOpen) {
@@ -1539,22 +1856,189 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             onFocus: () => setFocusedWindow('folder')
         });
     }
+    if (showKetoBank) {
+        runningApps.push({
+            id: 'ketoBank',
+            name: 'KETO Bank',
+            icon: <Wallet className="w-3.5 h-3.5 text-blue-400" />,
+            onClose: () => closeAppToDesktop(() => setShowKetoBank(false)),
+            onFocus: () => setFocusedWindow('ketoBank')
+        });
+    }
+    if (showCailusApp) {
+        runningApps.push({
+            id: 'cailus',
+            name: '캐일러스',
+            icon: <Sparkles className="w-3.5 h-3.5 text-amber-400" />,
+            onClose: () => closeAppToDesktop(() => setShowCailusApp(false)),
+            onFocus: () => setFocusedWindow('cailus')
+        });
+    }
+    if (showCatore) {
+        runningApps.push({
+            id: 'catore',
+            name: '캐토어',
+            icon: <Sparkles className="w-3.5 h-3.5 text-blue-400" />,
+            onClose: () => setShowCatore(false),
+            onFocus: () => setFocusedWindow('catore')
+        });
+    }
+    if (showCacking) {
+        runningApps.push({
+            id: 'cacking',
+            name: '캐킹',
+            icon: <Terminal className="w-3.5 h-3.5 text-emerald-400" />,
+            onClose: () => setShowCacking(false),
+            onFocus: () => setFocusedWindow('cacking')
+        });
+    }
+    if (showBrowser) {
+        runningApps.push({
+            id: 'browser',
+            name: theme === 'mac' ? 'Safari' : '브라우저',
+            icon: <Compass className="w-3.5 h-3.5 text-sky-400" />,
+            onClose: () => setShowBrowser(false),
+            onFocus: () => setFocusedWindow('browser')
+        });
+    }
+    if (showPhotos) {
+        runningApps.push({
+            id: 'photos',
+            name: '사진',
+            icon: <ImageIcon className="w-3.5 h-3.5 text-pink-400" />,
+            onClose: () => setShowPhotos(false),
+            onFocus: () => setFocusedWindow('photos')
+        });
+    }
+    if (showTaskManager) {
+        runningApps.push({
+            id: 'taskmgr',
+            name: theme === 'mac' ? '활성 상태 보기' : '작업 관리자',
+            icon: <Activity className="w-3.5 h-3.5 text-cyan-400" />,
+            onClose: () => setShowTaskManager(false),
+            onFocus: () => setFocusedWindow('taskmgr')
+        });
+    }
+    if (showClock) {
+        runningApps.push({
+            id: 'clock',
+            name: '시계',
+            icon: <Clock className="w-3.5 h-3.5 text-amber-400" />,
+            onClose: () => setShowClock(false),
+            onFocus: () => setFocusedWindow('clock')
+        });
+    }
+    if (showPower) {
+        runningApps.push({
+            id: 'power',
+            name: '전원',
+            icon: <Power className="w-3.5 h-3.5 text-rose-400" />,
+            onClose: () => closeAppToDesktop(() => setShowPower(false)),
+            onFocus: () => setFocusedWindow('power')
+        });
+    }
+    if (showGameCenter) {
+        runningApps.push({
+            id: 'gamecenter',
+            name: '게임 센터',
+            icon: <Gamepad2 className="w-3.5 h-3.5 text-cyan-400" />,
+            onClose: () => closeAppToDesktop(() => setShowGameCenter(false)),
+            onFocus: () => setFocusedWindow('gamecenter')
+        });
+    }
+    if (showSpeedKeyboard) {
+        runningApps.push({
+            id: 'speedkeyboard',
+            name: '스피드 키보드 탈출',
+            icon: <Zap className="w-3.5 h-3.5 text-amber-400" />,
+            onClose: () => closeAppToDesktop(() => setShowSpeedKeyboard(false)),
+            onFocus: () => setFocusedWindow('speedkeyboard')
+        });
+    }
+    if (showPixelSurvivor) {
+        runningApps.push({
+            id: 'pixelsurvivor',
+            name: '픽셀 서바이버',
+            icon: <Swords className="w-3.5 h-3.5 text-purple-400" />,
+            onClose: () => closeAppToDesktop(() => setShowPixelSurvivor(false)),
+            onFocus: () => setFocusedWindow('pixelsurvivor')
+        });
+    }
+    if (showNeonRunner) {
+        runningApps.push({
+            id: 'neonrunner',
+            name: '네온 러너',
+            icon: <Activity className="w-3.5 h-3.5 text-pink-400" />,
+            onClose: () => closeAppToDesktop(() => setShowNeonRunner(false)),
+            onFocus: () => setFocusedWindow('neonrunner')
+        });
+    }
+    if (showDungeonCore) {
+        runningApps.push({
+            id: 'dungeoncore',
+            name: '던전 코어',
+            icon: <Shield className="w-3.5 h-3.5 text-red-400" />,
+            onClose: () => closeAppToDesktop(() => setShowDungeonCore(false)),
+            onFocus: () => setFocusedWindow('dungeoncore')
+        });
+    }
+    if (showMiniTycoon) {
+        runningApps.push({
+            id: 'minitycoon',
+            name: '미니 타이쿤',
+            icon: <Utensils className="w-3.5 h-3.5 text-emerald-400" />,
+            onClose: () => closeAppToDesktop(() => setShowMiniTycoon(false)),
+            onFocus: () => setFocusedWindow('minitycoon')
+        });
+    }
+    if (showBlockPuzzle) {
+        runningApps.push({
+            id: 'blockpuzzle',
+            name: '블록 퍼즐',
+            icon: <Grid className="w-3.5 h-3.5 text-cyan-400" />,
+            onClose: () => closeAppToDesktop(() => setShowBlockPuzzle(false)),
+            onFocus: () => setFocusedWindow('blockpuzzle')
+        });
+    }
+    if (showRhythmBeat) {
+        runningApps.push({
+            id: 'rhythmbeat',
+            name: '리듬 비트',
+            icon: <Music className="w-3.5 h-3.5 text-pink-400" />,
+            onClose: () => closeAppToDesktop(() => setShowRhythmBeat(false)),
+            onFocus: () => setFocusedWindow('rhythmbeat')
+        });
+    }
+    if (showSpaceDefender) {
+        runningApps.push({
+            id: 'spacedefender',
+            name: '스페이스 디펜더',
+            icon: <Navigation className="w-3.5 h-3.5 text-blue-400" />,
+            onClose: () => closeAppToDesktop(() => setShowSpaceDefender(false)),
+            onFocus: () => setFocusedWindow('spacedefender')
+        });
+    }
+
+    const isSplitDualMonitor = !!systemSettings.dualMonitorEnabled && (systemSettings.dualMonitorMode === 'split' || !systemSettings.dualMonitorMode);
 
     return (
-        <div 
-            ref={desktopAreaRef}
-            data-desktop-bg="true"
-            data-os-theme={theme}
-            style={{
-                backgroundImage: `url('${activeWallpaperUrl}')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-            }}
-            className="h-screen h-[100dvh] w-screen max-h-screen max-w-full bg-slate-950 flex flex-col relative overflow-hidden select-none"
-            onContextMenu={(e) => handleContextMenu(e)}
-            onMouseDown={handleDesktopMouseDown}
-        >
+        <div className="h-screen h-[100dvh] w-screen max-h-screen max-w-full bg-slate-950 flex flex-row relative overflow-hidden select-none">
+            <div 
+                ref={desktopAreaRef}
+                data-desktop-bg="true"
+                data-os-theme={theme}
+                style={{
+                    backgroundImage: `url('${activeWallpaperUrl}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                }}
+                className={`h-full flex flex-col relative overflow-hidden select-none transition-all ${
+                    isSplitDualMonitor ? 'w-1/2 border-r border-cyan-500/30' : 'w-full'
+                }`}
+                onContextMenu={(e) => handleContextMenu(e)}
+                onMouseDown={handleDesktopMouseDown}
+            >
             {/* Hidden Input for Windows PC File Import */}
             <input 
                 ref={fileInputRef}
@@ -1754,6 +2238,66 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Search className="w-7 h-7 text-white absolute pointer-events-none" />
                                     </div>
                                 )}
+                                {(item.appType === 'ketoBank' || item.appType === 'ketobank' || item.id === 'app-keto-bank') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center shadow-lg border border-blue-300/40 group-hover:scale-105 transition-transform">
+                                        <Wallet className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                                    </div>
+                                )}
+                                {(item.appType === 'catore' || item.id === 'app-catore') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg border border-indigo-300/40 group-hover:scale-105 transition-transform">
+                                        <Sparkles className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
+                                    </div>
+                                )}
+                                {(item.appType === 'cacking' || item.id === 'app-cacking') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 flex items-center justify-center shadow-lg border-2 border-emerald-400/60 ring-2 ring-emerald-500/30 group-hover:scale-105 transition-transform">
+                                        <Terminal className="w-7 h-7 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                    </div>
+                                )}
+                                {(item.appType === 'browser' || item.id === 'app-browser') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg border border-sky-300/40 group-hover:scale-105 transition-transform">
+                                        <Compass className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'photos' || item.id === 'app-photos') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 via-rose-600 to-purple-600 flex items-center justify-center shadow-lg border border-pink-300/40 group-hover:scale-105 transition-transform">
+                                        <ImageIcon className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'calendar' || item.id === 'app-calendar') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-lg border border-amber-300/40 group-hover:scale-105 transition-transform">
+                                        <CalendarIcon className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'terminal' || item.id === 'app-terminal') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 to-black flex items-center justify-center shadow-lg border border-emerald-500/50 ring-1 ring-emerald-500/20 group-hover:scale-105 transition-transform">
+                                        <Terminal className="w-7 h-7 text-emerald-400 drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'screenshot' || item.id === 'app-screenshot') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 via-pink-600 to-purple-600 flex items-center justify-center shadow-lg border border-rose-300/40 ring-2 ring-rose-500/30 group-hover:scale-105 transition-transform">
+                                        <Scissors className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'taskmgr' || item.id === 'app-taskmgr') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-600 via-teal-700 to-slate-900 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
+                                        <Activity className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'clock' || item.id === 'app-clock') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 flex items-center justify-center shadow-lg border border-amber-300/40 group-hover:scale-105 transition-transform">
+                                        <Clock className="w-7 h-7 text-slate-900 drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'power' || item.id === 'app-power') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 via-rose-600 to-slate-900 flex items-center justify-center shadow-lg border border-rose-300/40 group-hover:scale-105 transition-transform">
+                                        <Power className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'explorer' || item.id === 'app-explorer') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-600 flex items-center justify-center shadow-lg border border-amber-300/40 group-hover:scale-105 transition-transform">
+                                        <Folder className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
                                 {(item.appType === 'catto' || item.id === 'app-catto') && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 flex items-center justify-center shadow-lg border border-cyan-400/50 ring-2 ring-cyan-500/20 group-hover:scale-105 group-hover:border-cyan-400 transition-all">
                                         <Cat className="w-7 h-7 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
@@ -1764,14 +2308,14 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Palette className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
                                     </div>
                                 )}
+                                {(item.appType === 'ailearning' || item.id === 'app-ailearning') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg border border-cyan-300/40 ring-2 ring-cyan-500/20 group-hover:scale-105 group-hover:border-cyan-400 transition-all">
+                                        <GraduationCap className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]" />
+                                    </div>
+                                )}
                                 {(item.appType === 'aichat' || item.id === 'app-aichat') && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg border border-cyan-300/40 ring-2 ring-cyan-500/20 group-hover:scale-105 transition-all">
                                         <Bot className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
-                                    </div>
-                                )}
-                                {item.appType === 'screenshot' && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 via-pink-600 to-purple-600 flex items-center justify-center shadow-lg border border-rose-300/40 ring-2 ring-rose-500/30 group-hover:scale-105 transition-transform">
-                                        <Scissors className="w-7 h-7 text-white drop-shadow" />
                                     </div>
                                 )}
                                 {item.appType === 'paint' && (
@@ -1779,9 +2323,94 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Palette className="w-7 h-7 text-white drop-shadow" />
                                     </div>
                                 )}
-                                {item.appType === 'aichat' && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-600 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg border border-cyan-300/40 ring-2 ring-cyan-500/30 group-hover:scale-105 transition-transform">
-                                        <Bot className="w-7 h-7 text-cyan-200 drop-shadow" />
+                                {item.appType === 'music' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
+                                        <Music className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'gamecenter' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-purple-600 flex items-center justify-center shadow-lg border border-cyan-300/40 ring-2 ring-cyan-500/20 group-hover:scale-105 transition-all">
+                                        <Gamepad2 className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
+                                    </div>
+                                )}
+                                {item.appType === 'speedkeyboard' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center shadow-lg border border-amber-300/40 group-hover:scale-105 transition-transform">
+                                        <Zap className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'pixelsurvivor' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-800 flex items-center justify-center shadow-lg border border-purple-300/40 group-hover:scale-105 transition-transform">
+                                        <Swords className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'neonrunner' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-700 flex items-center justify-center shadow-lg border border-pink-300/40 group-hover:scale-105 transition-transform">
+                                        <Activity className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'dungeoncore' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-700 to-red-900 flex items-center justify-center shadow-lg border border-amber-300/40 group-hover:scale-105 transition-transform">
+                                        <Shield className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'minitycoon' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-700 flex items-center justify-center shadow-lg border border-emerald-300/40 group-hover:scale-105 transition-transform">
+                                        <Utensils className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'blockpuzzle' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-800 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
+                                        <Grid className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'rhythmbeat' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-700 flex items-center justify-center shadow-lg border border-pink-300/40 group-hover:scale-105 transition-transform">
+                                        <Music className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'spacedefender' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-900 flex items-center justify-center shadow-lg border border-blue-300/40 group-hover:scale-105 transition-transform">
+                                        <Navigation className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'phone' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-800 flex items-center justify-center shadow-lg border border-violet-300/40 group-hover:scale-105 transition-transform">
+                                        <Smartphone className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'bluetower' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center shadow-lg border border-blue-300/40 group-hover:scale-105 transition-transform">
+                                        <ShieldCheck className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'survivor' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-700 flex items-center justify-center shadow-lg border border-orange-300/40 group-hover:scale-105 transition-transform">
+                                        <Flame className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'fishing' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-700 flex items-center justify-center shadow-lg border border-teal-300/40 group-hover:scale-105 transition-transform">
+                                        <Fish className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'garden' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center shadow-lg border border-emerald-300/40 group-hover:scale-105 transition-transform">
+                                        <Trees className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'eatclicker' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg border border-amber-300/40 group-hover:scale-105 transition-transform">
+                                        <Utensils className="w-7 h-7 text-slate-900 drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'blog' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-700 flex items-center justify-center shadow-lg border border-indigo-300/40 group-hover:scale-105 transition-transform">
+                                        <BookOpen className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'channel' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-700 flex items-center justify-center shadow-lg border border-rose-300/40 group-hover:scale-105 transition-transform">
+                                        <Tv className="w-7 h-7 text-white drop-shadow" />
                                     </div>
                                 )}
                                 {item.appType === 'trash' && (
@@ -1812,6 +2441,12 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 {item.appType === 'settings' && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-600 via-cyan-700 to-slate-800 flex items-center justify-center shadow-lg border border-cyan-400/40 ring-2 ring-cyan-500/20 group-hover:scale-105 transition-transform">
                                         <Settings className="w-7 h-7 text-white drop-shadow group-hover:rotate-45 transition-transform duration-300" />
+                                    </div>
+                                )}
+                                {item.type === 'app' && 
+                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings'].includes(item.appType || '') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
+                                        <Sparkles className="w-7 h-7 text-white drop-shadow" />
                                     </div>
                                 )}
                                 {item.type === 'folder' && (
@@ -2105,12 +2740,26 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 <OSWindowFrame
                     title="캐치온 (CatchOn) — 검색 엔진"
                     icon={<Search className="w-4 h-4 text-cyan-400" />}
-                    onClose={() => setShowCatchOn(false)}
+                    onClose={() => closeAppToDesktop(() => setShowCatchOn(false))}
                     theme={theme}
                     defaultWidth="880px"
                     defaultHeight="600px"
                 >
-                    <CatchOnSearch onClose={() => setShowCatchOn(false)} />
+                    <CatchOnSearch onClose={() => closeAppToDesktop(() => setShowCatchOn(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* Cailus App Window */}
+            {showCailusApp && (
+                <OSWindowFrame
+                    title="캐일러스 (Cailus Enterprise) — COMING SOON"
+                    icon={<Sparkles className="w-4 h-4 text-amber-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowCailusApp(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <CailusAppWindow onClose={() => closeAppToDesktop(() => setShowCailusApp(false))} />
                 </OSWindowFrame>
             )}
 
@@ -2460,452 +3109,185 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                         </div>
                     </div>
 
-                    {/* Quick App Shortcuts */}
+                    {/* Quick App Shortcuts: Core Apps & Installed Catore Packages */}
                     <div className="p-3 flex flex-col gap-1 max-h-[380px] overflow-y-auto custom-scrollbar">
+                        {/* Section 1: Core System Apps */}
                         <div className="flex items-center justify-between px-2 py-1">
-                            <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap truncate">시스템 & 추천 앱 목록</span>
-                            <span className="text-[9px] text-cyan-400 font-semibold whitespace-nowrap">즉시 실행</span>
+                            <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                                {theme === 'mac' ? 'macOS 기본 앱' : 'Windows 기본 앱'}
+                            </span>
+                            <span className="text-[9px] text-cyan-400 font-semibold whitespace-nowrap">시스템</span>
                         </div>
 
-                        {/* 🎵 음악 플레이어 */}
-                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-pointer">
-                            <button 
-                                onClick={() => { setIsMusicPlayerOpen(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left min-w-0"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shrink-0">
-                                    <Music className="w-4 h-4 text-white" />
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap truncate">
-                                        <span>음악 플레이어</span>
-                                        <span className="px-1 py-0.2 rounded text-[8px] font-black bg-cyan-500/30 text-cyan-300">NEW</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 whitespace-nowrap truncate">100여 곡 고품질 사운드트랙 플레이어</div>
-                                </div>
-                            </button>
-                        </div>
+                        {[
+                            { id: 'app-explorer', name: theme === 'mac' ? t('os.finder', 'Finder') : t('os.fileExplorer', '파일 탐색기'), appType: 'explorer', icon: <Folder className="w-4 h-4 text-amber-400" />, desc: '파일 및 폴더 탐색기' },
+                            { id: 'app-settings', name: theme === 'mac' ? t('os.systemSettings', '시스템 설정') : t('os.settings', '설정'), appType: 'settings', icon: <Settings className="w-4 h-4 text-sky-400" />, desc: '배경화면, 테마, 마우스, 계정, 보안' },
+                            { id: 'app-calculator', name: t('os.calculator', '계산기'), appType: 'calculator', icon: <Calculator className="w-4 h-4 text-emerald-400" />, desc: '표준 & 공학용 사칙연산 계산기' },
+                            { id: 'app-notepad', name: theme === 'mac' ? t('os.textedit', '텍스트 편집기') : t('os.notepad', '메모장'), appType: 'notepad', icon: <FileText className="w-4 h-4 text-yellow-400" />, desc: '텍스트 문서 편집기' },
+                            { id: 'app-browser', name: theme === 'mac' ? t('os.safari', 'Safari') : t('os.browser', '브라우저'), appType: 'browser', icon: <Compass className="w-4 h-4 text-blue-400" />, desc: '웹 서핑 및 북마크 네비게이터' },
+                            { id: 'app-photos', name: t('os.photos', '사진'), appType: 'photos', icon: <ImageIcon className="w-4 h-4 text-pink-400" />, desc: '월페이퍼 및 이미지 뷰어' },
+                            { id: 'app-calendar', name: t('os.calendar', '캘린더'), appType: 'calendar', icon: <CalendarIcon className="w-4 h-4 text-amber-400" />, desc: '연도/월별 일일 일정 및 메모' },
+                            { id: 'app-terminal', name: t('os.terminal', '터미널'), appType: 'terminal', icon: <Terminal className="w-4 h-4 text-emerald-400" />, desc: '가상 파일 시스템 명령 프롬프트' },
+                            { id: 'app-screenshot', name: theme === 'mac' ? t('os.screenshot', '스크린샷') : t('os.captureTool', '캡처 도구'), appType: 'screenshot', icon: <Scissors className="w-4 h-4 text-rose-400" />, desc: '화면 캡처, 영역 선택, 주석 및 저장' },
+                            { id: 'app-taskmgr', name: theme === 'mac' ? t('os.activityMonitor', '활성 상태 보기') : t('os.taskManager', '작업 관리자'), appType: 'taskmgr', icon: <Activity className="w-4 h-4 text-cyan-400" />, desc: '프로세스 모니터링 및 강제 종료' },
+                            { id: 'app-clock', name: t('os.clock', '시계'), appType: 'clock', icon: <Clock className="w-4 h-4 text-amber-400" />, desc: '세계 시각, 스톱워치 및 타이머' },
+                            { id: 'app-trash', name: t('os.trash', '휴지통'), appType: 'trash', icon: <Trash2 className="w-4 h-4 text-slate-300" />, desc: `${trashItems.length}개 항목 보관` },
+                            { id: 'app-power', name: t('os.power', '전원'), appType: 'power', icon: <Power className="w-4 h-4 text-rose-400" />, desc: '종료, 다시 시작, 화면 잠금' },
+                            { id: 'app-keto-bank', name: 'KETO Bank', appType: 'ketoBank', icon: <Wallet className="w-4 h-4 text-blue-400" />, desc: '가상 원화 지갑, 실시간 채굴 수입, 적금 및 이벤트' },
+                            { id: 'app-catchon', name: t('os.catchon', '캐치온'), appType: 'catchon', icon: <Search className="w-4 h-4 text-cyan-400" />, desc: '구글 스타일 통합 검색 엔진' },
+                            { id: 'app-catore', name: t('os.catore', '캐토어'), appType: 'catore', icon: <Sparkles className="w-4 h-4 text-indigo-400" />, desc: '가상 OS 공식 앱스토어 (설치/관리)' }
+                        ].map(coreApp => {
+                            const isOnDesktop = isAppOnDesktop(coreApp.appType);
+                            return (
+                                <div 
+                                    key={coreApp.id}
+                                    className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-pointer"
+                                >
+                                    <button 
+                                        onClick={() => {
+                                            handleLaunchAppFromSearch(coreApp.appType);
+                                            setShowStartMenu(false);
+                                        }}
+                                        className="flex items-center gap-3 flex-1 text-left min-w-0"
+                                    >
+                                        <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shadow shrink-0">
+                                            {coreApp.icon}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap truncate">
+                                                <span>{coreApp.name}</span>
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 whitespace-nowrap truncate">{coreApp.desc}</div>
+                                        </div>
+                                    </button>
 
-                        {/* 📅 달력 */}
-                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-pointer">
-                            <button 
-                                onClick={() => { setIsCalendarAppOpen(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left min-w-0"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md shrink-0">
-                                    <CalendarIcon className="w-4 h-4 text-white" />
+                                    {/* UI 바탕화면에 추가 / 제거 버튼 */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleToggleDesktopShortcut(coreApp.appType, coreApp.name);
+                                        }}
+                                        className={`ml-2 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1 border ${
+                                            isOnDesktop
+                                                ? 'bg-rose-950/60 hover:bg-rose-600 text-rose-300 hover:text-white border-rose-500/40'
+                                                : 'bg-cyan-950/80 hover:bg-cyan-600 text-cyan-300 hover:text-white border-cyan-500/50 shadow-sm shadow-cyan-500/20'
+                                        }`}
+                                        title={isOnDesktop ? "바탕화면에서 제거" : "UI 바탕화면에 추가"}
+                                    >
+                                        {isOnDesktop ? (
+                                            <>
+                                                <X className="w-3 h-3 text-rose-400 group-hover:text-white" />
+                                                <span>바탕화면 제거</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="w-3 h-3 text-cyan-400 group-hover:text-white" />
+                                                <span>UI 바탕화면에 추가</span>
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
-                                <div className="min-w-0">
-                                    <div className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap truncate">
-                                        <span>달력 (Calendar)</span>
-                                        <span className="px-1 py-0.2 rounded text-[8px] font-black bg-amber-500/30 text-amber-300">NEW</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 whitespace-nowrap truncate">연도/월별 일일 일정 및 메모 관리</div>
-                                </div>
-                            </button>
-                        </div>
+                            );
+                        })}
 
-                        {/* 💻 터미널 */}
-                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-pointer">
-                            <button 
-                                onClick={() => { setIsTerminalAppOpen(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left min-w-0"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shrink-0">
-                                    <Terminal className="w-4 h-4 text-white" />
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap truncate">
-                                        <span>터미널 (Terminal)</span>
-                                        <span className="px-1 py-0.2 rounded text-[8px] font-black bg-emerald-500/30 text-emerald-300">NEW</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 whitespace-nowrap truncate">가상 파일 시스템 커스텀 명령 프롬프트</div>
-                                </div>
-                            </button>
-                        </div>
+                        {/* Section 2: Installed Catore Packages */}
+                        {(() => {
+                            const installedPkgs = appRegistry.getInstalledAppPackages();
+                            if (installedPkgs.length === 0) return null;
 
-                        {/* 📸 스크린샷 캡처 */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: '스크린샷',
-                                    type: 'app',
-                                    appType: 'screenshot'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { setShowScreenshot(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-md">
-                                    <Scissors className="w-4 h-4 text-white" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                                        <span>스크린샷</span>
-                                        <span className="px-1 py-0.2 rounded text-[8px] font-black bg-rose-500/30 text-rose-300">NEW</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-400">화면 캡처, 영역 선택, 주석 및 저장</div>
-                                </div>
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    sound.buy();
-                                    const newItem: DesktopItem = {
-                                        id: `app-screenshot-${Date.now()}`,
-                                        name: '스크린샷',
-                                        type: 'app',
-                                        appType: 'screenshot',
-                                        updatedAt: new Date().toLocaleDateString()
-                                    };
-                                    setItems(prev => [...prev.filter(i => i.appType !== 'screenshot' && i.name !== '스크린샷'), newItem]);
-                                }}
-                                title="바탕화면에 바로가기 추가"
-                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-slate-700 hover:bg-cyan-600 text-slate-200 hover:text-white transition-opacity cursor-pointer text-[10px] flex items-center gap-0.5"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-
-                        {/* 🖌️ 그림판 */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: '그림판',
-                                    type: 'app',
-                                    appType: 'paint'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { setShowPaint(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md">
-                                    <Palette className="w-4 h-4 text-white" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                                        <span>그림판</span>
-                                        <span className="px-1 py-0.2 rounded text-[8px] font-black bg-amber-500/30 text-amber-300">NEW</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-400">자유 펜, 형광펜, 도형, 페인트통 & 저장</div>
-                                </div>
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    sound.buy();
-                                    const newItem: DesktopItem = {
-                                        id: `app-paint-${Date.now()}`,
-                                        name: '그림판',
-                                        type: 'app',
-                                        appType: 'paint',
-                                        updatedAt: new Date().toLocaleDateString()
-                                    };
-                                    setItems(prev => [...prev.filter(i => i.appType !== 'paint' && i.name !== '그림판'), newItem]);
-                                }}
-                                title="바탕화면에 바로가기 추가"
-                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-slate-700 hover:bg-cyan-600 text-slate-200 hover:text-white transition-opacity cursor-pointer text-[10px] flex items-center gap-0.5"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-
-                        {/* 🤖 AI 대화 */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: 'AI 대화',
-                                    type: 'app',
-                                    appType: 'aichat'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { setShowAIChat(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-600 to-indigo-700 flex items-center justify-center shadow-md">
-                                    <Bot className="w-4 h-4 text-cyan-200" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                                        <span>AI 대화</span>
-                                        <span className="px-1 py-0.2 rounded text-[8px] font-black bg-cyan-500/30 text-cyan-300">GEMINI</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-400">지능형 AI 비서 질의응답 & 메모 연동</div>
-                                </div>
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    sound.buy();
-                                    const newItem: DesktopItem = {
-                                        id: `app-aichat-${Date.now()}`,
-                                        name: 'AI 대화',
-                                        type: 'app',
-                                        appType: 'aichat',
-                                        updatedAt: new Date().toLocaleDateString()
-                                    };
-                                    setItems(prev => [...prev.filter(i => i.appType !== 'aichat' && i.name !== 'AI 대화'), newItem]);
-                                }}
-                                title="바탕화면에 바로가기 추가"
-                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-slate-700 hover:bg-cyan-600 text-slate-200 hover:text-white transition-opacity cursor-pointer text-[10px] flex items-center gap-0.5"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-
-
-
-                        {/* 캐치온 - 원래 검색 엔진 */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: '캐치온',
-                                    type: 'app',
-                                    appType: 'catchon'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { sound.click(); setShowCatchOn(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <img src="/assets/catchon.png" alt="CatchOn" className="w-8 h-8 rounded-lg object-cover" onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }} />
-                                <div>
-                                    <div className="text-xs font-bold text-white">캐치온</div>
-                                    <div className="text-[10px] text-slate-400">구글 스타일 통합 검색 엔진</div>
-                                </div>
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    sound.click();
-                                    const newItem: DesktopItem = {
-                                        id: 'catchon_' + Date.now(),
-                                        name: '캐치온',
-                                        type: 'app',
-                                        appType: 'catchon',
-                                        icon: '/assets/catchon.png',
-                                        x: 20,
-                                        y: 20,
-                                        updatedAt: new Date().toLocaleDateString()
-                                    };
-                                    setItems(prev => [...prev.filter(i => i.appType !== 'catchon'), newItem]);
-                                }}
-                                title="바탕화면에 바로가기 추가"
-                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-slate-700 hover:bg-cyan-600 text-slate-200 hover:text-white transition-opacity cursor-pointer text-[10px] flex items-center gap-0.5"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-
-                        {/* 캐트 (Catto) - 게임 시작 */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: '캐트',
-                                    type: 'app',
-                                    appType: 'catto'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { onLaunch(); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-950 flex items-center justify-center border border-cyan-400/40">
-                                    <Cat className="w-4 h-4 text-cyan-400" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-white">캐트 (KETO)</div>
-                                    <div className="text-[10px] text-slate-400">메인 게임 시작하기</div>
-                                </div>
-                            </button>
-                        </div>
-
-                        {/* AI 채팅 */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: 'AI 채팅',
-                                    type: 'app',
-                                    appType: 'aichat'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { setShowAIChat(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center border border-cyan-400/40">
-                                    <Bot className="w-4 h-4 text-white" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-white">AI 채팅</div>
-                                    <div className="text-[10px] text-slate-400">지능형 AI 어시스턴트</div>
-                                </div>
-                            </button>
-                        </div>
-
-                        {/* 메모장 */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: '메모장',
-                                    type: 'app',
-                                    appType: 'notepad'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { handleOpenNotepad(); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center">
-                                    <FileText className="w-4 h-4 text-amber-300" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-white">메모장</div>
-                                    <div className="text-[10px] text-slate-400">텍스트 문서 편집기</div>
-                                </div>
-                            </button>
-                        </div>
-
-                        {/* 계산기 */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: '계산기',
-                                    type: 'app',
-                                    appType: 'calculator'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { setShowCalculator(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-                                    <Calculator className="w-4 h-4 text-emerald-400" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-white">계산기</div>
-                                    <div className="text-[10px] text-slate-400">표준 & 공학용 사칙연산 계산기</div>
-                                </div>
-                            </button>
-                        </div>
-
-                        {/* CANVAS */}
-                        <div 
-                            draggable={true}
-                            onDragStart={(e) => {
-                                e.dataTransfer.setData('application/json', JSON.stringify({
-                                    name: '캐버스',
-                                    type: 'app',
-                                    appType: 'catvas'
-                                }));
-                            }}
-                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-grab active:cursor-grabbing"
-                        >
-                            <button 
-                                onClick={() => { setShowCatvas(true); setShowStartMenu(false); }}
-                                className="flex items-center gap-3 flex-1 text-left cursor-pointer"
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 border border-purple-400/40 flex items-center justify-center shadow-md shadow-purple-900/30">
-                                    <Palette className="w-4 h-4 text-white" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                                        <span>CANVAS (캔버스)</span>
-                                        <span className="px-1 py-0.2 rounded text-[8px] font-black bg-purple-500/30 text-purple-300">PRO</span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-400">디자인 & 영상 제작 올인원 스튜디오</div>
-                                </div>
-                            </button>
-                        </div>
-
-                        {/* 마우스 포인터 설정 */}
-                        <button 
-                            onClick={() => {
-                                sound.click();
-                                setSettingsCategory('mouse');
-                                setShowSettingsApp(true);
-                                setShowStartMenu(false);
-                            }}
-                            className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800 transition-colors text-left cursor-pointer"
-                        >
-                            <div className="w-8 h-8 rounded-lg bg-cyan-900/60 border border-cyan-400/40 flex items-center justify-center">
-                                <MousePointer className="w-4 h-4 text-cyan-300" />
-                            </div>
-                            <div>
-                                <div className="text-xs font-bold text-white">마우스 포인터 설정</div>
-                                <div className="text-[10px] text-slate-400">20종 커서 & 커스텀 이미지/감도 조절</div>
-                            </div>
-                        </button>
-
-                        {/* 휴지통 */}
-                        <button 
-                            onClick={() => {
-                                sound.click();
-                                setShowTrashBinApp(true);
-                                setShowStartMenu(false);
-                            }}
-                            className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800 transition-colors text-left cursor-pointer"
-                        >
-                            <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center">
-                                <Trash2 className={`w-4 h-4 ${trashItems.length > 0 ? 'text-cyan-400' : 'text-slate-400'}`} />
-                            </div>
-                            <div>
-                                <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                                    <span>휴지통</span>
-                                    {trashItems.length > 0 && (
-                                        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                                            {trashItems.length}개 보관
+                            return (
+                                <>
+                                    <div className="flex items-center justify-between px-2 py-1 mt-2 border-t border-slate-800 pt-2">
+                                        <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                                            캐토어 설치 앱 ({installedPkgs.length})
                                         </span>
-                                    )}
-                                </div>
-                                <div className="text-[10px] text-slate-400">삭제된 파일 복구 및 영구 삭제</div>
-                            </div>
-                        </button>
+                                        <span className="text-[9px] text-indigo-400 font-semibold whitespace-nowrap">설치됨</span>
+                                    </div>
 
-                        {/* 시스템 종합 설정 */}
-                        <button 
-                            onClick={() => {
-                                sound.click();
-                                setShowSettingsApp(true);
-                                setShowStartMenu(false);
-                            }}
-                            className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800 transition-colors text-left cursor-pointer"
-                        >
-                            <div className="w-8 h-8 rounded-lg bg-sky-900/60 border border-sky-400/40 flex items-center justify-center">
-                                <Settings className="w-4 h-4 text-sky-300" />
-                            </div>
-                            <div>
-                                <div className="text-xs font-bold text-white">시스템 설정</div>
-                                <div className="text-[10px] text-slate-400">배경화면, 테마, 마우스, 계정, 보안</div>
-                            </div>
-                        </button>
+                                    {installedPkgs.map(pkg => {
+                                        const appType = pkg.appType || 'catore';
+                                        const pkgName = pkg.nameKey ? t(pkg.nameKey, pkg.name) : pkg.name;
+                                        const isOnDesktop = isAppOnDesktop(appType);
+
+                                        return (
+                                            <div 
+                                                key={pkg.id}
+                                                className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 transition-colors group cursor-pointer"
+                                            >
+                                                <button 
+                                                    onClick={() => {
+                                                        handleLaunchAppFromSearch(appType);
+                                                        setShowStartMenu(false);
+                                                    }}
+                                                    className="flex items-center gap-3 flex-1 text-left min-w-0"
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-900/60 to-slate-800 border border-indigo-500/30 flex items-center justify-center shadow shrink-0">
+                                                        {appType === 'gamecenter' ? <Gamepad2 className="w-4 h-4 text-cyan-400" /> :
+                                                         appType === 'speedkeyboard' ? <Zap className="w-4 h-4 text-amber-400" /> :
+                                                         appType === 'pixelsurvivor' ? <Swords className="w-4 h-4 text-purple-400" /> :
+                                                         appType === 'neonrunner' ? <Activity className="w-4 h-4 text-pink-400" /> :
+                                                         appType === 'dungeoncore' ? <Shield className="w-4 h-4 text-red-400" /> :
+                                                         appType === 'minitycoon' ? <Utensils className="w-4 h-4 text-emerald-400" /> :
+                                                         appType === 'blockpuzzle' ? <Grid className="w-4 h-4 text-cyan-400" /> :
+                                                         appType === 'rhythmbeat' ? <Music className="w-4 h-4 text-pink-400" /> :
+                                                         appType === 'spacedefender' ? <Navigation className="w-4 h-4 text-blue-400" /> :
+                                                         appType === 'cacking' ? <Terminal className="w-4 h-4 text-emerald-400" /> :
+                                                         appType === 'catvas' ? <Palette className="w-4 h-4 text-purple-400" /> :
+                                                         appType === 'ailearning' ? <GraduationCap className="w-4 h-4 text-blue-400" /> :
+                                                         appType === 'aichat' ? <Bot className="w-4 h-4 text-cyan-400" /> :
+                                                         appType === 'paint' ? <Palette className="w-4 h-4 text-amber-400" /> :
+                                                         appType === 'music' ? <Music className="w-4 h-4 text-cyan-400" /> :
+                                                         appType === 'catto' ? <Gamepad2 className="w-4 h-4 text-purple-400" /> :
+                                                         appType === 'phone' ? <Smartphone className="w-4 h-4 text-violet-400" /> :
+                                                         appType === 'bluetower' ? <ShieldCheck className="w-4 h-4 text-blue-400" /> :
+                                                         appType === 'survivor' ? <Flame className="w-4 h-4 text-orange-400" /> :
+                                                         appType === 'fishing' ? <Fish className="w-4 h-4 text-cyan-400" /> :
+                                                         appType === 'garden' ? <Trees className="w-4 h-4 text-emerald-400" /> :
+                                                         appType === 'eatclicker' ? <Utensils className="w-4 h-4 text-yellow-400" /> :
+                                                         appType === 'blog' ? <BookOpen className="w-4 h-4 text-indigo-400" /> :
+                                                         appType === 'channel' ? <Tv className="w-4 h-4 text-rose-400" /> :
+                                                         <Sparkles className="w-4 h-4 text-indigo-400" />}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap truncate">
+                                                            <span>{pkgName}</span>
+                                                            <span className="px-1 py-0.2 rounded text-[8px] font-black bg-indigo-500/30 text-indigo-300">앱</span>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 whitespace-nowrap truncate">{pkg.description}</div>
+                                                    </div>
+                                                </button>
+
+                                                {/* UI 바탕화면에 추가 / 제거 버튼 */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleToggleDesktopShortcut(appType, pkgName);
+                                                    }}
+                                                    className={`ml-2 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1 border ${
+                                                        isOnDesktop
+                                                            ? 'bg-rose-950/60 hover:bg-rose-600 text-rose-300 hover:text-white border-rose-500/40'
+                                                            : 'bg-cyan-950/80 hover:bg-cyan-600 text-cyan-300 hover:text-white border-cyan-500/50 shadow-sm shadow-cyan-500/20'
+                                                    }`}
+                                                    title={isOnDesktop ? "바탕화면에서 제거" : "UI 바탕화면에 추가"}
+                                                >
+                                                    {isOnDesktop ? (
+                                                        <>
+                                                            <X className="w-3 h-3 text-rose-400 group-hover:text-white" />
+                                                            <span>바탕화면 제거</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Plus className="w-3 h-3 text-cyan-400 group-hover:text-white" />
+                                                            <span>UI 바탕화면에 추가</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </>
+                            );
+                        })()}
                     </div>
 
                     {/* Power Menu (잠금, 다시시작, 전원끄기) */}
@@ -3212,6 +3594,20 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
 
                 {/* Right: Real Internet, Sound, Clock & Calendar */}
                 <div className="flex items-center gap-2">
+                    {/* Live KRW Wallet Pill */}
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            sound.click();
+                            setShowKetoBank(true);
+                        }}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-blue-600/30 to-indigo-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 border border-blue-400/40 text-blue-200 text-xs font-extrabold transition-all cursor-pointer shadow-md shadow-blue-900/20 active:scale-95"
+                        title="KETO Bank (원화 지갑) 열기"
+                    >
+                        <Wallet className="w-3.5 h-3.5 text-blue-400" />
+                        <span>{formatKRWSymbol(taskbarBalance)}</span>
+                    </button>
+
                     {/* Internet Icon */}
                     <div 
                         onClick={(e) => { e.stopPropagation(); setShowCalendarTray(true); }}
@@ -3458,6 +3854,377 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 </OSWindowFrame>
             )}
 
+            {/* 🎓 AI Learning (캐링) 맞춤형 전문 학습 플랫폼 */}
+            {showAILearning && !isAILearningMinimized && (
+                <OSWindowFrame
+                    title="AI Learning (캐링) — 게임형 맞춤 학습 플랫폼"
+                    icon={<GraduationCap className="w-4 h-4 text-cyan-400" />}
+                    onClose={() => {
+                        setShowAILearning(false);
+                        setIsAILearningMinimized(false);
+                    }}
+                    onMinimize={() => setIsAILearningMinimized(true)}
+                    theme={theme}
+                    defaultWidth="980px"
+                    defaultHeight="680px"
+                    defaultMaximized={isAILearningMaximized}
+                >
+                    <AILearningApp
+                        onClose={() => {
+                            setShowAILearning(false);
+                            setIsAILearningMinimized(false);
+                        }}
+                        onMinimize={() => setIsAILearningMinimized(true)}
+                        onToggleMaximize={() => setIsAILearningMaximized(prev => !prev)}
+                        isMaximized={isAILearningMaximized}
+                        onOpenCanvasWithDiagram={() => {
+                            setShowCatvas(true);
+                        }}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 🏦 KETO Bank (원화 지갑) */}
+            {showKetoBank && (
+                <OSWindowFrame
+                    title="KETO Bank (원화 지갑) — 가상 금융 서비스"
+                    icon={<Wallet className="w-4 h-4 text-blue-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowKetoBank(false))}
+                    theme={theme}
+                    defaultWidth="880px"
+                    defaultHeight="650px"
+                >
+                    <KetoBankApp 
+                        onClose={() => closeAppToDesktop(() => setShowKetoBank(false))}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 🛍️ 캐토어 (Catore) — 가상 OS 공식 앱스토어 */}
+            {showCatore && (
+                <OSWindowFrame
+                    title="캐토어 (Catore App Store) — 공식 앱스토어"
+                    icon={<Sparkles className="w-4 h-4 text-blue-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowCatore(false))}
+                    theme={theme}
+                    defaultWidth="980px"
+                    defaultHeight="680px"
+                >
+                    <CatoreStoreApp 
+                        onClose={() => closeAppToDesktop(() => setShowCatore(false))} 
+                        onLaunchApp={(appType) => {
+                            handleLaunchAppFromSearch(appType);
+                        }}
+                        onToggleDesktopShortcut={handleToggleDesktopShortcut}
+                        isAppOnDesktop={isAppOnDesktop}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* ⚡ 캐킹 (Cacking) — 가상 OS 전용 시스템 실험 도구 */}
+            {showCacking && (
+                <OSWindowFrame
+                    title="캐킹 (Cacking) — 가상 시스템 실험 도구"
+                    icon={<Terminal className="w-4 h-4 text-emerald-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowCacking(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="640px"
+                >
+                    <CackingApp 
+                        onClose={() => closeAppToDesktop(() => setShowCacking(false))} 
+                        onTriggerBSOD={() => setIsBSODActive(true)}
+                        onAddCashToCatchOn={(amt) => walletService.addMoney(amt, '캐킹 가상 해킹 지원금', 'other')}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 🌐 브라우저 (Browser / Safari) */}
+            {showBrowser && (
+                <OSWindowFrame
+                    title={theme === 'mac' ? 'Safari' : '브라우저 (Web Browser)'}
+                    icon={<Compass className="w-4 h-4 text-blue-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowBrowser(false))}
+                    theme={theme}
+                    defaultWidth="920px"
+                    defaultHeight="620px"
+                >
+                    <BrowserApp onClose={() => closeAppToDesktop(() => setShowBrowser(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🖼️ 사진 (Photos / Gallery) */}
+            {showPhotos && (
+                <OSWindowFrame
+                    title="사진 (Photos & Wallpapers)"
+                    icon={<ImageIcon className="w-4 h-4 text-pink-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowPhotos(false))}
+                    theme={theme}
+                    defaultWidth="880px"
+                    defaultHeight="600px"
+                >
+                    <PhotosApp 
+                        onClose={() => closeAppToDesktop(() => setShowPhotos(false))}
+                        onSetWallpaper={handleSelectWallpaper}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 📊 작업 관리자 (Task Manager / Activity Monitor) */}
+            {showTaskManager && (
+                <OSWindowFrame
+                    title={theme === 'mac' ? '활성 상태 보기 (Activity Monitor)' : '작업 관리자 (Task Manager)'}
+                    icon={<Activity className="w-4 h-4 text-cyan-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowTaskManager(false))}
+                    theme={theme}
+                    defaultWidth="820px"
+                    defaultHeight="560px"
+                >
+                    <TaskManagerApp 
+                        onClose={() => closeAppToDesktop(() => setShowTaskManager(false))} 
+                        runningApps={runningApps}
+                        onKillProcess={(appId) => {
+                            const app = runningApps.find(a => a.id === appId);
+                            if (app) app.onClose();
+                        }}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* ⏰ 시계 (Clock / Stopwatch / Timer) */}
+            {showClock && (
+                <OSWindowFrame
+                    title="시계 (Clock & Timer)"
+                    icon={<Clock className="w-4 h-4 text-amber-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowClock(false))}
+                    theme={theme}
+                    defaultWidth="560px"
+                    defaultHeight="520px"
+                >
+                    <ClockApp onClose={() => closeAppToDesktop(() => setShowClock(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🔌 전원 (Power Manager) */}
+            {showPower && (
+                <OSWindowFrame
+                    title="시스템 전원 (Power Options)"
+                    icon={<Power className="w-4 h-4 text-rose-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowPower(false))}
+                    theme={theme}
+                    defaultWidth="480px"
+                    defaultHeight="480px"
+                >
+                    <PowerApp 
+                        onClose={() => closeAppToDesktop(() => setShowPower(false))}
+                        onShutdown={() => setIsPoweredOff(true)}
+                        onRestart={() => window.location.reload()}
+                        onLock={() => {
+                            sessionStorage.removeItem('desktop_is_unlocked');
+                            setIsLocked(true);
+                        }}
+                        onSleep={() => {
+                            sound.wrong();
+                            alert('절전 모드로 진입했습니다. 마우스를 움직이거나 아무 키나 누르면 깨어납니다.');
+                        }}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 🎵 음악 플레이어 (Music Player) */}
+            {isMusicPlayerOpen && (
+                <OSWindowFrame
+                    title="음악 플레이어 (Music Player)"
+                    icon={<Music className="w-4 h-4 text-cyan-400" />}
+                    onClose={() => closeAppToDesktop(() => setIsMusicPlayerOpen(false))}
+                    theme={theme}
+                    defaultWidth="880px"
+                    defaultHeight="600px"
+                >
+                    <MusicPlayerApp 
+                        isOpen={isMusicPlayerOpen}
+                        onClose={() => closeAppToDesktop(() => setIsMusicPlayerOpen(false))}
+                        theme={theme}
+                        currentTrack={musicTrack}
+                        isPlaying={isMusicPlaying}
+                        onPlayTrack={(track) => {
+                            setMusicTrack(track);
+                            setIsMusicPlaying(true);
+                        }}
+                        onTogglePlay={() => setIsMusicPlaying(prev => !prev)}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 🎮 Game Center (게임 센터) */}
+            {showGameCenter && (
+                <OSWindowFrame
+                    title="게임 센터 (Game Center) — 게이밍 허브"
+                    icon={<Gamepad2 className="w-4 h-4 text-cyan-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowGameCenter(false))}
+                    theme={theme}
+                    defaultWidth="980px"
+                    defaultHeight="680px"
+                >
+                    <GameCenterApp
+                        onClose={() => closeAppToDesktop(() => setShowGameCenter(false))}
+                        onLaunchGame={(appType) => handleLaunchAppFromSearch(appType)}
+                        onOpenCatoreGameStore={() => {
+                            setShowCatore(true);
+                            setShowGameCenter(false);
+                        }}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* ⚡ 스피드 키보드 탈출 */}
+            {showSpeedKeyboard && (
+                <OSWindowFrame
+                    title="스피드 키보드 탈출 (Speed Keyboard Escape)"
+                    icon={<Zap className="w-4 h-4 text-amber-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowSpeedKeyboard(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <SpeedKeyboardEscape onClose={() => closeAppToDesktop(() => setShowSpeedKeyboard(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* ⚔️ 픽셀 서바이버 */}
+            {showPixelSurvivor && (
+                <OSWindowFrame
+                    title="픽셀 서바이버 (Pixel Survivor)"
+                    icon={<Swords className="w-4 h-4 text-purple-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowPixelSurvivor(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <PixelSurvivor onClose={() => closeAppToDesktop(() => setShowPixelSurvivor(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🌃 네온 러너 */}
+            {showNeonRunner && (
+                <OSWindowFrame
+                    title="네온 러너 (Neon Runner)"
+                    icon={<Activity className="w-4 h-4 text-pink-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowNeonRunner(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <NeonRunner onClose={() => closeAppToDesktop(() => setShowNeonRunner(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🛡️ 던전 코어 */}
+            {showDungeonCore && (
+                <OSWindowFrame
+                    title="던전 코어 (Dungeon Core)"
+                    icon={<Shield className="w-4 h-4 text-red-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowDungeonCore(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <DungeonCore onClose={() => closeAppToDesktop(() => setShowDungeonCore(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🏪 미니 타이쿤 */}
+            {showMiniTycoon && (
+                <OSWindowFrame
+                    title="미니 타이쿤 (Mini Tycoon)"
+                    icon={<Utensils className="w-4 h-4 text-emerald-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowMiniTycoon(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <MiniTycoon onClose={() => closeAppToDesktop(() => setShowMiniTycoon(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🧩 블록 퍼즐 */}
+            {showBlockPuzzle && (
+                <OSWindowFrame
+                    title="블록 퍼즐 (Block Puzzle)"
+                    icon={<Grid className="w-4 h-4 text-cyan-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowBlockPuzzle(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <BlockPuzzle onClose={() => closeAppToDesktop(() => setShowBlockPuzzle(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🎵 리듬 비트 */}
+            {showRhythmBeat && (
+                <OSWindowFrame
+                    title="리듬 비트 (Rhythm Beat)"
+                    icon={<Music className="w-4 h-4 text-pink-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowRhythmBeat(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <RhythmBeat onClose={() => closeAppToDesktop(() => setShowRhythmBeat(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🚀 스페이스 디펜더 */}
+            {showSpaceDefender && (
+                <OSWindowFrame
+                    title="스페이스 디펜더 (Space Defender)"
+                    icon={<Navigation className="w-4 h-4 text-blue-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowSpaceDefender(false))}
+                    theme={theme}
+                    defaultWidth="900px"
+                    defaultHeight="620px"
+                >
+                    <SpaceDefender onClose={() => closeAppToDesktop(() => setShowSpaceDefender(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🎮 Cyber Effects Overlays (Matrix, Glitch, BSOD) */}
+            {isGlitchActive && (
+                <div className="fixed inset-0 z-[99998] pointer-events-none mix-blend-screen opacity-70 bg-gradient-to-b from-transparent via-cyan-500/10 to-pink-500/15 animate-pulse" />
+            )}
+
+            {isBSODActive && (
+                <div className="fixed inset-0 z-[999999] bg-[#0078d7] text-white p-12 flex flex-col justify-between font-sans select-none animate-fade-in">
+                    <div className="space-y-6 max-w-2xl">
+                        <div className="text-7xl font-light">:(</div>
+                        <h2 className="text-2xl font-bold leading-relaxed">
+                            가상 OS에 문제가 발생하여 시스템을 긴급 보호 조치했습니다.
+                        </h2>
+                        <p className="text-sm opacity-90 leading-relaxed">
+                            Cacking 시스템 시뮬레이션에 의해 가상 커널 정지 신호가 트리거되었습니다. 실제 컴퓨터에는 어떠한 영향도 없습니다.
+                        </p>
+                        <div className="bg-black/20 p-4 rounded-xl font-mono text-xs space-y-1">
+                            <div>중지 코드: CRITICAL_PROCESS_DIED_ERROR137</div>
+                            <div>원인 모듈: cacking_virtual_kernel_sim.sys</div>
+                            <div>덤프 진행률: 100% 완료</div>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-white/20 pt-6">
+                        <span className="text-xs opacity-75">CatchOS v5.2 Safe Mode Recoverer</span>
+                        <button
+                            onClick={() => {
+                                setIsBSODActive(false);
+                                sound.buy();
+                            }}
+                            className="px-6 py-2.5 bg-white text-[#0078d7] font-black text-sm rounded-xl shadow-lg hover:bg-slate-100 cursor-pointer transition-all"
+                        >
+                            가상 시스템 정상 복구 (Reboot)
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* 🔍 작업표시줄 실시간 통합 검색 창 (앱, 파일, 설정) */}
             <SearchFlyout 
                 isOpen={showSearchFlyout}
@@ -3544,6 +4311,14 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 isOpen={showHelpModal}
                 onClose={() => setShowHelpModal(false)}
             />
+            </div>
+
+            {/* Monitor 2 Secondary Display View */}
+            {isSplitDualMonitor && (
+                <div className="h-full w-1/2 flex flex-col relative bg-slate-950 overflow-hidden">
+                    <SecondaryMonitorView />
+                </div>
+            )}
         </div>
     );
 };

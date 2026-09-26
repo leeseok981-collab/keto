@@ -16,6 +16,7 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { DesktopOS } from './DesktopOS';
 import { GameWindowShell } from './components/GameWindowShell';
 import { CustomAuthModal, CustomUser } from './components/CustomAuthModal';
+import { SecondaryMonitorView } from './components/SecondaryMonitorView';
 
 export const BADGES = [
     { id: 'first_farm', name: '첫 농사', desc: '씨앗을 처음 심었습니다!', icon: '🌱', bg: 'bg-green-600' },
@@ -428,6 +429,14 @@ const GAME_DETAILS: Record<string, any> = {
 };
 
 export default function App() {
+  if (typeof window !== 'undefined' && window.location.search.includes('monitor=2')) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 overflow-hidden">
+        <SecondaryMonitorView isStandaloneWindow={true} onCloseStandalone={() => window.close()} />
+      </div>
+    );
+  }
+
   const [customUser, setCustomUser] = useState<CustomUser | null>(() => {
     try {
       const saved = localStorage.getItem('keto_custom_user');
@@ -1359,7 +1368,7 @@ export default function App() {
               onMinimize={() => setInDesktop(true)}
               onClose={() => setInDesktop(true)}
           >
-              <GardenGame user={user} userData={state} onBack={() => setAppMode('lobby')} onBadgeUnlock={(id: string) => {
+              <GardenGame user={user} userData={state} onBack={() => setInDesktop(true)} onBadgeUnlock={(id: string) => {
                   const userBadges = state.badges || [];
                   if (!userBadges.includes(id)) {
                       userBadges.push(id);
@@ -1380,7 +1389,7 @@ export default function App() {
               onMinimize={() => setInDesktop(true)}
               onClose={() => setInDesktop(true)}
           >
-              <BlueTower user={user} onBack={() => setAppMode('lobby')} deviceMode={deviceMode} />
+              <BlueTower user={user} onBack={() => setInDesktop(true)} deviceMode={deviceMode} />
           </GameWindowShell>
       );
   }
@@ -1409,7 +1418,7 @@ export default function App() {
               onMinimize={() => setInDesktop(true)}
               onClose={() => setInDesktop(true)}
           >
-              <SurvivorGame user={user} userData={state} onBack={() => setAppMode('lobby')} deviceMode={deviceMode} />
+              <SurvivorGame user={user} userData={state} onBack={() => setInDesktop(true)} deviceMode={deviceMode} />
           </GameWindowShell>
       );
   }
@@ -1426,8 +1435,8 @@ export default function App() {
               <div className="flex-1 flex flex-col h-full min-h-full bg-slate-950 text-white select-none">
                   <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center z-10 shrink-0">
                       <div className="flex gap-4">
-                          <button onClick={() => setAppMode('lobby')} className="text-slate-400 hover:text-white flex items-center gap-2 font-bold">
-                              <DoorOpen className="w-5 h-5" /> 로비로 돌아가기
+                          <button onClick={() => setInDesktop(true)} className="text-slate-400 hover:text-white flex items-center gap-2 font-bold">
+                              <DoorOpen className="w-5 h-5" /> 바탕화면으로 나가기
                           </button>
                           {isOwner && (
                               <button onClick={() => setShowAdminPanel(true)} className="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-lg flex items-center gap-2 font-bold hover:bg-yellow-500/30">
@@ -1466,7 +1475,7 @@ export default function App() {
               onMinimize={() => setInDesktop(true)}
               onClose={() => setInDesktop(true)}
           >
-              <BlogSystem user={user} onBack={() => setAppMode('lobby')} />
+              <BlogSystem user={user} onBack={() => setInDesktop(true)} />
           </GameWindowShell>
       );
   }
@@ -1480,7 +1489,7 @@ export default function App() {
               onMinimize={() => setInDesktop(true)}
               onClose={() => setInDesktop(true)}
           >
-              <SpeedKeyboard2 user={user} onBack={() => setAppMode('lobby')} />
+              <SpeedKeyboard2 user={user} onBack={() => setInDesktop(true)} />
           </GameWindowShell>
       );
   }
