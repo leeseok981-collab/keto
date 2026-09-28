@@ -62,36 +62,89 @@ export const CailusPurchaseFlowModal: React.FC<CailusPurchaseFlowModalProps> = (
     }, []);
 
     // Helper: Generate Random 6-digit Code
+    // AI Email Dispatch Loading States
+    const [isSendingCode1, setIsSendingCode1] = useState<boolean>(false);
+    const [aiEmailBody1, setAiEmailBody1] = useState<string>('');
+
+    const [isSendingCode2, setIsSendingCode2] = useState<boolean>(false);
+    const [aiEmailBody2, setAiEmailBody2] = useState<string>('');
+
     const generate6DigitCode = () => {
         return Math.floor(100000 + Math.random() * 900000).toString();
     };
 
-    // Step 1: Send 1st Code
-    const handleSendCode1 = () => {
+    // Step 1: Send 1st Code via AI Email API
+    const handleSendCode1 = async () => {
         sound.click();
         const code = generate6DigitCode();
-        setGeneratedCode1(code);
-        setCode1SentAlert(true);
-        sound.buy();
+        setIsSendingCode1(true);
+
+        try {
+            const res = await fetch('/api/gemini/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    recipientEmail: emailInput.trim() || 'cailus@catchos.com',
+                    purpose: '캐일러스 엔터프라이즈 구매 1차 보안 인증',
+                    code,
+                    appName: 'CatchOS Cailus Store'
+                })
+            });
+            const data = await res.json();
+            const activeCode = data.code || code;
+            setGeneratedCode1(activeCode);
+            setAiEmailBody1(data.emailContent || '');
+            setCode1SentAlert(true);
+            sound.buy();
+        } catch {
+            setGeneratedCode1(code);
+            setCode1SentAlert(true);
+            sound.buy();
+        } finally {
+            setIsSendingCode1(false);
+        }
     };
 
     const handleVerifyCode1 = () => {
         if (!generatedCode1 || emailCode1.trim() !== generatedCode1) {
             sound.wrong();
-            alert('인증 코드가 일치하지 않습니다. 화면 상단의 6자리 코드를 확인하세요.');
+            alert('인증 코드가 일치하지 않습니다. 발송된 6자리 코드를 확인하세요.');
             return;
         }
         sound.fanfare();
         setStep(2);
     };
 
-    // Step 3: Send 2nd Code
-    const handleSendCode2 = () => {
+    // Step 3: Send 2nd Code via AI Email API
+    const handleSendCode2 = async () => {
         sound.click();
         const code = generate6DigitCode();
-        setGeneratedCode2(code);
-        setCode2SentAlert(true);
-        sound.buy();
+        setIsSendingCode2(true);
+
+        try {
+            const res = await fetch('/api/gemini/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    recipientEmail: emailInput.trim() || 'cailus@catchos.com',
+                    purpose: '캐일러스 엔터프라이즈 구매 2차 재확인 인증',
+                    code,
+                    appName: 'CatchOS Cailus Store'
+                })
+            });
+            const data = await res.json();
+            const activeCode = data.code || code;
+            setGeneratedCode2(activeCode);
+            setAiEmailBody2(data.emailContent || '');
+            setCode2SentAlert(true);
+            sound.buy();
+        } catch {
+            setGeneratedCode2(code);
+            setCode2SentAlert(true);
+            sound.buy();
+        } finally {
+            setIsSendingCode2(false);
+        }
     };
 
     const handleVerifyCode2 = () => {

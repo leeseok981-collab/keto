@@ -336,6 +336,68 @@ async function startServer() {
     }
   });
 
+  // Dedicated AI Email Sending Endpoint
+  app.post("/api/gemini/send-email", async (req, res) => {
+    try {
+      const { recipientEmail, purpose = "인증 코드 발송", code, appName = "CatchOS" } = req.body;
+      if (!recipientEmail) {
+        return res.status(400).json({ error: "수신자 이메일 주소가 필요합니다." });
+      }
+
+      const generatedCode = code || Math.floor(100000 + Math.random() * 900000).toString();
+      const ai = getGeminiAI();
+
+      let emailBody = "";
+      if (ai) {
+        try {
+          const response = await generateWithFallback(
+            ai,
+            DEFAULT_TEXT_MODELS,
+            {
+              contents: `당신은 ${appName}의 AI 스마트 이메일 발송 자동화 시스템입니다.
+수신자: ${recipientEmail}
+목적: ${purpose}
+인증코드: ${generatedCode}
+
+수신자에게 전송할 정중하고 격식 있는 정식 AI 보안/안내 이메일 본문을 작성하세요.
+이메일 제목, 안녕하세요 인사말, 발송 목적, 6자리 인증코드 [${generatedCode}], 유효시간 안내(5분), 보안 당부 및 ${appName} 지원팀 맺음말을 포함해 다정하고 깔끔한 한국어로 작성하세요.`,
+            }
+          );
+          emailBody = response.text || "";
+        } catch (e: any) {
+          console.warn("[Send Email API] Gemini fallback:", e?.message);
+        }
+      }
+
+      if (!emailBody) {
+        emailBody = `[${appName} AI 보안 센터 - ${purpose}]
+
+안녕하세요, ${recipientEmail} 님.
+
+${appName} 가상 시스템에 요청하신 [${purpose}]를 위한 6자리 인증 코드를 발송해 드립니다.
+
+🔑 인증 코드: [ ${generatedCode} ]
+
+본 인증 코드는 5분간 유효하며, 본인이 요청하지 않은 경우 본 이메일을 무시하셔도 됩니다.
+
+감사합니다.
+${appName} AI 오토메이션 시스템 드림`;
+      }
+
+      return res.json({
+        success: true,
+        recipientEmail,
+        code: generatedCode,
+        subject: `[${appName}] ${purpose} 안내 (인증코드: ${generatedCode})`,
+        emailContent: emailBody,
+        sentTimestamp: Date.now()
+      });
+    } catch (err: any) {
+      console.error("[Send Email API Error]:", err);
+      res.status(500).json({ error: err.message || "이메일 발송에 실패했습니다." });
+    }
+  });
+
   // Dedicated Conversational AI Chat Endpoint
   app.post("/api/gemini/chat", async (req, res) => {
     try {

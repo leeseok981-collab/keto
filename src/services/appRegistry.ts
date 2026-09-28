@@ -232,6 +232,22 @@ export const OFFICIAL_APP_CATALOG: AppPackage[] = [
         appType: 'spacedefender'
     },
     {
+        id: 'pkg-game-mahjong',
+        name: '마젠 (Mahjong Solitaire)',
+        version: '1.0.0',
+        description: '48개의 정통 마작 타일을 짝 맞추어 모두 제거하는 클래식 두뇌 퍼즐! 힌트, 셔플, 콤보 시스템 완비.',
+        icon: 'grid',
+        category: 'game',
+        permissions: ['game.loop', 'sound.fx'],
+        size: '15.2 MB',
+        publisher: 'Eastern Puzzle Works',
+        rating: 4.9,
+        downloads: '1.8M',
+        isDefault: false,
+        appType: 'mahjong',
+        featured: true
+    },
+    {
         id: 'pkg-catto',
         name: '캐트 (KETO 게임)',
         nameKey: 'os.catto',

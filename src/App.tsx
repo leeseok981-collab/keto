@@ -1949,15 +1949,8 @@ export default function App() {
                                         <span className="text-5xl drop-shadow-md group-hover:scale-110 transition-transform">🔫</span>
                                     </div>
                                     <h3 className="font-black text-sm text-white truncate">탕탕특공대</h3>
-                                    <p className="text-xs text-slate-400 mt-1">로그라이크 서바이벌</p></div>
-                                <div onMouseEnter={sound.hover} onClick={() => { sound.click(); setSelectedGame('mystery'); }} className="bg-slate-900 rounded-2xl p-4 border border-slate-700 hover:border-cyan-400 hover:bg-slate-800 cursor-pointer transition-colors text-center group">
-                                    <div className="bg-gradient-to-br from-indigo-900 to-cyan-900 aspect-square rounded-xl mb-3 flex items-center justify-center group-hover:scale-105 transition-transform relative overflow-hidden border border-cyan-500/30">
-                                        <img src="/assets/gpt1icon.png" alt="스피드 키보드 탈출 2" className="w-full h-full object-cover rounded-xl" />
-                                    </div>
-                                    <h3 className="font-black text-sm text-white truncate">스피드 키보드 탈출 2</h3>
-                                    <p className="text-xs text-amber-400 font-bold mt-1 whitespace-nowrap">얼리액세스</p>
+                                    <p className="text-xs text-slate-400 mt-1">로그라이크 서바이벌</p>
                                 </div>
-
                             </div>
                         </div>
 

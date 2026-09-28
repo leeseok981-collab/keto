@@ -246,6 +246,11 @@ export class GameAPI {
         return updated;
     }
 
+    // Save game score helper
+    static async saveGameScore(gameId: string, score: number): Promise<GameStats> {
+        return this.updateGameStats(gameId, { bestScore: score, playCount: 1 });
+    }
+
     // 5. Achievements
     static async getAchievements(gameId?: string): Promise<Achievement[]> {
         const savedUnlocksRaw = localStorage.getItem('gc_unlocked_achievements');

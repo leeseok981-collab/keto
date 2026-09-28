@@ -4,10 +4,11 @@ import {
     Zap, Sparkles, AlertTriangle, RefreshCw, CheckCircle2, 
     Flame, Database, Radio, Eye, EyeOff, Bug, Activity,
     Sliders, Code, DollarSign, Crosshair, Play, Square,
-    Layers, Search, ShieldCheck, X
+    Layers, Search, ShieldCheck, X, Mail, Send, Wallet
 } from 'lucide-react';
 import { sound } from '../utils/sound';
 import { appRegistry } from '../services/appRegistry';
+import { walletService, formatKRW } from '../services/walletService';
 
 interface CackingAppProps {
     onClose: () => void;
@@ -34,8 +35,29 @@ export const CackingApp: React.FC<CackingAppProps> = ({
 
     // Navigation Tabs
     const [activeTab, setActiveTab] = useState<
-        'dashboard' | 'catchon' | 'injector' | 'memory' | 'visual' | 'registry' | 'scanner'
+        'dashboard' | 'catchon' | 'money' | 'email' | 'injector' | 'memory' | 'visual' | 'registry' | 'scanner'
     >('dashboard');
+
+    // Wallet Money Modifier State
+    const [walletBalance, setWalletBalance] = useState<number>(() => walletService.getBalance());
+    const [targetBalanceInput, setTargetBalanceInput] = useState<string>('10000000');
+
+    // AI Email Sender State
+    const [emailRecipient, setEmailRecipient] = useState<string>('cailus@catchos.com');
+    const [emailPurpose, setEmailPurpose] = useState<string>('CatchOS 가상 계정 이메일 인증코드 발송');
+    const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
+    const [sentEmailResult, setSentEmailResult] = useState<{
+        recipientEmail: string;
+        subject: string;
+        emailContent: string;
+        code: string;
+        sentTimestamp: number;
+    } | null>(null);
+
+    useEffect(() => {
+        const unsub = walletService.subscribe(w => setWalletBalance(w.balance));
+        return () => unsub();
+    }, []);
 
     // Terminal log streams
     const [logs, setLogs] = useState<string[]>([
@@ -180,6 +202,72 @@ export const CackingApp: React.FC<CackingAppProps> = ({
         }, 1200);
     };
 
+    // Money Modification Handlers
+    const handleSetDirectBalance = () => {
+        const amt = parseInt(targetBalanceInput, 10);
+        if (isNaN(amt) || amt < 0) {
+            sound.wrong();
+            alert('올바른 금액 수치를 입력해 주세요.');
+            return;
+        }
+        sound.buy();
+        walletService.setBalance(amt, '⚡ 캐킹 콘솔 직접 원화 자산 변경');
+        setWalletBalance(walletService.getBalance());
+        addLog(`[MONEY-MOD] Wallet balance forcefully set to: ${formatKRW(amt)}`);
+    };
+
+    const handleAddMoneyQuick = (amount: number) => {
+        sound.buy();
+        walletService.addMoney(amount, '⚡ 캐킹 콘솔 자산 추가', 'other');
+        setWalletBalance(walletService.getBalance());
+        addLog(`[MONEY-MOD] Injected +${formatKRW(amount)} into main OS Wallet balance.`);
+    };
+
+    // AI Email Dispatch Handler
+    const handleSendAiEmail = async () => {
+        if (!emailRecipient.trim() || !emailRecipient.includes('@')) {
+            sound.wrong();
+            alert('올바른 수신자 이메일 주소를 입력해 주세요! (예: user@example.com)');
+            return;
+        }
+        sound.click();
+        setIsSendingEmail(true);
+        addLog(`[AI-EMAIL] Initiating Gemini AI Email Agent dispatch to ${emailRecipient}...`);
+
+        try {
+            const res = await fetch('/api/gemini/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    recipientEmail: emailRecipient.trim(),
+                    purpose: emailPurpose.trim() || 'AI 오토메이션 보안 통지',
+                    appName: 'CatchOS Cacking AI'
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                sound.fanfare();
+                setSentEmailResult({
+                    recipientEmail: data.recipientEmail,
+                    subject: data.subject,
+                    emailContent: data.emailContent,
+                    code: data.code,
+                    sentTimestamp: data.sentTimestamp
+                });
+                addLog(`[AI-EMAIL] SUCCESS: AI Email dispatched to ${data.recipientEmail}. Verification Code: [${data.code}]`);
+            } else {
+                throw new Error(data.error || '이메일 발송 오류');
+            }
+        } catch (err: any) {
+            sound.wrong();
+            addLog(`[AI-EMAIL] ERROR: ${err.message || 'AI 이메일 발송 실패'}`);
+            alert(`AI 이메일 발송 실패: ${err.message || '네트워크 오류'}`);
+        } finally {
+            setIsSendingEmail(false);
+        }
+    };
+
     // If still locked, show the Lock screen interface
     if (!isUnlocked) {
         return (
@@ -296,6 +384,8 @@ export const CackingApp: React.FC<CackingAppProps> = ({
             <div className="px-4 bg-slate-900/60 border-b border-slate-800/80 flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5 shrink-0">
                 {[
                     { id: 'dashboard', label: '대시보드', icon: Activity },
+                    { id: 'money', label: '원화 자산 변경', icon: Wallet },
+                    { id: 'email', label: 'AI 이메일 발송기', icon: Mail },
                     { id: 'catchon', label: '캐치온 연동 도구', icon: Zap },
                     { id: 'injector', label: '프로세스 인젝터', icon: Cpu },
                     { id: 'memory', label: '메모리 뷰어', icon: HardDrive },
@@ -369,7 +459,144 @@ export const CackingApp: React.FC<CackingAppProps> = ({
                     </div>
                 )}
 
-                {/* 2. CATCHON INTEGRATION TAB */}
+                {/* 2. MONEY MODIFIER TAB */}
+                {activeTab === 'money' && (
+                    <div className="space-y-4">
+                        <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-2">
+                            <h3 className="text-sm font-black text-emerald-400 flex items-center gap-2">
+                                <Wallet className="w-4 h-4 text-emerald-400" />
+                                <span>OS 메인 원화 자산 / 잔액 강제 변경 모듈</span>
+                            </h3>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                                캐트 뱅크, 주식 시장, 쇼핑몰 등 OS 전체 시스템에 공유되는 가상 지갑 잔액을 자유롭게 원하는 금액으로 수정/변경합니다.
+                            </p>
+                        </div>
+
+                        {/* Current Balance Overview */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/40 border border-emerald-500/40 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-slate-400 font-bold">현재 CatchOS 가상 지갑 잔액</span>
+                                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">LIVE SYNCED</span>
+                            </div>
+                            <div className="text-3xl font-black text-emerald-400 font-mono">
+                                {formatKRW(walletBalance)}
+                            </div>
+                        </div>
+
+                        {/* Direct Balance Input */}
+                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                            <h4 className="font-bold text-white flex items-center gap-1.5">
+                                <DollarSign className="w-4 h-4 text-amber-400" /> 원하는 수치로 잔액 직접 설정
+                            </h4>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="number"
+                                    value={targetBalanceInput}
+                                    onChange={(e) => setTargetBalanceInput(e.target.value)}
+                                    placeholder="설정할 원화 금액 입력"
+                                    className="flex-1 bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-xl px-4 py-2.5 text-sm text-emerald-300 font-mono font-bold outline-none"
+                                />
+                                <button
+                                    onClick={handleSetDirectBalance}
+                                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded-xl text-xs shadow-lg shadow-emerald-700/30 transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                    <span>잔액 즉시 변경</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                            <h4 className="font-bold text-white text-xs">빠른 원화 추가 / 치트 버튼</h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                {[
+                                    { label: '+100만 원', amt: 1000000 },
+                                    { label: '+1,000만 원', amt: 10000000 },
+                                    { label: '+1억 원', amt: 100000000 },
+                                    { label: '+10억 원', amt: 1000000000 }
+                                ].map((btn) => (
+                                    <button
+                                        key={btn.amt}
+                                        onClick={() => handleAddMoneyQuick(btn.amt)}
+                                        className="py-2.5 px-3 bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white rounded-xl font-bold border border-slate-700 transition-all text-xs cursor-pointer"
+                                    >
+                                        {btn.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. AI EMAIL SENDER TAB */}
+                {activeTab === 'email' && (
+                    <div className="space-y-4">
+                        <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-2">
+                            <h3 className="text-sm font-black text-cyan-400 flex items-center gap-2">
+                                <Mail className="w-4 h-4 text-cyan-400" />
+                                <span>Gemini AI 통합 이메일 자동 발송기</span>
+                            </h3>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                                수신자 실제 이메일을 입력하고 [AI 발송하기] 버튼을 누르면 AI 가 스마트 안내 및 6자리 보안 인증 코드가 포함된 문서를 실시간 생성하여 전달합니다.
+                            </p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                            <div>
+                                <label className="text-xs font-bold text-slate-300 block mb-1">수신자 실제 이메일 주소</label>
+                                <input 
+                                    type="email"
+                                    value={emailRecipient}
+                                    onChange={(e) => setEmailRecipient(e.target.value)}
+                                    placeholder="예: target@domain.com"
+                                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-300 block mb-1">이메일 용도 및 발송 목적</label>
+                                <input 
+                                    type="text"
+                                    value={emailPurpose}
+                                    onChange={(e) => setEmailPurpose(e.target.value)}
+                                    placeholder="예: 캐일러스 앱 결제 보안 코드 / CatchOS 로그인 가증"
+                                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-2.5 text-xs text-slate-200 outline-none"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleSendAiEmail}
+                                disabled={isSendingEmail}
+                                className="w-full py-3 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition shadow-lg shadow-cyan-900/40 cursor-pointer flex items-center justify-center gap-2"
+                            >
+                                <Send className="w-4 h-4" />
+                                <span>{isSendingEmail ? 'AI 가 이메일 작성 및 발송 중...' : 'AI 이메일 발송하기'}</span>
+                            </button>
+                        </div>
+
+                        {/* Dispatched AI Email Result Preview */}
+                        {sentEmailResult && (
+                            <div className="p-5 rounded-2xl bg-slate-950 border border-cyan-500/40 space-y-3 font-mono text-xs text-slate-200 shadow-xl animate-fade-in">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                                    <span className="text-cyan-400 font-bold flex items-center gap-1.5">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-400" /> AI 이메일 발송 완료 통지
+                                    </span>
+                                    <span className="text-[10px] text-slate-500">
+                                        {new Date(sentEmailResult.sentTimestamp).toLocaleTimeString()}
+                                    </span>
+                                </div>
+                                <div className="space-y-1 text-[11px]">
+                                    <div><span className="text-slate-500">수신자:</span> <span className="text-amber-300">{sentEmailResult.recipientEmail}</span></div>
+                                    <div><span className="text-slate-500">제목:</span> <span className="text-white font-bold">{sentEmailResult.subject}</span></div>
+                                    <div><span className="text-slate-500">인증 코드:</span> <span className="bg-cyan-950 border border-cyan-500/40 px-2 py-0.5 rounded text-cyan-300 font-bold">{sentEmailResult.code}</span></div>
+                                </div>
+                                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 whitespace-pre-wrap text-[11px] leading-relaxed text-slate-300 font-sans">
+                                    {sentEmailResult.emailContent}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
                 {activeTab === 'catchon' && (
                     <div className="space-y-4">
                         <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-2">

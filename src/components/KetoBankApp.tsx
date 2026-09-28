@@ -479,70 +479,150 @@ export const KetoBankApp: React.FC<KetoBankAppProps> = ({ onClose }) => {
                 {activeTab === 'lotto' && <LottoSection />}
 
                 {/* 4. HISTORY TAB */}
-                {activeTab === 'history' && (
-                    <div className="space-y-4 max-w-2xl mx-auto">
-                        <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-                            <div className="flex gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
-                                <button 
-                                    onClick={() => setHistoryFilter('all')}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium ${historyFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400'}`}
-                                >
-                                    전체
-                                </button>
-                                <button 
-                                    onClick={() => setHistoryFilter('earn')}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium ${historyFilter === 'earn' ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/30' : 'text-slate-400'}`}
-                                >
-                                    수입 (+)
-                                </button>
-                                <button 
-                                    onClick={() => setHistoryFilter('spend')}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium ${historyFilter === 'spend' ? 'bg-rose-600/30 text-rose-300 border border-rose-500/30' : 'text-slate-400'}`}
-                                >
-                                    지출 (-)
-                                </button>
-                            </div>
+                {activeTab === 'history' && (() => {
+                    const now = new Date();
+                    const curMonth = now.getMonth();
+                    const curYear = now.getFullYear();
 
-                            <div className="relative w-full sm:w-64">
-                                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
-                                <input 
-                                    type="text" 
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="거래 내역 검색..."
-                                    className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-                        </div>
+                    // Calculate total spent this month
+                    const thisMonthSpent = transactions
+                        .filter(tx => {
+                            if (tx.type !== 'spend') return false;
+                            const d = new Date(tx.timestamp);
+                            return d.getMonth() === curMonth && d.getFullYear() === curYear;
+                        })
+                        .reduce((sum, tx) => sum + tx.amount, 0);
 
-                        <div className="rounded-2xl bg-slate-900 border border-slate-800 divide-y divide-slate-800/80 overflow-hidden">
-                            {filteredTxs.map(tx => (
-                                <div key={tx.id} className="p-3.5 flex items-center justify-between hover:bg-slate-800/40 transition">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${tx.type === 'earn' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-                                            {tx.type === 'earn' ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                    // Fixed monthly recurring expenditure (e.g. Cailus 500,000 KRW/month)
+                    const monthlyRecurringAmount = 500000;
+                    const estimatedTotalMonthlyExpenditure = thisMonthSpent + monthlyRecurringAmount;
+
+                    return (
+                        <div className="space-y-4 max-w-2xl mx-auto">
+                            {/* 💳 월별 지출 요약 및 월 정기 예정 지출 카드 */}
+                            <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-rose-950/30 to-slate-900 border border-rose-500/30 p-4 sm:p-5 space-y-3 shadow-lg">
+                                <div className="flex items-center justify-between pb-2 border-b border-rose-500/20">
+                                    <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                                        💳 월별 지출 요약 & 월 정기 예정 지출
+                                    </h4>
+                                    <span className="text-[11px] font-mono font-bold text-rose-300 px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30">
+                                        {curYear}년 {curMonth + 1}월
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-0.5">
+                                        <div className="text-[10px] text-slate-400 font-bold">이번 달 실지출 누적</div>
+                                        <div className="text-base font-black text-rose-400 font-mono">
+                                            {formatKRW(thisMonthSpent)}
                                         </div>
-                                        <div>
-                                            <div className="text-sm font-semibold text-slate-100">{tx.reason}</div>
-                                            <div className="text-[11px] text-slate-500">
-                                                {new Date(tx.timestamp).toLocaleString()} · 잔액 {formatKRW(tx.balanceAfter)}
+                                    </div>
+
+                                    <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-0.5">
+                                        <div className="text-[10px] text-slate-400 font-bold">월 정기 예정 지출액</div>
+                                        <div className="text-base font-black text-amber-400 font-mono">
+                                            {formatKRW(monthlyRecurringAmount)}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-950/80 p-3 rounded-xl border border-rose-500/30 space-y-0.5">
+                                        <div className="text-[10px] text-rose-300 font-bold">이번 달 총 예상 지출</div>
+                                        <div className="text-base font-black text-white font-mono">
+                                            {formatKRW(estimatedTotalMonthlyExpenditure)}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Recurring Monthly Expense Item Details */}
+                                <div className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 text-xs space-y-1.5">
+                                    <div className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                                        <span>📌 등록된 월 정기 자동 지출 항목:</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-slate-300 pl-2 text-[11px]">
+                                        <span className="flex items-center gap-1.5">
+                                            <span>👑</span> 캐일러스 (Cailus) 엔터프라이즈 월 서비스 유지/구독료
+                                        </span>
+                                        <span className="font-mono font-bold text-amber-400">월 500,000원</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-slate-400 pl-2 text-[11px]">
+                                        <span className="flex items-center gap-1.5">
+                                            <span>🌐</span> CatchOS 가상 보안 네트워크 회선 이용료
+                                        </span>
+                                        <span className="font-mono font-bold text-emerald-400">월 0원 (프로모션 무료)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                                <div className="flex gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                                    <button 
+                                        onClick={() => setHistoryFilter('all')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${historyFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400'}`}
+                                    >
+                                        전체
+                                    </button>
+                                    <button 
+                                        onClick={() => setHistoryFilter('earn')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${historyFilter === 'earn' ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/30' : 'text-slate-400'}`}
+                                    >
+                                        수입 (+)
+                                    </button>
+                                    <button 
+                                        onClick={() => setHistoryFilter('spend')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${historyFilter === 'spend' ? 'bg-rose-600/30 text-rose-300 border border-rose-500/30' : 'text-slate-400'}`}
+                                    >
+                                        지출 (-)
+                                    </button>
+                                </div>
+
+                                <div className="relative w-full sm:w-64">
+                                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
+                                    <input 
+                                        type="text" 
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="거래 내역 검색..."
+                                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl bg-slate-900 border border-slate-800 divide-y divide-slate-800/80 overflow-hidden">
+                                {filteredTxs.map(tx => (
+                                    <div key={tx.id} className="p-3.5 flex items-center justify-between hover:bg-slate-800/40 transition">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${tx.type === 'earn' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                                                {tx.type === 'earn' ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                                                    <span>{tx.reason}</span>
+                                                    {tx.reason.includes('월') || tx.reason.includes('구독') || tx.reason.includes('유지') ? (
+                                                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                                                            월 정기
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                                <div className="text-[11px] text-slate-500">
+                                                    {new Date(tx.timestamp).toLocaleString()} · 잔액 {formatKRW(tx.balanceAfter)}
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className={`text-sm font-bold ${tx.type === 'earn' ? 'text-emerald-400' : 'text-slate-200'}`}>
+                                            {tx.type === 'earn' ? '+' : '-'}{formatKRW(tx.amount)}
+                                        </div>
                                     </div>
-                                    <div className={`text-sm font-bold ${tx.type === 'earn' ? 'text-emerald-400' : 'text-slate-200'}`}>
-                                        {tx.type === 'earn' ? '+' : '-'}{formatKRW(tx.amount)}
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
 
-                            {filteredTxs.length === 0 && (
-                                <div className="p-8 text-center text-xs text-slate-500">
-                                    검색된 거래 내역이 없습니다.
-                                </div>
-                            )}
+                                {filteredTxs.length === 0 && (
+                                    <div className="p-8 text-center text-xs text-slate-500">
+                                        검색된 거래 내역이 없습니다.
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
 
                 {/* 5. SETTINGS TAB */}
                 {activeTab === 'settings' && (

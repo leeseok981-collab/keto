@@ -11,7 +11,7 @@ import {
     PlaySquare, Code, Apple, Layout, Scissors, Palette, MousePointer, Sliders,
     Camera, Bot, Plus, Settings, Lock, CornerDownLeft, GraduationCap,
     Compass, Activity, Flame, Fish, Trees, Utensils, BookOpen, Tv, Smartphone,
-    Zap, Swords, Shield, Grid, Navigation, Wallet
+    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown
 } from 'lucide-react';
 import { KetoBankApp } from './components/KetoBankApp';
 import { CailusAppWindow } from './components/CailusAppWindow';
@@ -74,7 +74,6 @@ import { SAMPLE_TRACKS_100, Track } from './data/musicTracks';
 import { loadVFSNodes, saveVFSNodes, VFSNode, vfsToDesktopItems } from './utils/vfs';
 
 import { GameCenterApp } from './components/GameCenterApp';
-import { SpeedKeyboardEscape } from './components/games/SpeedKeyboardEscape';
 import { PixelSurvivor } from './components/games/PixelSurvivor';
 import { NeonRunner } from './components/games/NeonRunner';
 import { DungeonCore } from './components/games/DungeonCore';
@@ -82,6 +81,8 @@ import { MiniTycoon } from './components/games/MiniTycoon';
 import { BlockPuzzle } from './components/games/BlockPuzzle';
 import { RhythmBeat } from './components/games/RhythmBeat';
 import { SpaceDefender } from './components/games/SpaceDefender';
+import { MahjongGame } from './components/games/MahjongGame';
+import { MazenComingSoon } from './components/mazen/MazenComingSoon';
 
 export type DesktopItemType = 'app' | 'text' | 'file' | 'video' | 'image' | 'audio' | 'game' | 'zip' | 'folder';
 
@@ -145,9 +146,9 @@ export const getSystemCoreApps = (theme: 'windows' | 'mac', lang: SupportedLangu
         },
         {
             id: 'app-browser',
-            name: isMac ? t('os.safari', 'Safari') : t('os.browser', '브라우저'),
+            name: '검색엔진',
             type: 'app',
-            appType: 'browser',
+            appType: 'catchon',
             updatedAt: now
         },
         {
@@ -242,9 +243,9 @@ export const getDefaultDesktopApps = (
         },
         {
             id: 'app-browser',
-            name: isMac ? t('os.safari', 'Safari') : t('os.browser', '브라우저'),
+            name: '검색엔진',
             type: 'app',
-            appType: 'browser',
+            appType: 'catchon',
             updatedAt: now
         },
         {
@@ -485,7 +486,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
 
     // Official Game Center & Games Window States
     const [showGameCenter, setShowGameCenter] = useState(false);
-    const [showSpeedKeyboard, setShowSpeedKeyboard] = useState(false);
     const [showPixelSurvivor, setShowPixelSurvivor] = useState(false);
     const [showNeonRunner, setShowNeonRunner] = useState(false);
     const [showDungeonCore, setShowDungeonCore] = useState(false);
@@ -493,6 +493,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showBlockPuzzle, setShowBlockPuzzle] = useState(false);
     const [showRhythmBeat, setShowRhythmBeat] = useState(false);
     const [showSpaceDefender, setShowSpaceDefender] = useState(false);
+    const [showMahjong, setShowMahjong] = useState(false);
 
     // Helper to close any app window and cleanly return to the desktop background
     const closeAppToDesktop = (closeStateFn: () => void) => {
@@ -977,6 +978,8 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'calendar' || item.id === 'app-calendar') { sound.click(); setIsCalendarAppOpen(true); setFocusedWindow('calendar'); }
             else if (item.appType === 'terminal' || item.id === 'app-terminal') { sound.click(); setIsTerminalAppOpen(true); setFocusedWindow('terminal'); }
             else if (item.appType === 'cailus') { sound.click(); setShowCailusApp(true); setFocusedWindow('cailus'); }
+            else if (item.appType === 'mahjong') { sound.click(); setShowMahjong(true); setFocusedWindow('mahjong'); }
+            else if (item.appType === 'speedkeyboard2' || item.appType === 'speedkeyboard') { sound.click(); setShowCatore(true); setFocusedWindow('catore'); }
             else { sound.click(); onLaunch(); }
         } else if (item.type === 'game') {
             sound.click();
@@ -1415,8 +1418,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             setIsTerminalAppOpen(true);
         } else if (appType === 'gamecenter') {
             setShowGameCenter(true);
-        } else if (appType === 'speedkeyboard') {
-            setShowSpeedKeyboard(true);
+        } else if (appType === 'speedkeyboard' || appType === 'speedkeyboard2') {
+            setShowCatore(true);
+            setFocusedWindow('catore');
         } else if (appType === 'pixelsurvivor') {
             setShowPixelSurvivor(true);
         } else if (appType === 'neonrunner') {
@@ -1431,6 +1435,10 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             setShowRhythmBeat(true);
         } else if (appType === 'spacedefender') {
             setShowSpaceDefender(true);
+        } else if (appType === 'cailus') {
+            setShowCailusApp(true);
+        } else if (appType === 'mahjong') {
+            setShowMahjong(true);
         } else if (appType === 'mouse') {
             setSettingsCategory('mouse');
             setShowSettingsApp(true);
@@ -1865,15 +1873,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             onFocus: () => setFocusedWindow('ketoBank')
         });
     }
-    if (showCailusApp) {
-        runningApps.push({
-            id: 'cailus',
-            name: '캐일러스',
-            icon: <Sparkles className="w-3.5 h-3.5 text-amber-400" />,
-            onClose: () => closeAppToDesktop(() => setShowCailusApp(false)),
-            onFocus: () => setFocusedWindow('cailus')
-        });
-    }
     if (showCatore) {
         runningApps.push({
             id: 'catore',
@@ -1895,8 +1894,8 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     if (showBrowser) {
         runningApps.push({
             id: 'browser',
-            name: theme === 'mac' ? 'Safari' : '브라우저',
-            icon: <Compass className="w-3.5 h-3.5 text-sky-400" />,
+            name: '검색엔진',
+            icon: <Search className="w-3.5 h-3.5 text-cyan-400" />,
             onClose: () => setShowBrowser(false),
             onFocus: () => setFocusedWindow('browser')
         });
@@ -1944,15 +1943,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             icon: <Gamepad2 className="w-3.5 h-3.5 text-cyan-400" />,
             onClose: () => closeAppToDesktop(() => setShowGameCenter(false)),
             onFocus: () => setFocusedWindow('gamecenter')
-        });
-    }
-    if (showSpeedKeyboard) {
-        runningApps.push({
-            id: 'speedkeyboard',
-            name: '스피드 키보드 탈출',
-            icon: <Zap className="w-3.5 h-3.5 text-amber-400" />,
-            onClose: () => closeAppToDesktop(() => setShowSpeedKeyboard(false)),
-            onFocus: () => setFocusedWindow('speedkeyboard')
         });
     }
     if (showPixelSurvivor) {
@@ -2016,6 +2006,24 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             icon: <Navigation className="w-3.5 h-3.5 text-blue-400" />,
             onClose: () => closeAppToDesktop(() => setShowSpaceDefender(false)),
             onFocus: () => setFocusedWindow('spacedefender')
+        });
+    }
+    if (showCailusApp) {
+        runningApps.push({
+            id: 'cailus',
+            name: '캐일러스 (Cailus)',
+            icon: <Sparkles className="w-3.5 h-3.5 text-amber-400" />,
+            onClose: () => closeAppToDesktop(() => setShowCailusApp(false)),
+            onFocus: () => setFocusedWindow('cailus')
+        });
+    }
+    if (showMahjong) {
+        runningApps.push({
+            id: 'mahjong',
+            name: '마젠',
+            icon: <Grid className="w-3.5 h-3.5 text-amber-400" />,
+            onClose: () => closeAppToDesktop(() => setShowMahjong(false)),
+            onFocus: () => setFocusedWindow('mahjong')
         });
     }
 
@@ -2253,6 +2261,21 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Terminal className="w-7 h-7 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                                     </div>
                                 )}
+                                {(item.appType === 'cailus' || item.id === 'app-cailus') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-600 to-yellow-500 flex items-center justify-center shadow-lg border-2 border-amber-300/60 ring-2 ring-amber-500/30 group-hover:scale-105 transition-transform">
+                                        <span className="text-2xl drop-shadow">👑</span>
+                                    </div>
+                                )}
+                                {(item.appType === 'mahjong' || item.id === 'app-mahjong') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-700 via-orange-800 to-stone-900 flex items-center justify-center shadow-lg border border-amber-400/40 group-hover:scale-105 transition-transform">
+                                        <span className="text-2xl drop-shadow">🀄</span>
+                                    </div>
+                                )}
+                                {(item.appType === 'speedkeyboard2' || item.id === 'app-speedkeyboard2') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
+                                        <Zap className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                                    </div>
+                                )}
                                 {(item.appType === 'browser' || item.id === 'app-browser') && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg border border-sky-300/40 group-hover:scale-105 transition-transform">
                                         <Compass className="w-7 h-7 text-white drop-shadow" />
@@ -2443,8 +2466,23 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Settings className="w-7 h-7 text-white drop-shadow group-hover:rotate-45 transition-transform duration-300" />
                                     </div>
                                 )}
+                                {item.appType === 'cailus' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-purple-600 to-cyan-500 flex items-center justify-center shadow-2xl border-2 border-amber-300/80 ring-4 ring-amber-400/30 group-hover:scale-110 transition-transform">
+                                        <Crown className="w-7 h-7 text-amber-200 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]" />
+                                    </div>
+                                )}
+                                {item.appType === 'mahjong' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 via-amber-700 to-slate-900 flex items-center justify-center shadow-lg border border-amber-400/40 ring-2 ring-emerald-500/20 group-hover:scale-105 transition-transform">
+                                        <Grid className="w-7 h-7 text-amber-300 drop-shadow" />
+                                    </div>
+                                )}
+                                {item.appType === 'speedkeyboard2' && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 via-purple-600 to-cyan-400 flex items-center justify-center shadow-lg border border-cyan-300/60 ring-2 ring-pink-500/30 group-hover:scale-105 transition-transform">
+                                        <Zap className="w-7 h-7 text-yellow-300 drop-shadow-[0_0_8px_rgba(253,224,71,0.7)]" />
+                                    </div>
+                                )}
                                 {item.type === 'app' && 
-                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings'].includes(item.appType || '') && (
+                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings','cailus','mahjong','speedkeyboard2'].includes(item.appType || '') && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
                                         <Sparkles className="w-7 h-7 text-white drop-shadow" />
                                     </div>
@@ -2746,20 +2784,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     defaultHeight="600px"
                 >
                     <CatchOnSearch onClose={() => closeAppToDesktop(() => setShowCatchOn(false))} />
-                </OSWindowFrame>
-            )}
-
-            {/* Cailus App Window */}
-            {showCailusApp && (
-                <OSWindowFrame
-                    title="캐일러스 (Cailus Enterprise) — COMING SOON"
-                    icon={<Sparkles className="w-4 h-4 text-amber-400" />}
-                    onClose={() => closeAppToDesktop(() => setShowCailusApp(false))}
-                    theme={theme}
-                    defaultWidth="900px"
-                    defaultHeight="620px"
-                >
-                    <CailusAppWindow onClose={() => closeAppToDesktop(() => setShowCailusApp(false))} />
                 </OSWindowFrame>
             )}
 
@@ -3124,7 +3148,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             { id: 'app-settings', name: theme === 'mac' ? t('os.systemSettings', '시스템 설정') : t('os.settings', '설정'), appType: 'settings', icon: <Settings className="w-4 h-4 text-sky-400" />, desc: '배경화면, 테마, 마우스, 계정, 보안' },
                             { id: 'app-calculator', name: t('os.calculator', '계산기'), appType: 'calculator', icon: <Calculator className="w-4 h-4 text-emerald-400" />, desc: '표준 & 공학용 사칙연산 계산기' },
                             { id: 'app-notepad', name: theme === 'mac' ? t('os.textedit', '텍스트 편집기') : t('os.notepad', '메모장'), appType: 'notepad', icon: <FileText className="w-4 h-4 text-yellow-400" />, desc: '텍스트 문서 편집기' },
-                            { id: 'app-browser', name: theme === 'mac' ? t('os.safari', 'Safari') : t('os.browser', '브라우저'), appType: 'browser', icon: <Compass className="w-4 h-4 text-blue-400" />, desc: '웹 서핑 및 북마크 네비게이터' },
+                            { id: 'app-catchon', name: '검색엔진', appType: 'catchon', icon: <Search className="w-4 h-4 text-cyan-400" />, desc: '스마트 통합 검색엔진 & 웹 포털' },
                             { id: 'app-photos', name: t('os.photos', '사진'), appType: 'photos', icon: <ImageIcon className="w-4 h-4 text-pink-400" />, desc: '월페이퍼 및 이미지 뷰어' },
                             { id: 'app-calendar', name: t('os.calendar', '캘린더'), appType: 'calendar', icon: <CalendarIcon className="w-4 h-4 text-amber-400" />, desc: '연도/월별 일일 일정 및 메모' },
                             { id: 'app-terminal', name: t('os.terminal', '터미널'), appType: 'terminal', icon: <Terminal className="w-4 h-4 text-emerald-400" />, desc: '가상 파일 시스템 명령 프롬프트' },
@@ -3134,7 +3158,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             { id: 'app-trash', name: t('os.trash', '휴지통'), appType: 'trash', icon: <Trash2 className="w-4 h-4 text-slate-300" />, desc: `${trashItems.length}개 항목 보관` },
                             { id: 'app-power', name: t('os.power', '전원'), appType: 'power', icon: <Power className="w-4 h-4 text-rose-400" />, desc: '종료, 다시 시작, 화면 잠금' },
                             { id: 'app-keto-bank', name: 'KETO Bank', appType: 'ketoBank', icon: <Wallet className="w-4 h-4 text-blue-400" />, desc: '가상 원화 지갑, 실시간 채굴 수입, 적금 및 이벤트' },
-                            { id: 'app-catchon', name: t('os.catchon', '캐치온'), appType: 'catchon', icon: <Search className="w-4 h-4 text-cyan-400" />, desc: '구글 스타일 통합 검색 엔진' },
                             { id: 'app-catore', name: t('os.catore', '캐토어'), appType: 'catore', icon: <Sparkles className="w-4 h-4 text-indigo-400" />, desc: '가상 OS 공식 앱스토어 (설치/관리)' }
                         ].map(coreApp => {
                             const isOnDesktop = isAppOnDesktop(coreApp.appType);
@@ -3617,20 +3640,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                         {isOnline ? <Wifi className="w-4 h-4 text-emerald-400" /> : <WifiOff className="w-4 h-4 text-rose-400" />}
                     </div>
 
-                    {/* 💡 도움말 버튼 (인터넷 바로 옆) */}
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            sound.click();
-                            setShowHelpModal(true);
-                        }}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 hover:text-white border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                        title="도움말 센터 (수백 개 기능 백과 & AI 질의응답)"
-                    >
-                        <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>도움말</span>
-                    </button>
-
                     {/* Sound Icon */}
                     <div 
                         onClick={(e) => { e.stopPropagation(); setShowCalendarTray(true); }}
@@ -3939,17 +3948,17 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 </OSWindowFrame>
             )}
 
-            {/* 🌐 브라우저 (Browser / Safari) */}
+            {/* 🔍 검색엔진 (CatchOn Search) */}
             {showBrowser && (
                 <OSWindowFrame
-                    title={theme === 'mac' ? 'Safari' : '브라우저 (Web Browser)'}
-                    icon={<Compass className="w-4 h-4 text-blue-400" />}
+                    title="검색엔진 (CatchOn Search)"
+                    icon={<Search className="w-4 h-4 text-cyan-400" />}
                     onClose={() => closeAppToDesktop(() => setShowBrowser(false))}
                     theme={theme}
                     defaultWidth="920px"
                     defaultHeight="620px"
                 >
-                    <BrowserApp onClose={() => closeAppToDesktop(() => setShowBrowser(false))} />
+                    <CatchOnSearch onClose={() => closeAppToDesktop(() => setShowBrowser(false))} />
                 </OSWindowFrame>
             )}
 
@@ -4077,20 +4086,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 </OSWindowFrame>
             )}
 
-            {/* ⚡ 스피드 키보드 탈출 */}
-            {showSpeedKeyboard && (
-                <OSWindowFrame
-                    title="스피드 키보드 탈출 (Speed Keyboard Escape)"
-                    icon={<Zap className="w-4 h-4 text-amber-400" />}
-                    onClose={() => closeAppToDesktop(() => setShowSpeedKeyboard(false))}
-                    theme={theme}
-                    defaultWidth="900px"
-                    defaultHeight="620px"
-                >
-                    <SpeedKeyboardEscape onClose={() => closeAppToDesktop(() => setShowSpeedKeyboard(false))} />
-                </OSWindowFrame>
-            )}
-
             {/* ⚔️ 픽셀 서바이버 */}
             {showPixelSurvivor && (
                 <OSWindowFrame
@@ -4186,6 +4181,49 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     defaultHeight="620px"
                 >
                     <SpaceDefender onClose={() => closeAppToDesktop(() => setShowSpaceDefender(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🀄 마젠 (Mazen Enterprise Platform) */}
+            {showMahjong && (
+                <OSWindowFrame
+                    title="마젠 (Mazen Enterprise Platform) — Coming Soon"
+                    icon={<Grid className="w-4 h-4 text-amber-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowMahjong(false))}
+                    theme={theme}
+                    defaultWidth="980px"
+                    defaultHeight="680px"
+                >
+                    <MazenComingSoon 
+                        onClose={() => closeAppToDesktop(() => setShowMahjong(false))} 
+                        onOpenOfficialSite={() => {
+                            closeAppToDesktop(() => setShowMahjong(false));
+                            setShowCatchOn(true);
+                            setFocusedWindow('catchon');
+                            setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('open-catchon-url', { detail: { url: 'https://www.Mazen.net/ko-kr' } }));
+                            }, 50);
+                        }}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 👑 캐일러스 (Cailus Enterprise OS) — 20대 핵심 기능 통합 지휘본부 */}
+            {showCailusApp && (
+                <OSWindowFrame
+                    title="CAILUS ENTERPRISE OS MODE — 통합 AI 및 시스템 제어 센터"
+                    icon={<Crown className="w-4 h-4 text-amber-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowCailusApp(false))}
+                    theme={theme}
+                    defaultWidth="1180px"
+                    defaultHeight="820px"
+                >
+                    <CailusAppWindow 
+                        onClose={() => closeAppToDesktop(() => setShowCailusApp(false))}
+                        onLaunchExternalApp={(appType) => {
+                            handleLaunchAppFromSearch(appType);
+                        }}
+                    />
                 </OSWindowFrame>
             )}
 

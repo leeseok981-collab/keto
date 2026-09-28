@@ -19,6 +19,46 @@ export interface GameInfo {
 
 export const GAME_CATALOG: GameInfo[] = [
     {
+        id: 'speedkeyboard2',
+        pkgId: 'pkg-game-speedkeyboard2',
+        appType: 'speedkeyboard2',
+        name: '스피드 키보드 탈출 2',
+        genre: '2D Action / Keyboard Runner',
+        description: '더욱 강력해진 후속작! PC 키보드 & 모바일 터치 풀 지원, 장애물 돌파 및 방화벽 단어 해킹으로 3,000m 탈출!',
+        size: '28.5 MB',
+        version: '2.0.0',
+        iconName: 'zap',
+        publisher: 'KETO Speed Studio',
+        rating: 5.0,
+        downloads: '2.4M',
+        bannerGradient: 'from-cyan-600 via-blue-600 to-indigo-800',
+        controlsGuide: [
+            { action: '점프 / 상승', key: 'Space / W / ArrowUp' },
+            { action: '장애물 회피 키', key: 'A S D F 화면 지시 키' },
+            { action: '방화벽 단어 해킹', key: '단어 스펠링 연속 입력' },
+            { action: '모바일 조작', key: '화면 가상 터치 키패드' }
+        ]
+    },
+    {
+        id: 'mahjong',
+        pkgId: 'pkg-game-mahjong',
+        appType: 'mahjong',
+        name: '마젠 (Mahjong Solitaire)',
+        genre: 'Tile Matching Puzzle',
+        description: '48개의 정통 마작 타일을 짝 맞추어 모두 제거하는 클래식 두뇌 퍼즐! 힌트, 셔플, 콤보 시스템 완비.',
+        size: '15.2 MB',
+        version: '1.0.0',
+        iconName: 'grid',
+        publisher: 'Eastern Puzzle Works',
+        rating: 4.9,
+        downloads: '1.8M',
+        bannerGradient: 'from-amber-700 via-orange-800 to-stone-900',
+        controlsGuide: [
+            { action: '타일 선택 & 매칭', key: '마우스 클릭 / 화면 터치' },
+            { action: '힌트 / 섞기', key: '상단 힌트 및 섞기 버튼' }
+        ]
+    },
+    {
         id: 'speedkeyboard',
         pkgId: 'pkg-game-speedkeyboard',
         appType: 'speedkeyboard',

@@ -243,7 +243,7 @@ export const sound = {
         playTone(700, 'sine', 0.1, 0.05);
         setTimeout(() => playTone(900, 'sine', 0.2, 0.05), 100);
     },
-    type: () => playKeyboardClick(0, 0.35),
+    type: (switchType: number = 0) => playKeyboardClick(switchType, 0.4),
     correct: () => playTone(1200, 'sine', 0.1, 0.05),
     wrong: () => playTone(200, 'sawtooth', 0.2, 0.1),
     pop: () => {

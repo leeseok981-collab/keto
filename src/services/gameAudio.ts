@@ -260,6 +260,10 @@ class GameAudioEngine {
         }
     }
 
+    public stopChiptuneBgm() {
+        this.stopBgm();
+    }
+
     public click() {
         this.playSfx('click');
     }

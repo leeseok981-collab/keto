@@ -304,6 +304,34 @@ class WalletService {
         return this.getBalance() >= amount;
     }
 
+    public setBalance(newBalance: number, reason: string = '캐킹 가상 자산 직접 변경'): WalletData {
+        const target = Math.max(0, Math.floor(newBalance));
+        const diff = target - this.wallet.balance;
+        
+        this.wallet.balance = target;
+        if (diff > 0) {
+            this.wallet.lifetimeEarned += diff;
+            this.recordTransaction({
+                type: 'earn',
+                amount: diff,
+                reason,
+                category: 'other'
+            });
+        } else if (diff < 0) {
+            const absDiff = Math.abs(diff);
+            this.wallet.lifetimeSpent += absDiff;
+            this.recordTransaction({
+                type: 'spend',
+                amount: absDiff,
+                reason,
+                category: 'other'
+            });
+        }
+
+        this.saveWallet();
+        return this.getWalletData();
+    }
+
     public addMoney(
         amount: number, 
         reason: string, 
