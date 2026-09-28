@@ -70,6 +70,23 @@ export const OFFICIAL_APP_CATALOG: AppPackage[] = [
         featured: true
     },
     {
+        id: 'pkg-ai-pixel-studio',
+        name: '무제한 AI 픽셀 디자인 생성기',
+        version: '1.0.0',
+        description: '기본 32×32 텍스처, 마인크래프트 블록·캐릭터 등의 구성요소를 작성하고 실행하면 AI가 즉시 생성하고 고화질로 다운로드할 수 있는 픽셀 스튜디오!',
+        icon: 'palette',
+        category: 'productivity',
+        permissions: ['ai.pixel', 'storage.export', 'canvas.export'],
+        size: '19.5 MB',
+        publisher: 'KETO AI Lab & Studio',
+        rating: 5.0,
+        downloads: '520K+',
+        price: 100000,
+        isDefault: false,
+        appType: 'pixelstudio',
+        featured: true
+    },
+    {
         id: 'pkg-cacking',
         name: '캐킹',
         nameKey: 'os.cacking',

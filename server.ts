@@ -336,6 +336,75 @@ async function startServer() {
     }
   });
 
+  // Dedicated Unlimited AI Pixel Design Generator Endpoint (32x32)
+  app.post("/api/gemini/pixel-art", async (req, res) => {
+    try {
+      const {
+        prompt,
+        category = 'block',
+        size = 32,
+        palette = 'minecraft',
+        shading = 'bevel3d'
+      } = req.body;
+
+      const ai = getGeminiAI();
+
+      if (!ai) {
+        return res.json({
+          source: 'local_generator',
+          message: 'Using Neural Procedural Pixel Engine.'
+        });
+      }
+
+      const systemInstruction = `You are an expert 32x32 retro pixel artist and Minecraft texture designer.
+When given a user prompt, create a pixel art representation.
+Return ONLY a valid JSON object with:
+1. "title": short Korean title string (e.g. "다이아몬드 원석 블록")
+2. "palette": an array of 8 to 16 hex color strings (e.g. ["#000000", "#737373", "#38C5F0", "#FFFFFF"])
+3. "dominantColor": main hex color string
+4. "pixelMatrix": a 2D array of palette indices (integers 0 to palette.length - 1) of dimensions ${size}x${size}.
+Make sure the art clearly depicts the requested elements (block, character, sword, Minecraft texture, etc.) with authentic shading and contrast.`;
+
+      const response = await generateWithFallback(
+        ai,
+        DEFAULT_TEXT_MODELS,
+        {
+          contents: `${systemInstruction}\n\n[카테고리: ${category}]\n[구성 요소/프롬프트: ${prompt}]\n[팔레트: ${palette}]\n[음영: ${shading}]`,
+          config: {
+            responseMimeType: "application/json"
+          }
+        }
+      );
+
+      let parsed: any = null;
+      try {
+        const text = response.text?.trim() || "";
+        const cleanJson = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        parsed = JSON.parse(cleanJson);
+      } catch (parseErr) {
+        console.warn("Pixel art JSON parse fallback:", parseErr);
+      }
+
+      if (parsed && Array.isArray(parsed.pixelMatrix) && Array.isArray(parsed.palette)) {
+        return res.json({
+          source: 'gemini_ai',
+          result: parsed
+        });
+      }
+
+      return res.json({
+        source: 'local_generator',
+        rawText: response.text
+      });
+    } catch (err: any) {
+      console.warn("[Pixel Art Gemini Error]:", err?.message);
+      return res.json({
+        source: 'local_generator',
+        error: err?.message
+      });
+    }
+  });
+
   // Dedicated AI Email Sending Endpoint
   app.post("/api/gemini/send-email", async (req, res) => {
     try {

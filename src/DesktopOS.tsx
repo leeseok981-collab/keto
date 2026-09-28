@@ -51,6 +51,7 @@ import { CalendarApp } from './components/CalendarApp';
 import { TerminalApp } from './components/TerminalApp';
 import { CatvasProModal } from './components/catvas/CatvasProModal';
 import { SystemHelpModal } from './components/SystemHelpModal';
+import { AIPixelStudio } from './components/pixelStudio/AIPixelStudio';
 import { OSWindowFrame } from './components/OSWindowFrame';
 import { AILearningApp } from './components/AILearningApp';
 import { CatoreStoreApp } from './components/CatoreStoreApp';
@@ -276,7 +277,13 @@ export const generateAllDesktopItems = (
     }
 
     // Combine default apps with user added desktop shortcuts and user files
-    const result = [...existingUserItems];
+    // Filter out standalone speedkeyboard program items (kept inside Catto game as requested)
+    const result = existingUserItems.filter(item => 
+        item.appType !== 'speedkeyboard' && 
+        item.appType !== 'speedkeyboard2' && 
+        item.id !== 'app-speedkeyboard' && 
+        item.id !== 'app-speedkeyboard2'
+    );
     defaultApps.forEach(def => {
         if (!result.some(r => r.appType === def.appType || r.id === def.id)) {
             result.unshift(def);
@@ -341,7 +348,12 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             if (saved) {
                 const parsed: DesktopItem[] = JSON.parse(saved);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed;
+                    return parsed.filter(item => 
+                        item.appType !== 'speedkeyboard' && 
+                        item.appType !== 'speedkeyboard2' && 
+                        item.id !== 'app-speedkeyboard' && 
+                        item.id !== 'app-speedkeyboard2'
+                    );
                 }
             }
         } catch (e) {
@@ -350,13 +362,24 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         return getDefaultDesktopApps(
             localStorage.getItem('desktop_os_theme') === 'mac' ? 'mac' : 'windows',
             getCurrentLanguage()
+        ).filter(item => 
+            item.appType !== 'speedkeyboard' && 
+            item.appType !== 'speedkeyboard2' && 
+            item.id !== 'app-speedkeyboard' && 
+            item.id !== 'app-speedkeyboard2'
         );
     });
 
-    // Save items to localStorage whenever they change
+    // Save items to localStorage whenever they change (filtering standalone speedkeyboard program)
     useEffect(() => {
         try {
-            localStorage.setItem('desktop_os_items_v8', JSON.stringify(items));
+            const filtered = items.filter(item => 
+                item.appType !== 'speedkeyboard' && 
+                item.appType !== 'speedkeyboard2' && 
+                item.id !== 'app-speedkeyboard' && 
+                item.id !== 'app-speedkeyboard2'
+            );
+            localStorage.setItem('desktop_os_items_v8', JSON.stringify(filtered));
         } catch (e) {
             console.error(e);
         }
@@ -494,6 +517,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showRhythmBeat, setShowRhythmBeat] = useState(false);
     const [showSpaceDefender, setShowSpaceDefender] = useState(false);
     const [showMahjong, setShowMahjong] = useState(false);
+    const [showAIPixelStudio, setShowAIPixelStudio] = useState(false);
 
     // Helper to close any app window and cleanly return to the desktop background
     const closeAppToDesktop = (closeStateFn: () => void) => {
@@ -979,7 +1003,8 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'terminal' || item.id === 'app-terminal') { sound.click(); setIsTerminalAppOpen(true); setFocusedWindow('terminal'); }
             else if (item.appType === 'cailus') { sound.click(); setShowCailusApp(true); setFocusedWindow('cailus'); }
             else if (item.appType === 'mahjong') { sound.click(); setShowMahjong(true); setFocusedWindow('mahjong'); }
-            else if (item.appType === 'speedkeyboard2' || item.appType === 'speedkeyboard') { sound.click(); setShowCatore(true); setFocusedWindow('catore'); }
+            else if (item.appType === 'pixelstudio' || item.id === 'app-pixelstudio') { sound.click(); setShowAIPixelStudio(true); setFocusedWindow('pixelstudio'); }
+            else if (item.appType === 'speedkeyboard2' || item.appType === 'speedkeyboard') { sound.click(); onLaunch(); }
             else { sound.click(); onLaunch(); }
         } else if (item.type === 'game') {
             sound.click();
@@ -1418,9 +1443,11 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             setIsTerminalAppOpen(true);
         } else if (appType === 'gamecenter') {
             setShowGameCenter(true);
+        } else if (appType === 'pixelstudio') {
+            setShowAIPixelStudio(true);
+            setFocusedWindow('pixelstudio');
         } else if (appType === 'speedkeyboard' || appType === 'speedkeyboard2') {
-            setShowCatore(true);
-            setFocusedWindow('catore');
+            onLaunch();
         } else if (appType === 'pixelsurvivor') {
             setShowPixelSurvivor(true);
         } else if (appType === 'neonrunner') {
@@ -2026,6 +2053,15 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             onFocus: () => setFocusedWindow('mahjong')
         });
     }
+    if (showAIPixelStudio) {
+        runningApps.push({
+            id: 'pixelstudio',
+            name: 'AI 픽셀 디자인 생성기',
+            icon: <Palette className="w-3.5 h-3.5 text-purple-400" />,
+            onClose: () => closeAppToDesktop(() => setShowAIPixelStudio(false)),
+            onFocus: () => setFocusedWindow('pixelstudio')
+        });
+    }
 
     const isSplitDualMonitor = !!systemSettings.dualMonitorEnabled && (systemSettings.dualMonitorMode === 'split' || !systemSettings.dualMonitorMode);
 
@@ -2271,9 +2307,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <span className="text-2xl drop-shadow">🀄</span>
                                     </div>
                                 )}
-                                {(item.appType === 'speedkeyboard2' || item.id === 'app-speedkeyboard2') && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
-                                        <Zap className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                                {(item.appType === 'pixelstudio' || item.id === 'app-pixelstudio') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-pink-600 to-amber-500 flex items-center justify-center shadow-lg border border-purple-300/40 ring-2 ring-purple-500/20 group-hover:scale-105 transition-all">
+                                        <Palette className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(217,70,239,0.8)]" />
                                     </div>
                                 )}
                                 {(item.appType === 'browser' || item.id === 'app-browser') && (
@@ -2354,11 +2390,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 {item.appType === 'gamecenter' && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-purple-600 flex items-center justify-center shadow-lg border border-cyan-300/40 ring-2 ring-cyan-500/20 group-hover:scale-105 transition-all">
                                         <Gamepad2 className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
-                                    </div>
-                                )}
-                                {item.appType === 'speedkeyboard' && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center shadow-lg border border-amber-300/40 group-hover:scale-105 transition-transform">
-                                        <Zap className="w-7 h-7 text-white drop-shadow" />
                                     </div>
                                 )}
                                 {item.appType === 'pixelsurvivor' && (
@@ -2476,13 +2507,8 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Grid className="w-7 h-7 text-amber-300 drop-shadow" />
                                     </div>
                                 )}
-                                {item.appType === 'speedkeyboard2' && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 via-purple-600 to-cyan-400 flex items-center justify-center shadow-lg border border-cyan-300/60 ring-2 ring-pink-500/30 group-hover:scale-105 transition-transform">
-                                        <Zap className="w-7 h-7 text-yellow-300 drop-shadow-[0_0_8px_rgba(253,224,71,0.7)]" />
-                                    </div>
-                                )}
                                 {item.type === 'app' && 
-                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings','cailus','mahjong','speedkeyboard2'].includes(item.appType || '') && (
+                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings','cailus','mahjong','pixelstudio'].includes(item.appType || '') && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
                                         <Sparkles className="w-7 h-7 text-white drop-shadow" />
                                     </div>
@@ -4343,6 +4369,33 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 onSubscribePro={() => handleToggleProSubscription(!isProSubscribed)}
                 featureNoticeMessage={proNoticeMessage}
             />
+
+            {/* 🎨 무제한 AI 픽셀 디자인 생성기 (32×32) */}
+            {showAIPixelStudio && (
+                <OSWindowFrame
+                    title="무제한 AI 픽셀 디자인 생성기 (32×32 Texture Studio)"
+                    icon={<Palette className="w-4 h-4 text-purple-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowAIPixelStudio(false))}
+                    theme={theme}
+                    defaultWidth="1100px"
+                    defaultHeight="720px"
+                >
+                    <AIPixelStudio 
+                        onClose={() => closeAppToDesktop(() => setShowAIPixelStudio(false))}
+                        onSaveToDesktop={(name, dataUrl) => {
+                            const newItem: DesktopItem = {
+                                id: `pixel-${Date.now()}`,
+                                name: name || `픽셀작품_${Date.now()}.png`,
+                                type: 'image',
+                                fileUrl: dataUrl,
+                                updatedAt: new Date().toLocaleDateString()
+                            };
+                            setItems(prev => [...prev, newItem]);
+                            sound.buy();
+                        }}
+                    />
+                </OSWindowFrame>
+            )}
 
             {/* 💡 시스템 도움말 & AI 질의응답 센터 */}
             <SystemHelpModal 
