@@ -4,7 +4,7 @@ import {
     Sparkles, ShieldCheck, Star, RefreshCw, Layers, Award,
     Filter, ArrowUpRight, AlertCircle, Terminal, Palette,
     GraduationCap, Bot, Paintbrush, Music, Cat, Smartphone,
-    Shield, Swords, Fish, Flower, Utensils, Newspaper, Tv, X, Plus, Wallet
+    Shield, Swords, Fish, Flower, Utensils, Newspaper, Tv, X, Plus, Wallet, Box
 } from 'lucide-react';
 import { AppPackage, AppCategory, OFFICIAL_APP_CATALOG, appRegistry } from '../services/appRegistry';
 import { UnifiedPurchaseModal, PurchaseItem } from './UnifiedPurchaseModal';
@@ -149,6 +149,7 @@ export const CatoreStoreApp: React.FC<CatoreStoreAppProps> = ({
             case 'utensils': return <Utensils className={`${className} text-orange-400`} />;
             case 'newspaper': return <Newspaper className={`${className} text-amber-300`} />;
             case 'tv': return <Tv className={`${className} text-sky-400`} />;
+            case 'box': return <Box className={`${className} text-emerald-400`} />;
             default: return <Layers className={`${className} text-cyan-400`} />;
         }
     };

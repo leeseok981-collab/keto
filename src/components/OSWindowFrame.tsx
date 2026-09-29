@@ -107,6 +107,10 @@ export const OSWindowFrame: React.FC<OSWindowFrameProps> = ({
 
     return (
         <div
+            data-os-window="true"
+            onContextMenu={(e) => {
+                e.stopPropagation();
+            }}
             style={
                 isMaximized
                     ? { top: 0, left: 0, right: 0, bottom: '48px', width: '100vw', height: 'calc(100vh - 48px)' }

@@ -11,7 +11,7 @@ import {
     PlaySquare, Code, Apple, Layout, Scissors, Palette, MousePointer, Sliders,
     Camera, Bot, Plus, Settings, Lock, CornerDownLeft, GraduationCap,
     Compass, Activity, Flame, Fish, Trees, Utensils, BookOpen, Tv, Smartphone,
-    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown
+    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box
 } from 'lucide-react';
 import { KetoBankApp } from './components/KetoBankApp';
 import { CailusAppWindow } from './components/CailusAppWindow';
@@ -52,6 +52,7 @@ import { TerminalApp } from './components/TerminalApp';
 import { CatvasProModal } from './components/catvas/CatvasProModal';
 import { SystemHelpModal } from './components/SystemHelpModal';
 import { AIPixelStudio } from './components/pixelStudio/AIPixelStudio';
+import { MagenGame } from './magen/MagenGame';
 import { OSWindowFrame } from './components/OSWindowFrame';
 import { AILearningApp } from './components/AILearningApp';
 import { CatoreStoreApp } from './components/CatoreStoreApp';
@@ -516,7 +517,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showBlockPuzzle, setShowBlockPuzzle] = useState(false);
     const [showRhythmBeat, setShowRhythmBeat] = useState(false);
     const [showSpaceDefender, setShowSpaceDefender] = useState(false);
-    const [showMahjong, setShowMahjong] = useState(false);
+    const [showMagen, setShowMagen] = useState(false);
     const [showAIPixelStudio, setShowAIPixelStudio] = useState(false);
 
     // Helper to close any app window and cleanly return to the desktop background
@@ -1002,7 +1003,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'calendar' || item.id === 'app-calendar') { sound.click(); setIsCalendarAppOpen(true); setFocusedWindow('calendar'); }
             else if (item.appType === 'terminal' || item.id === 'app-terminal') { sound.click(); setIsTerminalAppOpen(true); setFocusedWindow('terminal'); }
             else if (item.appType === 'cailus') { sound.click(); setShowCailusApp(true); setFocusedWindow('cailus'); }
-            else if (item.appType === 'mahjong') { sound.click(); setShowMahjong(true); setFocusedWindow('mahjong'); }
+            else if (item.appType === 'magen' || item.appType === 'mahjong' || item.id === 'app-magen' || item.id === 'app-mahjong') { sound.click(); setShowMagen(true); setFocusedWindow('magen'); }
             else if (item.appType === 'pixelstudio' || item.id === 'app-pixelstudio') { sound.click(); setShowAIPixelStudio(true); setFocusedWindow('pixelstudio'); }
             else if (item.appType === 'speedkeyboard2' || item.appType === 'speedkeyboard') { sound.click(); onLaunch(); }
             else { sound.click(); onLaunch(); }
@@ -1068,6 +1069,13 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const handleContextMenu = (e: React.MouseEvent, item?: DesktopItem) => {
         e.preventDefault();
         e.stopPropagation();
+
+        const target = e.target as HTMLElement;
+        // If right clicked inside any window or game canvas, never show desktop menu
+        if (!item && target && target.closest('[data-os-window="true"], [data-no-desktop-context="true"], canvas, .os-window')) {
+            return;
+        }
+
         sound.click();
 
         if (item && !selectedItemIds.includes(item.id)) {
@@ -1464,8 +1472,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             setShowSpaceDefender(true);
         } else if (appType === 'cailus') {
             setShowCailusApp(true);
-        } else if (appType === 'mahjong') {
-            setShowMahjong(true);
+        } else if (appType === 'magen' || appType === 'mahjong') {
+            setShowMagen(true);
+            setFocusedWindow('magen');
         } else if (appType === 'mouse') {
             setSettingsCategory('mouse');
             setShowSettingsApp(true);
@@ -2044,13 +2053,13 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             onFocus: () => setFocusedWindow('cailus')
         });
     }
-    if (showMahjong) {
+    if (showMagen) {
         runningApps.push({
-            id: 'mahjong',
-            name: '마젠',
-            icon: <Grid className="w-3.5 h-3.5 text-amber-400" />,
-            onClose: () => closeAppToDesktop(() => setShowMahjong(false)),
-            onFocus: () => setFocusedWindow('mahjong')
+            id: 'magen',
+            name: '마젠 (MAGEN)',
+            icon: <Box className="w-3.5 h-3.5 text-emerald-400" />,
+            onClose: () => closeAppToDesktop(() => setShowMagen(false)),
+            onFocus: () => setFocusedWindow('magen')
         });
     }
     if (showAIPixelStudio) {
@@ -2302,9 +2311,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <span className="text-2xl drop-shadow">👑</span>
                                     </div>
                                 )}
-                                {(item.appType === 'mahjong' || item.id === 'app-mahjong') && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-700 via-orange-800 to-stone-900 flex items-center justify-center shadow-lg border border-amber-400/40 group-hover:scale-105 transition-transform">
-                                        <span className="text-2xl drop-shadow">🀄</span>
+                                {(item.appType === 'magen' || item.appType === 'mahjong' || item.id === 'app-magen' || item.id === 'app-mahjong') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-700 to-cyan-800 flex items-center justify-center shadow-lg border-2 border-emerald-400/50 ring-2 ring-emerald-500/30 group-hover:scale-105 transition-transform">
+                                        <Box className="w-7 h-7 text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                                     </div>
                                 )}
                                 {(item.appType === 'pixelstudio' || item.id === 'app-pixelstudio') && (
@@ -2502,13 +2511,13 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Crown className="w-7 h-7 text-amber-200 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]" />
                                     </div>
                                 )}
-                                {item.appType === 'mahjong' && (
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 via-amber-700 to-slate-900 flex items-center justify-center shadow-lg border border-amber-400/40 ring-2 ring-emerald-500/20 group-hover:scale-105 transition-transform">
-                                        <Grid className="w-7 h-7 text-amber-300 drop-shadow" />
+                                {(item.appType === 'magen' || item.appType === 'mahjong') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-700 to-cyan-800 flex items-center justify-center shadow-lg border-2 border-emerald-400/50 ring-2 ring-emerald-500/30 group-hover:scale-105 transition-transform">
+                                        <Box className="w-7 h-7 text-emerald-300 drop-shadow" />
                                     </div>
                                 )}
                                 {item.type === 'app' && 
-                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings','cailus','mahjong','pixelstudio'].includes(item.appType || '') && (
+                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings','cailus','mahjong','magen','pixelstudio'].includes(item.appType || '') && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
                                         <Sparkles className="w-7 h-7 text-white drop-shadow" />
                                     </div>
@@ -4210,27 +4219,17 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 </OSWindowFrame>
             )}
 
-            {/* 🀄 마젠 (Mazen Enterprise Platform) */}
-            {showMahjong && (
+            {/* ⛏️ 마젠 (MAGEN) 3D 싱글플레이 샌드박스 RPG 게임 */}
+            {showMagen && (
                 <OSWindowFrame
-                    title="마젠 (Mazen Enterprise Platform) — Coming Soon"
-                    icon={<Grid className="w-4 h-4 text-amber-400" />}
-                    onClose={() => closeAppToDesktop(() => setShowMahjong(false))}
+                    title="마젠 (MAGEN 1.0) — 3D 싱글플레이 샌드박스"
+                    icon={<Box className="w-4 h-4 text-emerald-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowMagen(false))}
                     theme={theme}
-                    defaultWidth="980px"
-                    defaultHeight="680px"
+                    defaultWidth="1200px"
+                    defaultHeight="760px"
                 >
-                    <MazenComingSoon 
-                        onClose={() => closeAppToDesktop(() => setShowMahjong(false))} 
-                        onOpenOfficialSite={() => {
-                            closeAppToDesktop(() => setShowMahjong(false));
-                            setShowCatchOn(true);
-                            setFocusedWindow('catchon');
-                            setTimeout(() => {
-                                window.dispatchEvent(new CustomEvent('open-catchon-url', { detail: { url: 'https://www.Mazen.net/ko-kr' } }));
-                            }, 50);
-                        }}
-                    />
+                    <MagenGame onClose={() => closeAppToDesktop(() => setShowMagen(false))} />
                 </OSWindowFrame>
             )}
 

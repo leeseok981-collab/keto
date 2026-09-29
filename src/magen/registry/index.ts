@@ -1,0 +1,12 @@
+export { BlockRegistry } from './BlockRegistry';
+export { ItemRegistry } from './ItemRegistry';
+export { GAME_MODES } from './GameModeRegistry';
+export type { GameModeInfo } from './GameModeRegistry';
+export { MobRegistry } from './MobRegistry';
+export type { MobDefinition, MobDrop } from './MobRegistry';
+export { BiomeRegistry } from './BiomeRegistry';
+export type { BiomeDefinition } from './BiomeRegistry';
+export { DimensionRegistry } from './DimensionRegistry';
+export type { DimensionDefinition } from './DimensionRegistry';
+export { RecipeRegistry } from './RecipeRegistry';
+export type { CraftingRecipe, SmeltingRecipe, RecipeIngredient } from './RecipeRegistry';

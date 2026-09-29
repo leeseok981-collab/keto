@@ -40,22 +40,29 @@ export const GAME_CATALOG: GameInfo[] = [
         ]
     },
     {
-        id: 'mahjong',
-        pkgId: 'pkg-game-mahjong',
-        appType: 'mahjong',
-        name: '마젠 (Mahjong Solitaire)',
-        genre: 'Tile Matching Puzzle',
-        description: '48개의 정통 마작 타일을 짝 맞추어 모두 제거하는 클래식 두뇌 퍼즐! 힌트, 셔플, 콤보 시스템 완비.',
-        size: '15.2 MB',
+        id: 'magen',
+        pkgId: 'pkg-magen',
+        appType: 'magen',
+        name: '마젠 (MAGEN)',
+        genre: '3D 싱글플레이 샌드박스 + 생존 + 탐험 + RPG',
+        description: '대규모 3D 복셀 블록 세계에서 생존, 건축, 탐험을 즐기는 싱글플레이 샌드박스 게임! 절차적 지형 생성, 3대 게임 모드(생존/크리에이티브/관전자), 청크 메시 엔진 완비.',
+        size: '48.5 MB',
         version: '1.0.0',
-        iconName: 'grid',
-        publisher: 'Eastern Puzzle Works',
-        rating: 4.9,
-        downloads: '1.8M',
-        bannerGradient: 'from-amber-700 via-orange-800 to-stone-900',
+        iconName: 'box',
+        publisher: 'MAGEN Interactive',
+        rating: 5.0,
+        downloads: '3.8M',
+        bannerGradient: 'from-emerald-700 via-teal-800 to-slate-900',
         controlsGuide: [
-            { action: '타일 선택 & 매칭', key: '마우스 클릭 / 화면 터치' },
-            { action: '힌트 / 섞기', key: '상단 힌트 및 섞기 버튼' }
+            { action: '이동', key: 'W / A / S / D' },
+            { action: '점프 / 비행 상승', key: 'Space (더블탭: 비행)' },
+            { action: '비행 하강', key: 'Shift' },
+            { action: '블록 파괴', key: '마우스 좌클릭' },
+            { action: '블록 설치', key: '마우스 우클릭' },
+            { action: '인벤토리 / 도감', key: 'E' },
+            { action: '단축바 슬롯 선택', key: '숫자키 1 ~ 9 / 휠 스크롤' },
+            { action: '일시정지 / 메뉴', key: 'ESC' },
+            { action: '디버그 정보', key: 'F3' }
         ]
     },
     {
