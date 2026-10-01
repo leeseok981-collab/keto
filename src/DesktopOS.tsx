@@ -11,7 +11,7 @@ import {
     PlaySquare, Code, Apple, Layout, Scissors, Palette, MousePointer, Sliders,
     Camera, Bot, Plus, Settings, Lock, CornerDownLeft, GraduationCap,
     Compass, Activity, Flame, Fish, Trees, Utensils, BookOpen, Tv, Smartphone,
-    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box, Disc
+    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box, Disc, Wand2
 } from 'lucide-react';
 import { KetoBankApp } from './components/KetoBankApp';
 import { CailusAppWindow } from './components/CailusAppWindow';
@@ -83,6 +83,7 @@ import { MiniTycoon } from './components/games/MiniTycoon';
 import { BlockPuzzle } from './components/games/BlockPuzzle';
 import { RhythmBeat } from './components/games/RhythmBeat';
 import { RhythmStop } from './components/games/RhythmStop';
+import { CagicApp } from './components/CagicApp';
 import { SpaceDefender } from './components/games/SpaceDefender';
 import { MahjongGame } from './components/games/MahjongGame';
 import { MazenComingSoon } from './components/mazen/MazenComingSoon';
@@ -521,6 +522,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showSpaceDefender, setShowSpaceDefender] = useState(false);
     const [showMagen, setShowMagen] = useState(false);
     const [showAIPixelStudio, setShowAIPixelStudio] = useState(false);
+    const [showCagic, setShowCagic] = useState(false);
 
     // Helper to close any app window and cleanly return to the desktop background
     const closeAppToDesktop = (closeStateFn: () => void) => {
@@ -1007,6 +1009,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'cailus') { sound.click(); setShowCailusApp(true); setFocusedWindow('cailus'); }
             else if (item.appType === 'magen' || item.appType === 'mahjong' || item.id === 'app-magen' || item.id === 'app-mahjong') { sound.click(); setShowMagen(true); setFocusedWindow('magen'); }
             else if (item.appType === 'pixelstudio' || item.id === 'app-pixelstudio') { sound.click(); setShowAIPixelStudio(true); setFocusedWindow('pixelstudio'); }
+            else if (item.appType === 'cagic' || item.id === 'app-cagic') { sound.click(); setShowCagic(true); setFocusedWindow('cagic'); }
             else if (item.appType === 'speedkeyboard2' || item.appType === 'speedkeyboard') { sound.click(); onLaunch(); }
             else if (item.appType === 'rhythmstop' || item.id === 'app-rhythmstop') { sound.click(); setShowRhythmStop(true); setFocusedWindow('rhythmstop'); }
             else if (item.appType === 'pixelsurvivor') { sound.click(); setShowPixelSurvivor(true); setFocusedWindow('pixelsurvivor'); }
@@ -1464,6 +1467,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         } else if (appType === 'pixelstudio') {
             setShowAIPixelStudio(true);
             setFocusedWindow('pixelstudio');
+        } else if (appType === 'cagic') {
+            setShowCagic(true);
+            setFocusedWindow('cagic');
         } else if (appType === 'speedkeyboard' || appType === 'speedkeyboard2') {
             onLaunch();
         } else if (appType === 'pixelsurvivor') {
@@ -2057,6 +2063,15 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             onFocus: () => setFocusedWindow('rhythmstop')
         });
     }
+    if (showCagic) {
+        runningApps.push({
+            id: 'cagic',
+            name: '캐직',
+            icon: <Wand2 className="w-3.5 h-3.5 text-purple-400" />,
+            onClose: () => closeAppToDesktop(() => setShowCagic(false)),
+            onFocus: () => setFocusedWindow('cagic')
+        });
+    }
     if (showSpaceDefender) {
         runningApps.push({
             id: 'spacedefender',
@@ -2456,6 +2471,11 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 {(item.appType === 'rhythmstop' || item.id === 'app-rhythmstop') && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-600 via-rose-600 to-indigo-800 flex items-center justify-center shadow-lg border border-pink-300/40 group-hover:scale-105 transition-transform">
                                         <Disc className="w-7 h-7 text-white drop-shadow animate-spin-slow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'cagic' || item.id === 'app-cagic') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-pink-600 to-indigo-800 flex items-center justify-center shadow-lg border border-purple-300/40 group-hover:scale-105 transition-transform">
+                                        <Wand2 className="w-7 h-7 text-white drop-shadow" />
                                     </div>
                                 )}
                                 {item.appType === 'spacedefender' && (
@@ -4232,10 +4252,10 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 </OSWindowFrame>
             )}
 
-            {/* 🎶 리듬스탑 (Rhythm Stop) — tuki. 만찬가(晩餐歌) 4-Lane Rhythm Game */}
+            {/* 🎶 리듬스탑 (Rhythm Stop) — 4-Lane Rhythm Game */}
             {showRhythmStop && (
                 <OSWindowFrame
-                    title="리듬스탑 (Rhythm Stop) — tuki. 만찬가(晩餐歌)"
+                    title="리듬스탑 (Rhythm Stop) — 4-Lane 리듬 게임"
                     icon={<Disc className="w-4 h-4 text-pink-400" />}
                     onClose={() => closeAppToDesktop(() => setShowRhythmStop(false))}
                     theme={theme}
@@ -4243,6 +4263,27 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     defaultHeight="720px"
                 >
                     <RhythmStop onClose={() => closeAppToDesktop(() => setShowRhythmStop(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🪄 캐직 (Cagic) — AI 음악 & 노래 작곡 스튜디오 */}
+            {showCagic && (
+                <OSWindowFrame
+                    title="캐직 (Cagic) — AI 노래 작곡 스튜디오"
+                    icon={<Wand2 className="w-4 h-4 text-purple-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowCagic(false))}
+                    theme={theme}
+                    defaultWidth="980px"
+                    defaultHeight="680px"
+                >
+                    <CagicApp 
+                        onClose={() => closeAppToDesktop(() => setShowCagic(false))}
+                        onLaunchRhythmStop={() => {
+                            closeAppToDesktop(() => setShowCagic(false));
+                            setShowRhythmStop(true);
+                            setFocusedWindow('rhythmstop');
+                        }}
+                    />
                 </OSWindowFrame>
             )}
 

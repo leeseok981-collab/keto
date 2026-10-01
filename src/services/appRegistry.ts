@@ -219,6 +219,22 @@ export const OFFICIAL_APP_CATALOG: AppPackage[] = [
         appType: 'blockpuzzle'
     },
     {
+        id: 'pkg-cagic',
+        name: '캐직 (Cagic)',
+        version: '1.0.0',
+        description: '인공지능 기반 노래 작곡 AI 스튜디오! 장르, 분위기, 가사 테마를 선택하면 AI가 감성 가사와 실시간 신디사이저 멜로디 음악을 즉석에서 작곡합니다.',
+        icon: 'wand',
+        category: 'multimedia',
+        permissions: ['audio.synth', 'ai.music', 'storage.save'],
+        size: '18.4 MB',
+        publisher: 'KETO AI Music Lab',
+        rating: 5.0,
+        downloads: '2.4M',
+        isDefault: false,
+        appType: 'cagic',
+        featured: true
+    },
+    {
         id: 'pkg-game-rhythmstop',
         name: '리듬스탑 (Rhythm Stop)',
         version: '1.0.0',
