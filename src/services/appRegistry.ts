@@ -219,6 +219,22 @@ export const OFFICIAL_APP_CATALOG: AppPackage[] = [
         appType: 'blockpuzzle'
     },
     {
+        id: 'pkg-game-rhythmstop',
+        name: '리듬스탑 (Rhythm Stop)',
+        version: '1.0.0',
+        description: 'tuki.의 감성 명곡 [만찬가(晩餐歌)]에 맞춰 상단에서 떨어지는 4개 타일을 DFJK 키 또는 화면 클릭으로 타격하는 정통 리듬 게임! (맥스퍼팩트, 퍼팩트, 좋은, 빠른, 느린 판정 및 콤보 시스템 완비)',
+        icon: 'disc',
+        category: 'game',
+        permissions: ['audio.playback', 'storage.save'],
+        size: '28.5 MB',
+        publisher: 'KETO Rhythm Studio',
+        rating: 5.0,
+        downloads: '1.8M',
+        isDefault: false,
+        appType: 'rhythmstop',
+        featured: true
+    },
+    {
         id: 'pkg-game-rhythmbeat',
         name: '리듬 비트',
         version: '1.0.0',

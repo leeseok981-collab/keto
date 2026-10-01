@@ -183,6 +183,28 @@ export const GAME_CATALOG: GameInfo[] = [
         ]
     },
     {
+        id: 'rhythmstop',
+        pkgId: 'pkg-game-rhythmstop',
+        appType: 'rhythmstop',
+        name: '리듬스탑 (Rhythm Stop)',
+        genre: '4-Lane Rhythm Game',
+        description: 'tuki.의 감성 명곡 [만찬가(晩餐歌)]! 상단에서 내려오는 4개 타일을 DFJK 키 또는 화면 클릭으로 타격하는 정통 리듬 게임.',
+        size: '28.5 MB',
+        version: '1.0.0',
+        iconName: 'disc',
+        publisher: 'KETO Rhythm Studio',
+        rating: 5.0,
+        downloads: '1.8M',
+        bannerGradient: 'from-pink-600 via-rose-700 to-cyan-900',
+        controlsGuide: [
+            { action: '1번 라인 (Cyan)', key: 'D 키 또는 레인 클릭' },
+            { action: '2번 라인 (Rose)', key: 'F 키 또는 레인 클릭' },
+            { action: '3번 라인 (Amber)', key: 'J 키 또는 레인 클릭' },
+            { action: '4번 라인 (Purple)', key: 'K 키 또는 레인 클릭' },
+            { action: '일시정지 / 계속', key: 'Space / ESC' }
+        ]
+    },
+    {
         id: 'rhythmbeat',
         pkgId: 'pkg-game-rhythmbeat',
         appType: 'rhythmbeat',

@@ -11,7 +11,7 @@ import {
     PlaySquare, Code, Apple, Layout, Scissors, Palette, MousePointer, Sliders,
     Camera, Bot, Plus, Settings, Lock, CornerDownLeft, GraduationCap,
     Compass, Activity, Flame, Fish, Trees, Utensils, BookOpen, Tv, Smartphone,
-    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box
+    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box, Disc
 } from 'lucide-react';
 import { KetoBankApp } from './components/KetoBankApp';
 import { CailusAppWindow } from './components/CailusAppWindow';
@@ -82,6 +82,7 @@ import { DungeonCore } from './components/games/DungeonCore';
 import { MiniTycoon } from './components/games/MiniTycoon';
 import { BlockPuzzle } from './components/games/BlockPuzzle';
 import { RhythmBeat } from './components/games/RhythmBeat';
+import { RhythmStop } from './components/games/RhythmStop';
 import { SpaceDefender } from './components/games/SpaceDefender';
 import { MahjongGame } from './components/games/MahjongGame';
 import { MazenComingSoon } from './components/mazen/MazenComingSoon';
@@ -516,6 +517,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showMiniTycoon, setShowMiniTycoon] = useState(false);
     const [showBlockPuzzle, setShowBlockPuzzle] = useState(false);
     const [showRhythmBeat, setShowRhythmBeat] = useState(false);
+    const [showRhythmStop, setShowRhythmStop] = useState(false);
     const [showSpaceDefender, setShowSpaceDefender] = useState(false);
     const [showMagen, setShowMagen] = useState(false);
     const [showAIPixelStudio, setShowAIPixelStudio] = useState(false);
@@ -1006,6 +1008,14 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'magen' || item.appType === 'mahjong' || item.id === 'app-magen' || item.id === 'app-mahjong') { sound.click(); setShowMagen(true); setFocusedWindow('magen'); }
             else if (item.appType === 'pixelstudio' || item.id === 'app-pixelstudio') { sound.click(); setShowAIPixelStudio(true); setFocusedWindow('pixelstudio'); }
             else if (item.appType === 'speedkeyboard2' || item.appType === 'speedkeyboard') { sound.click(); onLaunch(); }
+            else if (item.appType === 'rhythmstop' || item.id === 'app-rhythmstop') { sound.click(); setShowRhythmStop(true); setFocusedWindow('rhythmstop'); }
+            else if (item.appType === 'pixelsurvivor') { sound.click(); setShowPixelSurvivor(true); setFocusedWindow('pixelsurvivor'); }
+            else if (item.appType === 'neonrunner') { sound.click(); setShowNeonRunner(true); setFocusedWindow('neonrunner'); }
+            else if (item.appType === 'dungeoncore') { sound.click(); setShowDungeonCore(true); setFocusedWindow('dungeoncore'); }
+            else if (item.appType === 'minitycoon') { sound.click(); setShowMiniTycoon(true); setFocusedWindow('minitycoon'); }
+            else if (item.appType === 'blockpuzzle') { sound.click(); setShowBlockPuzzle(true); setFocusedWindow('blockpuzzle'); }
+            else if (item.appType === 'rhythmbeat') { sound.click(); setShowRhythmBeat(true); setFocusedWindow('rhythmbeat'); }
+            else if (item.appType === 'spacedefender') { sound.click(); setShowSpaceDefender(true); setFocusedWindow('spacedefender'); }
             else { sound.click(); onLaunch(); }
         } else if (item.type === 'game') {
             sound.click();
@@ -1468,6 +1478,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             setShowBlockPuzzle(true);
         } else if (appType === 'rhythmbeat') {
             setShowRhythmBeat(true);
+        } else if (appType === 'rhythmstop') {
+            setShowRhythmStop(true);
+            setFocusedWindow('rhythmstop');
         } else if (appType === 'spacedefender') {
             setShowSpaceDefender(true);
         } else if (appType === 'cailus') {
@@ -2035,6 +2048,15 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             onFocus: () => setFocusedWindow('rhythmbeat')
         });
     }
+    if (showRhythmStop) {
+        runningApps.push({
+            id: 'rhythmstop',
+            name: '리듬스탑',
+            icon: <Disc className="w-3.5 h-3.5 text-pink-400" />,
+            onClose: () => closeAppToDesktop(() => setShowRhythmStop(false)),
+            onFocus: () => setFocusedWindow('rhythmstop')
+        });
+    }
     if (showSpaceDefender) {
         runningApps.push({
             id: 'spacedefender',
@@ -2429,6 +2451,11 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 {item.appType === 'rhythmbeat' && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-700 flex items-center justify-center shadow-lg border border-pink-300/40 group-hover:scale-105 transition-transform">
                                         <Music className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'rhythmstop' || item.id === 'app-rhythmstop') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-600 via-rose-600 to-indigo-800 flex items-center justify-center shadow-lg border border-pink-300/40 group-hover:scale-105 transition-transform">
+                                        <Disc className="w-7 h-7 text-white drop-shadow animate-spin-slow" />
                                     </div>
                                 )}
                                 {item.appType === 'spacedefender' && (
@@ -4202,6 +4229,20 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     defaultHeight="620px"
                 >
                     <RhythmBeat onClose={() => closeAppToDesktop(() => setShowRhythmBeat(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🎶 리듬스탑 (Rhythm Stop) — tuki. 만찬가(晩餐歌) 4-Lane Rhythm Game */}
+            {showRhythmStop && (
+                <OSWindowFrame
+                    title="리듬스탑 (Rhythm Stop) — tuki. 만찬가(晩餐歌)"
+                    icon={<Disc className="w-4 h-4 text-pink-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowRhythmStop(false))}
+                    theme={theme}
+                    defaultWidth="880px"
+                    defaultHeight="720px"
+                >
+                    <RhythmStop onClose={() => closeAppToDesktop(() => setShowRhythmStop(false))} />
                 </OSWindowFrame>
             )}
 
