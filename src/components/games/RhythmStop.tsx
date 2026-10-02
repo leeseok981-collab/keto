@@ -99,9 +99,9 @@ export const SONGS: SongInfo[] = [
         artist: 'tuki.',
         mediaType: 'video',
         mediaSrc: '/assets/🍜너만의 풀코스를 내게 전해줘😋- tuki. - 『晩餐歌』 (만찬가, Bansanka) [가사 해석 lyrics].mp4',
-        fallbackSrc: '/assets/tuki_bansanka.mp3',
+        fallbackSrc: '/assets/tuki_bansanka.mp4',
         bpm: 86,
-        durationMs: 215000,
+        durationMs: 220000,
         description: '서정적인 어쿠스틱 기타와 폭발적인 록 보컬 사운드가 어우러진 감성 명곡 (고화질 MV 배경)',
         coverGradient: 'from-pink-600 via-rose-600 to-indigo-800',
         stars: { easy: 2, normal: 3, hard: 5 }
@@ -124,11 +124,11 @@ export const SONGS: SongInfo[] = [
         title: '좋아하니까 (好きだから)',
         artist: 'Yuika (ユイカ)',
         mediaType: 'video',
-        mediaSrc: '/assets/rokudenashi_tadakoe.mp4',
-        fallbackSrc: '/assets/tuki_bansanka.mp3',
+        mediaSrc: '/assets/💖좋아하니까 멋있는 거야.. Yuika(ユイカ) - 좋아하니까(好きだから) [가사 lyrics].mp4',
+        fallbackSrc: '/assets/yuika_sukidakara.mp4',
         bpm: 104,
         durationMs: 195000,
-        description: '설레는 가사와 풋풋한 어쿠스틱 감성이 돋보이는 Yuika의 대표 러브송',
+        description: '설레는 가사와 풋풋한 어쿠스틱 감성이 돋보이는 Yuika의 대표 러브송 (공식 가사 MV)',
         coverGradient: 'from-rose-500 via-pink-500 to-amber-500',
         stars: { easy: 1, normal: 3, hard: 4 }
     },
@@ -136,12 +136,12 @@ export const SONGS: SongInfo[] = [
         id: 'yuuri-betelgeuse',
         title: '베텔기우스 (ベテルギウス)',
         artist: 'Yuuri (優里)',
-        mediaType: 'audio',
-        mediaSrc: '/assets/tuki_bansanka.mp3',
-        fallbackSrc: '/assets/99B4823E5F71EDA02C.mp3',
-        bpm: 110,
-        durationMs: 230000,
-        description: '별빛처럼 영원히 빛나는 인연과 감동적인 하모니의 드라마틱 제이팝',
+        mediaType: 'video',
+        mediaSrc: '/assets/별이라고 네가 알려 주었어✨ Yuuri - 베텔기우스(ベテルギウス) [가사 lyrics] (1).mp4',
+        fallbackSrc: '/assets/yuuri_betelgeuse.mp4',
+        bpm: 108,
+        durationMs: 233760,
+        description: '별이라고 네가 알려 주었어✨ 감미로운 어쿠스틱과 웅장한 오케스트라 록 보컬의 정식 가사 MV',
         coverGradient: 'from-amber-600 via-yellow-600 to-blue-900',
         stars: { easy: 2, normal: 4, hard: 5 }
     },
@@ -183,6 +183,19 @@ export const SONGS: SongInfo[] = [
         description: '아름다운 피아노 선율과 청량한 감성으로 채워진 요루시카의 대표곡',
         coverGradient: 'from-teal-600 via-cyan-600 to-sky-900',
         stars: { easy: 2, normal: 3, hard: 5 }
+    },
+    {
+        id: 'kaguya-worldismine',
+        title: 'World Is Mine (월드 이즈 마인)',
+        artist: '초 카구야 공주 (超かぐや姫 OST)',
+        mediaType: 'video',
+        mediaSrc: '/assets/🔥 역대급 기대작 초 카구야 공주 OST World Is Mine (월드 이즈 마인) [가사 해석 번역] (1).mp4',
+        fallbackSrc: '/assets/kaguya_world_is_mine.mp4',
+        bpm: 165,
+        durationMs: 226810,
+        description: '🔥 역대급 기대작 초 카구야 공주의 폭발적인 에너지와 질주감 넘치는 OST 명곡 (공식 가사 MV)',
+        coverGradient: 'from-orange-500 via-rose-600 to-purple-900',
+        stars: { easy: 3, normal: 5, hard: 6 }
     }
 ];
 
