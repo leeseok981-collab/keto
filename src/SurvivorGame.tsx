@@ -778,7 +778,7 @@ export default function SurvivorGame({ user, userData, onBack, deviceMode }: any
                         ) : (
                             <div className="space-y-4">
                                 {choices.map((choice, i) => (
-                                    <button key={i} onClick={() => handleSelectSkill(choice.id)} className="w-full bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 hover:border-yellow-400 p-4 rounded-2xl flex items-center gap-4 transition-all text-left group">
+                                    <button key={`survivor-choice-${choice.id}-${i}`} onClick={() => handleSelectSkill(choice.id)} className="w-full bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 hover:border-yellow-400 p-4 rounded-2xl flex items-center gap-4 transition-all text-left group">
                                         <div className="w-16 h-16 bg-slate-900 rounded-xl flex items-center justify-center text-3xl shadow-inner border border-slate-700">
                                             {choice.icon}
                                         </div>

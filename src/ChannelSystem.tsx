@@ -249,7 +249,7 @@ export const ChannelView = ({ user, userData, onBack }: any) => {
                                     </div>
                                     <div className="space-y-3">
                                         {friendSearchResults.map((u, i) => (
-                                            <div key={i} className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                                            <div key={`friend-search-${u.uid || i}-${i}`} className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700">
                                                 <div className="flex items-center gap-3">
                                                     <img src={u.profilePic || 'https://api.dicebear.com/7.x/bottts/svg?seed=1'} className="w-10 h-10 rounded-lg bg-slate-700" />
                                                     <span className="font-bold text-white">{u.nickname || 'Unknown'}</span>
@@ -268,7 +268,7 @@ export const ChannelView = ({ user, userData, onBack }: any) => {
                                     {friendRequests.length === 0 ? (
                                         <div className="text-center text-slate-500 py-10">받은 요청이 없습니다.</div>
                                     ) : friendRequests.map((req, i) => (
-                                        <div key={i} className="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700">
+                                        <div key={`friend-req-${req.id || i}-${i}`} className="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700">
                                             <div className="flex items-center gap-3">
                                                 <img src={req.fromPic || 'https://api.dicebear.com/7.x/bottts/svg?seed=1'} className="w-10 h-10 rounded-lg bg-slate-700" />
                                                 <span className="font-bold text-white">{req.fromName || 'Unknown'}</span>

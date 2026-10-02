@@ -8,7 +8,7 @@ import { sound } from '../utils/sound';
 export interface CursorSettings {
     cursorId: string;
     customImageUrl?: string;
-    size: number; // 0.6 ~ 2.5 (multiplier)
+    size: number; // 0.1 ~ 3.0 (multiplier, 1.0 = 32px standard)
     sensitivity: number; // 0.5 ~ 2.0
     enableTrail: boolean;
     trailColor: string;
@@ -397,25 +397,74 @@ export const MouseSettingsModal: React.FC<MouseSettingsModalProps> = ({
                     {/* Tab 3: Motion, Size & Sensitivity */}
                     {activeTab === 'motion' && (
                         <div className="flex flex-col gap-4">
-                            {/* Cursor Size Slider */}
-                            <div className="p-4 bg-slate-800/60 rounded-xl border border-slate-700/60 flex flex-col gap-2">
+                            {/* Cursor Size Slider with Ultra-Small Support */}
+                            <div className="p-4 bg-slate-800/60 rounded-xl border border-slate-700/60 flex flex-col gap-3">
                                 <div className="flex items-center justify-between text-xs font-bold">
-                                    <span className="text-slate-300">마우스 커서 크기 (스케일)</span>
-                                    <span className="font-mono text-purple-400">{Math.round(settings.size * 100)}%</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-slate-200">마우스 커서 크기</span>
+                                        {settings.size <= 0.25 && (
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-300 font-extrabold border border-pink-500/40">
+                                                극소형 모드
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 font-mono">
+                                        <span className="text-purple-400 font-extrabold">{Math.round((settings.size > 5 ? settings.size / 32 : settings.size) * 100)}%</span>
+                                        <span className="text-slate-500 text-[11px]">({((settings.size > 5 ? settings.size / 32 : settings.size) * 32).toFixed(1)}px)</span>
+                                    </div>
                                 </div>
+
                                 <input 
                                     type="range" 
-                                    min="0.5" 
-                                    max="2.5" 
-                                    step="0.1"
-                                    value={settings.size} 
+                                    min="0.1" 
+                                    max="3.0" 
+                                    step="0.05"
+                                    value={settings.size > 5 ? settings.size / 32 : settings.size} 
                                     onChange={(e) => handleUpdate({ ...settings, size: Number(e.target.value) })}
                                     className="w-full accent-purple-500 cursor-pointer"
                                 />
-                                <div className="flex justify-between text-[10px] text-slate-500">
-                                    <span>작게 (50%)</span>
-                                    <span>기본 (100%)</span>
-                                    <span>크게 (250%)</span>
+
+                                <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                                    <span>극소형 (10%)</span>
+                                    <span>초소형 (30%)</span>
+                                    <span>표준 (100%)</span>
+                                    <span>대형 (200%)</span>
+                                    <span>최대 (300%)</span>
+                                </div>
+
+                                {/* Quick Size Preset Buttons */}
+                                <div className="pt-2 border-t border-slate-750">
+                                    <div className="text-[11px] font-bold text-slate-400 mb-1.5">빠른 크기 프리셋</div>
+                                    <div className="grid grid-cols-6 gap-1.5">
+                                        {[
+                                            { label: '극소형', size: 0.15, text: '15%' },
+                                            { label: '초소형', size: 0.3, text: '30%' },
+                                            { label: '소형', size: 0.6, text: '60%' },
+                                            { label: '표준', size: 1.0, text: '100%' },
+                                            { label: '대형', size: 1.6, text: '160%' },
+                                            { label: '특대', size: 2.5, text: '250%' },
+                                        ].map(preset => {
+                                            const currentVal = settings.size > 5 ? settings.size / 32 : settings.size;
+                                            const isActive = Math.abs(currentVal - preset.size) < 0.05;
+                                            return (
+                                                <button
+                                                    key={preset.size}
+                                                    onClick={() => {
+                                                        sound.pop();
+                                                        handleUpdate({ ...settings, size: preset.size });
+                                                    }}
+                                                    className={`py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer border ${
+                                                        isActive
+                                                            ? 'bg-purple-600 border-purple-400 text-white font-black shadow-md'
+                                                            : 'bg-slate-900/80 border-slate-700/70 text-slate-300 hover:bg-slate-750 hover:text-white'
+                                                    }`}
+                                                >
+                                                    <div className="text-[10px] font-bold truncate">{preset.label}</div>
+                                                    <div className="text-[9px] font-mono text-slate-400">{preset.text}</div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
 

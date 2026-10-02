@@ -1,0 +1,76 @@
+{
+  "app_name": "리듬스탑 (Rhythm Stop)",
+  "subtitle": "4-Lane Next-Gen Precision Rhythm Game",
+  "menu": {
+    "play": "PLAY START",
+    "select_song": "곡 선택",
+    "settings": "게임 설정",
+    "records": "기록실",
+    "exit": "종료",
+    "back": "뒤로가기",
+    "retry": "다시 플레이",
+    "next_song": "다음 곡"
+  },
+  "difficulty": {
+    "easy": {
+      "name": "초급",
+      "eng": "EASY",
+      "desc": "비교적 단순한 패턴과 여유로운 간격",
+      "unlock_condition": "기본 해금"
+    },
+    "normal": {
+      "name": "중급",
+      "eng": "NORMAL",
+      "desc": "노트 밀도 증가, 롱노트 및 연속 패턴",
+      "unlock_condition": "초급 클리어 후 해금"
+    },
+    "hard": {
+      "name": "고급",
+      "eng": "HARD",
+      "desc": "초고속 4-Lane 연타와 전방위 보스 메가 타일",
+      "unlock_condition": "중급 클리어 후 해금"
+    }
+  },
+  "gameplay": {
+    "ready": "READY",
+    "start": "START!",
+    "combo": "COMBO",
+    "max_combo": "MAX COMBO",
+    "score": "SCORE",
+    "accuracy": "ACCURACY",
+    "health": "HEALTH",
+    "fever": "FEVER 2X",
+    "mega_break": "MEGA BURST TILE!",
+    "paused": "일시 정지",
+    "resume": "계속하기",
+    "restart": "처음부터"
+  },
+  "judgments": {
+    "max_perfect": "MAX PERFECT",
+    "perfect": "PERFECT",
+    "fast": "FAST",
+    "slow": "SLOW",
+    "good": "GOOD",
+    "miss": "MISS",
+    "mega_break": "MEGA BREAK"
+  },
+  "ranks": {
+    "sss": { "name": "SSS", "min_acc": 98, "title": "PERFECT ALL CLEAR" },
+    "ss": { "name": "SS", "min_acc": 95, "title": "MASTER CLEAR" },
+    "s": { "name": "S", "min_acc": 90, "title": "EXCELLENT CLEAR" },
+    "a": { "name": "A", "min_acc": 80, "title": "GREAT CLEAR" },
+    "b": { "name": "B", "min_acc": 70, "title": "STANDARD CLEAR" },
+    "c": { "name": "C", "min_acc": 60, "title": "PASS CLEAR" },
+    "f": { "name": "F", "min_acc": 0, "title": "STAGE FAILED" }
+  },
+  "settings": {
+    "title": "리듬스탑 환경 설정",
+    "speed": "노트 낙하 속도",
+    "offset": "판정 타이밍 싱크 (ms)",
+    "music_volume": "음악(BGM) 음량",
+    "sfx_volume": "타격음(SFX) 음량",
+    "bga": "뮤직비디오 배경 (BGA) 표시",
+    "effects": "네온 타격 이펙트 및 파티클",
+    "key_mapping": "4-Lane 키 바인딩 (기본: D / F / J / K)"
+  }
+}

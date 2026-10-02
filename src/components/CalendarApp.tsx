@@ -221,7 +221,7 @@ export const CalendarApp: React.FC<CalendarAppProps> = ({
                                 className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 outline-none cursor-pointer"
                             >
                                 {Array.from({ length: 20 }, (_, i) => 2015 + i).map(y => (
-                                    <option key={y} value={y}>{y}년</option>
+                                    <option key={`cal-year-${y}`} value={y}>{y}년</option>
                                 ))}
                             </select>
                             <select 
@@ -230,7 +230,7 @@ export const CalendarApp: React.FC<CalendarAppProps> = ({
                                 className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 outline-none cursor-pointer"
                             >
                                 {monthNames.map((m, idx) => (
-                                    <option key={idx} value={idx}>{idx + 1}월</option>
+                                    <option key={`cal-month-${idx}`} value={idx}>{idx + 1}월</option>
                                 ))}
                             </select>
                         </div>
@@ -239,7 +239,7 @@ export const CalendarApp: React.FC<CalendarAppProps> = ({
                     {/* Weekday Labels Header */}
                     <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-400 mb-2 border-b border-slate-800/80 pb-2">
                         {weekDays.map((wd, i) => (
-                            <span key={wd} className={i === 0 ? 'text-rose-400' : i === 6 ? 'text-cyan-400' : ''}>
+                            <span key={`cal-wd-${wd}-${i}`} className={i === 0 ? 'text-rose-400' : i === 6 ? 'text-cyan-400' : ''}>
                                 {wd}
                             </span>
                         ))}
@@ -249,7 +249,7 @@ export const CalendarApp: React.FC<CalendarAppProps> = ({
                     <div className="grid grid-cols-7 gap-1 flex-1">
                         {/* Empty padding boxes for previous month */}
                         {Array.from({ length: firstDayOfMonth }).map((_, idx) => (
-                            <div key={`empty-${idx}`} className="p-2 rounded-xl bg-slate-950/20 opacity-30 select-none" />
+                            <div key={`cal-empty-pad-${currentYear}-${currentMonth}-${idx}`} className="p-2 rounded-xl bg-slate-950/20 opacity-30 select-none" />
                         ))}
 
                         {/* Month Days */}
@@ -262,7 +262,7 @@ export const CalendarApp: React.FC<CalendarAppProps> = ({
 
                             return (
                                 <button
-                                    key={dayNum}
+                                    key={`cal-date-${dateStr}`}
                                     onClick={() => {
                                         sound.click();
                                         setSelectedDateStr(dateStr);

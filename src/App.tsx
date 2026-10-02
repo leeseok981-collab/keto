@@ -2626,7 +2626,7 @@ export default function App() {
                                   const cost = Math.floor(stage * 10 * Math.pow(1.2, stage)) * 2;
                                   const canAfford = state.trophies >= cost;
                                   return (
-                                      <button key={stage} onClick={() => teleportTo(stage)} disabled={!canAfford} className={`p-2 rounded font-black text-xs transition-colors ${canAfford ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
+                                      <button key={`teleport-stage-${stage}`} onClick={() => teleportTo(stage)} disabled={!canAfford} className={`p-2 rounded font-black text-xs transition-colors ${canAfford ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
                                           ST.{stage}<br/><span className="text-[10px]">{formatNumber(cost)}</span>
                                       </button>
                                   );
@@ -2648,7 +2648,7 @@ export default function App() {
               {COLLECTION_TIERS.filter(t => state.world === 2 || !t.name.includes('(W2)')).map((tier, i) => {
                 const isUnlocked = state.totalTrophies >= tier.req;
                 return (
-                  <div key={i} className={`p-6 rounded-2xl border-4 ${isUnlocked ? 'bg-slate-800 border-yellow-500' : 'bg-slate-900/50 border-slate-800 opacity-50'}`}>
+                  <div key={`collect-tier-${tier.name}-${i}`} className={`p-6 rounded-2xl border-4 ${isUnlocked ? 'bg-slate-800 border-yellow-500' : 'bg-slate-900/50 border-slate-800 opacity-50'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className={`font-black text-lg ${isUnlocked ? 'text-yellow-400' : 'text-slate-500'}`}>{tier.name}</h3>
                       {isUnlocked && <Award className="text-yellow-400 w-6 h-6" />}
@@ -2844,7 +2844,7 @@ export default function App() {
 
               {/* Background decorative elements */}
               <div className="absolute inset-0 opacity-10 pointer-events-none flex flex-wrap justify-center items-center gap-8 overflow-hidden">
-                  {Array.from({length: 20}).map((_, i) => <Activity key={i} className="w-32 h-32 text-red-400" />)}
+                  {Array.from({length: 20}).map((_, i) => <Activity key={`treadmill-act-${i}`} className="w-32 h-32 text-red-400" />)}
                       </div>
           </div>
       )}
@@ -2905,7 +2905,7 @@ export default function App() {
                <div className="flex justify-between items-center bg-slate-800 p-4 rounded-xl mb-2">
                   <div className="font-bold text-white text-sm">최대 프레임(FPS) 설정</div>
                   <select value={state.fpsLimit || 60} onChange={e => setState(s=>({...s, fpsLimit: Number(e.target.value)}))} className="bg-slate-700 text-white p-2 rounded">
-                      {[15,30,60,120,140,240,300].map(f => <option key={f} value={f}>{f} FPS</option>)}
+                      {[15,30,60,120,140,240,300].map(f => <option key={`fps-opt-${f}`} value={f}>{f} FPS</option>)}
                   </select>
                </div>
 
@@ -2924,7 +2924,7 @@ export default function App() {
                   </div>
                   <div className="flex gap-2">
                       {['99B4823E (기본)', '갈축', '적축', '경쾌한 청축'].map((name, i) => (
-                          <button key={i} onClick={() => { setState(s=>({...s, keyboardSound: i})); playKeySound(i); }} className={`flex-1 py-2 text-xs font-black rounded transition-colors ${state.keyboardSound === i ? 'bg-cyan-600 text-white shadow-md' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>{name}</button>
+                          <button key={`kb-sound-preset-${i}`} onClick={() => { setState(s=>({...s, keyboardSound: i})); playKeySound(i); }} className={`flex-1 py-2 text-xs font-black rounded transition-colors ${state.keyboardSound === i ? 'bg-cyan-600 text-white shadow-md' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>{name}</button>
                       ))}
                   </div>
                </div>

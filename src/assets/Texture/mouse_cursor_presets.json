@@ -1,0 +1,10 @@
+{
+  "presets": [
+    { "label": "극소형", "size": 0.15, "scale_percent": "15%", "pixel_size": 4.8 },
+    { "label": "초소형", "size": 0.3, "scale_percent": "30%", "pixel_size": 9.6 },
+    { "label": "소형", "size": 0.6, "scale_percent": "60%", "pixel_size": 19.2 },
+    { "label": "표준", "size": 1.0, "scale_percent": "100%", "pixel_size": 32.0 },
+    { "label": "대형", "size": 1.6, "scale_percent": "160%", "pixel_size": 51.2 },
+    { "label": "특대", "size": 2.5, "scale_percent": "250%", "pixel_size": 80.0 }
+  ]
+}

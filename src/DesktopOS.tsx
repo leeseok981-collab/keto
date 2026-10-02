@@ -114,6 +114,52 @@ export const isPermanentItem = (item?: DesktopItem | null) => {
     return item.id === 'app-trash' || item.appType === 'trash';
 };
 
+// ⚡ Performance Optimized Isolated Clocks (Prevents entire OS tree from re-rendering every second)
+export const LiveTaskbarClock: React.FC = React.memo(() => {
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="flex flex-col items-end text-right leading-none select-none">
+            <span className="text-xs font-black text-white font-mono leading-none tracking-tight">
+                {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            <span className="text-[10px] text-slate-400 leading-none mt-1 font-mono">
+                {now.toLocaleDateString([], { year: 'numeric', month: '2-digit', day: '2-digit' })}
+            </span>
+        </div>
+    );
+});
+
+export const LiveCalendarHeader: React.FC = React.memo(() => {
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+                <div className="text-2xl font-black text-white font-mono tracking-tight">
+                    {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </div>
+                <div className="text-xs text-cyan-400 font-semibold mt-0.5">
+                    {now.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+                </div>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400">
+                <Clock className="w-4 h-4 animate-spin-slow" />
+            </div>
+        </div>
+    );
+});
+
 // OS 테마 및 언어에 따른 기본 설치 앱 목록 생성
 export const getSystemCoreApps = (theme: 'windows' | 'mac', lang: SupportedLanguage): DesktopItem[] => {
     const isMac = theme === 'mac';
@@ -854,9 +900,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         }
     }, [items]);
 
-    // Live Clock
+    // Live Clock (Background date sync every 30s, UI rendering handled by isolated LiveTaskbarClock)
     useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        const timer = setInterval(() => setCurrentTime(new Date()), 30000);
         return () => clearInterval(timer);
     }, []);
 
@@ -1696,7 +1742,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
 
         const days = [];
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty-${i}`} className="h-7 w-7"></div>);
+            days.push(<div key={`taskbar-cal-pad-${year}-${month}-${i}`} className="h-7 w-7"></div>);
         }
 
         const isCurrentMonth = 
@@ -1706,7 +1752,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             const isToday = isCurrentMonth && currentTime.getDate() === d;
             days.push(
                 <div 
-                    key={`day-${d}`} 
+                    key={`taskbar-cal-day-${year}-${month}-${d}`} 
                     className={`h-7 w-7 flex items-center justify-center rounded-full text-xs font-semibold cursor-pointer transition-colors ${
                         isToday 
                             ? 'bg-cyan-500 text-white font-black ring-2 ring-cyan-300 shadow-md shadow-cyan-500/50' 
@@ -3450,19 +3496,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     className={`fixed ${theme === 'mac' ? 'bottom-20 right-4 sm:right-8' : 'bottom-14 right-2'} w-88 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col p-4 text-slate-200 select-none font-sans ring-1 ring-black/60 animate-fade-in gap-4`}
                 >
                     {/* Live Clock & Date header */}
-                    <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
-                        <div>
-                            <div className="text-2xl font-black text-white font-mono tracking-tight">
-                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                            </div>
-                            <div className="text-xs text-cyan-400 font-semibold mt-0.5">
-                                {currentTime.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
-                            </div>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400">
-                            <Clock className="w-4 h-4 animate-spin-slow" />
-                        </div>
-                    </div>
+                    <LiveCalendarHeader />
 
                     {/* Interactive Calendar */}
                     <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800">
@@ -3747,12 +3781,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                         }`}
                         title="달력 및 시간 열기"
                     >
-                        <span className="text-xs font-black text-white font-mono leading-none">
-                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        <span className="text-[10px] text-slate-400 leading-none mt-1">
-                            {currentTime.toLocaleDateString([], { year: 'numeric', month: '2-digit', day: '2-digit' })}
-                        </span>
+                        <LiveTaskbarClock />
                     </button>
                 </div>
             </div>

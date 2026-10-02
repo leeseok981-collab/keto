@@ -15,19 +15,21 @@ export const CustomCursorFollower: React.FC<CustomCursorFollowerProps> = ({ sett
         ? settings.customImageUrl
         : activePreset?.iconSvg || CURSOR_PRESETS[0]?.iconSvg;
 
-    const baseSize = 32 * (settings.size || 1.0);
+    const rawSize = settings.size || 1.0;
+    const scale = rawSize > 5 ? rawSize / 32 : rawSize;
+    const baseSize = Math.max(3, 32 * scale);
 
-    // Determine hotspot offset based on cursor type
+    // Determine hotspot offset based on cursor type with proportional scale
     const getHotspotOffset = () => {
         const id = settings.cursorId;
         if (id === 'classic-default' || id === 'matte-black-pro' || id === 'rainbow-aero' || id === 'pixel-8bit') {
-            return { x: 2, y: 2 };
+            return { x: Math.max(0.5, 2 * scale), y: Math.max(0.5, 2 * scale) };
         }
         if (id === 'magic-wand' || id === 'cyber-saber') {
-            return { x: 4, y: 4 };
+            return { x: Math.max(0.5, 4 * scale), y: Math.max(0.5, 4 * scale) };
         }
         if (id === 'space-rocket') {
-            return { x: baseSize / 2, y: 2 };
+            return { x: baseSize / 2, y: Math.max(0.5, 2 * scale) };
         }
         return { x: baseSize / 2, y: baseSize / 2 };
     };

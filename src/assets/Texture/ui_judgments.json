@@ -1,0 +1,74 @@
+{
+  "system": "Precision Dynamic Hit Windows",
+  "windows_ms": {
+    "max_perfect": 55,
+    "perfect": 115,
+    "fast_slow": 180,
+    "good": 220
+  },
+  "judgments": [
+    {
+      "type": "MAX PERFECT",
+      "window_ms": 55,
+      "score_weight": 1.0,
+      "health_gain": 2.5,
+      "color": "#fbbf24",
+      "glow": "rgba(251, 191, 36, 0.9)",
+      "badge": "★ MAX PERFECT ★"
+    },
+    {
+      "type": "PERFECT",
+      "window_ms": 115,
+      "score_weight": 0.9,
+      "health_gain": 1.5,
+      "color": "#38bdf8",
+      "glow": "rgba(56, 189, 248, 0.8)",
+      "badge": "PERFECT"
+    },
+    {
+      "type": "FAST",
+      "window_ms": 180,
+      "score_weight": 0.7,
+      "health_gain": 0.5,
+      "color": "#f97316",
+      "glow": "rgba(249, 115, 22, 0.8)",
+      "badge": "FAST"
+    },
+    {
+      "type": "SLOW",
+      "window_ms": 180,
+      "score_weight": 0.7,
+      "health_gain": 0.5,
+      "color": "#a855f7",
+      "glow": "rgba(168, 85, 247, 0.8)",
+      "badge": "SLOW"
+    },
+    {
+      "type": "GOOD",
+      "window_ms": 220,
+      "score_weight": 0.5,
+      "health_gain": 0.2,
+      "color": "#22c55e",
+      "glow": "rgba(34, 197, 94, 0.7)",
+      "badge": "GOOD"
+    },
+    {
+      "type": "MISS",
+      "window_ms": -1,
+      "score_weight": 0.0,
+      "health_gain": -10.0,
+      "color": "#ef4444",
+      "glow": "rgba(239, 68, 68, 0.8)",
+      "badge": "MISS"
+    },
+    {
+      "type": "MEGA BREAK",
+      "window_ms": 150,
+      "score_weight": 1.2,
+      "health_gain": 5.0,
+      "color": "#ec4899",
+      "glow": "rgba(236, 72, 153, 0.95)",
+      "badge": "💥 MEGA BREAK! 💥"
+    }
+  ]
+}

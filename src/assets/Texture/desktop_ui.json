@@ -1,0 +1,40 @@
+{
+  "system_title": "Cattoer Windows Pro Edition",
+  "desktop_apps": [
+    {
+      "id": "rhythmstop",
+      "title": "리듬스탑 (Rhythm Stop)",
+      "category": "Games",
+      "icon": "Music",
+      "color": "from-cyan-500 to-blue-600"
+    },
+    {
+      "id": "cailus",
+      "title": "Cailus AI Assistant",
+      "category": "Productivity",
+      "icon": "Bot",
+      "color": "from-purple-500 to-indigo-600"
+    },
+    {
+      "id": "terminal",
+      "title": "명령 프롬프트 (Terminal)",
+      "category": "System",
+      "icon": "Terminal",
+      "color": "from-slate-700 to-slate-900"
+    },
+    {
+      "id": "settings",
+      "title": "시스템 설정 (Settings)",
+      "category": "System",
+      "icon": "Settings",
+      "color": "from-cyan-600 to-teal-700"
+    },
+    {
+      "id": "mouse_settings",
+      "title": "마우스 커서 커스텀",
+      "category": "Personalization",
+      "icon": "MousePointer",
+      "color": "from-rose-500 to-purple-600"
+    }
+  ]
+}

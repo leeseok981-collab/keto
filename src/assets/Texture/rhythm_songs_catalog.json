@@ -1,0 +1,96 @@
+{
+  "catalog_version": "2.0.0",
+  "songs": [
+    {
+      "id": "tuki-bansanka",
+      "title": "만찬가 (晩餐歌)",
+      "artist": "tuki.",
+      "media_type": "video",
+      "media_src": "/assets/🍜너만의 풀코스를 내게 전해줘😋- tuki. - 『晩餐歌』 (만찬가, Bansanka) [가사 해석 lyrics].mp4",
+      "fallback_src": "/assets/tuki_bansanka.mp3",
+      "bpm": 86,
+      "duration_ms": 215000,
+      "description": "서정적인 어쿠스틱 기타와 폭발적인 록 보컬 사운드가 어우러진 감성 명곡 (고화질 MV 배경)",
+      "cover_gradient": "from-pink-600 via-rose-600 to-indigo-800",
+      "stars": { "easy": 2, "normal": 3, "hard": 5 }
+    },
+    {
+      "id": "rokudenashi-tadakoe",
+      "title": "그저 목소리 하나 (ただ声一つ)",
+      "artist": "로쿠데나시 (ロクデナシ)",
+      "media_type": "video",
+      "media_src": "/assets/rokudenashi_tadakoe.mp4",
+      "fallback_src": "/assets/🌙⭐️ 사랑 한 스푼 로쿠데나시 (ロクデナシ) - 그저 목소리 하나 (ただ声一つ) [가사 해석 번역]🌙⭐️.mp4",
+      "bpm": 115,
+      "duration_ms": 185000,
+      "description": "반투명 고화질 뮤직비디오 배경과 함께 플레이하는 로쿠데나시의 대표 인기곡",
+      "cover_gradient": "from-indigo-600 via-purple-600 to-pink-600",
+      "stars": { "easy": 2, "normal": 4, "hard": 5 }
+    },
+    {
+      "id": "yuika-sukidakara",
+      "title": "좋아하니까 (好きだから)",
+      "artist": "Yuika (ユイカ)",
+      "media_type": "video",
+      "media_src": "/assets/rokudenashi_tadakoe.mp4",
+      "fallback_src": "/assets/tuki_bansanka.mp3",
+      "bpm": 104,
+      "duration_ms": 195000,
+      "description": "설레는 가사와 풋풋한 어쿠스틱 감성이 돋보이는 Yuika의 대표 러브송",
+      "cover_gradient": "from-rose-500 via-pink-500 to-amber-500",
+      "stars": { "easy": 1, "normal": 3, "hard": 4 }
+    },
+    {
+      "id": "yuuri-betelgeuse",
+      "title": "베텔기우스 (ベテルギウス)",
+      "artist": "Yuuri (優里)",
+      "media_type": "audio",
+      "media_src": "/assets/tuki_bansanka.mp3",
+      "fallback_src": "/assets/99B4823E5F71EDA02C.mp3",
+      "bpm": 110,
+      "duration_ms": 230000,
+      "description": "별빛처럼 영원히 빛나는 인연과 감동적인 하모니의 드라마틱 제이팝",
+      "cover_gradient": "from-amber-600 via-yellow-600 to-blue-900",
+      "stars": { "easy": 2, "normal": 4, "hard": 5 }
+    },
+    {
+      "id": "imase-nightdancer",
+      "title": "NIGHT DANCER",
+      "artist": "imase",
+      "media_type": "video",
+      "media_src": "/assets/imase_night_dancer.mp4",
+      "fallback_src": "/assets/🌙너와 함께 빠져버리고 싶어.. imase - NIGHT DANCER.mp4",
+      "bpm": 117,
+      "duration_ms": 210000,
+      "description": "트렌디한 시티팝 비트와 중독성 넘치는 그루브의 댄서블 명곡",
+      "cover_gradient": "from-blue-600 via-indigo-600 to-purple-800",
+      "stars": { "easy": 3, "normal": 4, "hard": 5 }
+    },
+    {
+      "id": "yoasobi-idol",
+      "title": "아이돌 (アイドル)",
+      "artist": "YOASOBI",
+      "media_type": "video",
+      "media_src": "/assets/yoasobi_idol.mp4",
+      "fallback_src": "/assets/YOASOBI 「아이돌」 Official Music Video.mp4",
+      "bpm": 166,
+      "duration_ms": 215000,
+      "description": "글로벌 메가히트! 압도적인 질주감과 고난도 4-Lane 연타 쾌감",
+      "cover_gradient": "from-fuchsia-600 via-rose-600 to-amber-500",
+      "stars": { "easy": 3, "normal": 5, "hard": 6 }
+    },
+    {
+      "id": "yorushika-ghost",
+      "title": "꽃의 망령 (花に亡霊)",
+      "artist": "요루시카 (ヨルシカ)",
+      "media_type": "video",
+      "media_src": "/assets/yorushika_ghost.mp4",
+      "fallback_src": "/assets/요루시카 - 꽃에 망령（OFFICIAL VIDEO）.mp4",
+      "bpm": 90,
+      "duration_ms": 240000,
+      "description": "아름다운 피아노 선율과 청량한 감성으로 채워진 요루시카의 대표곡",
+      "cover_gradient": "from-teal-600 via-cyan-600 to-sky-900",
+      "stars": { "easy": 2, "normal": 3, "hard": 5 }
+    }
+  ]
+}

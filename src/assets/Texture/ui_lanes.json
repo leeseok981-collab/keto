@@ -1,0 +1,52 @@
+{
+  "lane_count": 4,
+  "lanes": [
+    {
+      "id": 0,
+      "default_code": "KeyD",
+      "default_key": "d",
+      "label": "D",
+      "name": "Cyan Lane",
+      "color": "#06b6d4",
+      "glow": "rgba(6, 182, 212, 0.95)",
+      "highlight": "#67e8f9"
+    },
+    {
+      "id": 1,
+      "default_code": "KeyF",
+      "default_key": "f",
+      "label": "F",
+      "name": "Rose Lane",
+      "color": "#ec4899",
+      "glow": "rgba(236, 72, 153, 0.95)",
+      "highlight": "#f472b6"
+    },
+    {
+      "id": 2,
+      "default_code": "KeyJ",
+      "default_key": "j",
+      "label": "J",
+      "name": "Amber Lane",
+      "color": "#f59e0b",
+      "glow": "rgba(245, 158, 11, 0.95)",
+      "highlight": "#fbbf24"
+    },
+    {
+      "id": 3,
+      "default_code": "KeyK",
+      "default_key": "k",
+      "label": "K",
+      "name": "Purple Lane",
+      "color": "#8b5cf6",
+      "glow": "rgba(139, 92, 246, 0.95)",
+      "highlight": "#a78bfa"
+    }
+  ],
+  "mega_burst_lane": {
+    "id": -1,
+    "name": "All-Lane Boss Mega Tile",
+    "color": "#ef4444",
+    "glow": "rgba(239, 68, 68, 0.95)",
+    "highlight": "#fca5a5"
+  }
+}

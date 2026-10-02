@@ -703,7 +703,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
 
             return (
               <div 
-                  key={plot.id} 
+                  key={`garden-plot-unit-${plot.id}`} 
                   className="aspect-square bg-[#3d2314] rounded-3xl border-4 border-[#2c180e] relative shadow-inner overflow-hidden flex flex-col items-center justify-center p-4 group touch-none"
                   onPointerDown={(e) => { e.preventDefault(); handlePointerDown(plot.id, isReady, isPlanted); }}
                   onPointerUp={(e) => { e.preventDefault(); handlePointerUp(plot.id, isPlanted); }}
@@ -719,7 +719,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
                         const sdef = SEEDS[sid as keyof typeof SEEDS];
                         return (
                           <button
-                            key={sid}
+                            key={`plant-opt-${plot.id}-${sid}`}
                             onClick={(e) => { e.stopPropagation(); plantSeed(plot.id, sid); }}
                             className="bg-green-800 hover:bg-green-700 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1 border border-green-600"
                           >
@@ -750,7 +750,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
                         const pos = [{ top: '0', left: '0' }, { top: '0', right: '0' }, { bottom: '20px', left: '0' }, { bottom: '20px', right: '0' }];
                         const p = pos[idx % 4];
                         return (
-                            <div key={idx} className={`absolute ${p.top? 'top-0':''} ${p.bottom? 'bottom-4':''} ${p.left? 'left-0':''} ${p.right? 'right-0':''} text-lg animate-bounce drop-shadow-md z-10`}>
+                            <div key={`attr-dot-${plot.id}-${attrId}-${idx}`} className={`absolute ${p.top? 'top-0':''} ${p.bottom? 'bottom-4':''} ${p.left? 'left-0':''} ${p.right? 'right-0':''} text-lg animate-bounce drop-shadow-md z-10`}>
                                 {adef.icon}
                             </div>
                         )
@@ -768,7 +768,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
                         const pos = [{ top: '10px', left: '10px' }, { top: '10px', right: '10px' }, { bottom: '40px', left: '10px' }, { bottom: '40px', right: '10px' }];
                         const p = pos[idx % 4];
                         return (
-                            <div key={idx} className={`absolute ${p.top? 'top-2':''} ${p.bottom? 'bottom-10':''} ${p.left? 'left-2':''} ${p.right? 'right-2':''} text-2xl drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] z-10 animate-bounce`}>
+                            <div key={`ready-attr-dot-${plot.id}-${attrId}-${idx}`} className={`absolute ${p.top? 'top-2':''} ${p.bottom? 'bottom-10':''} ${p.left? 'left-2':''} ${p.right? 'right-2':''} text-2xl drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] z-10 animate-bounce`}>
                                 {adef.icon}
                             </div>
                         )
@@ -805,7 +805,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
               const mins = Math.floor(timeLeft / 60);
               const secs = timeLeft % 60;
               return (
-                  <div key={i} className="bg-stone-900/90 backdrop-blur-md border border-stone-700 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg pointer-events-auto">
+                  <div key={`vis-event-${ev.attrId}-${i}`} className="bg-stone-900/90 backdrop-blur-md border border-stone-700 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg pointer-events-auto">
                       <span className="text-lg">{adef.icon}</span>
                       <span className={`font-black text-sm whitespace-nowrap ${adef.color}`}>{adef.name}</span>
                       <span className="text-xs text-stone-400 font-bold ml-1 w-10 text-right">{mins}:{secs.toString().padStart(2, '0')}</span>
@@ -1108,7 +1108,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
                       const mins = Math.floor(timeLeft / 60);
                       const secs = timeLeft % 60;
                       return (
-                          <div key={i} className="bg-stone-800 p-4 rounded-2xl flex items-center justify-between border border-stone-700 shadow-md">
+                          <div key={`all-active-ev-${ev.attrId}-${i}`} className="bg-stone-800 p-4 rounded-2xl flex items-center justify-between border border-stone-700 shadow-md">
                               <div className="flex items-center gap-3">
                                   <div className="text-3xl bg-stone-900 p-2 rounded-xl">{adef.icon}</div>
                                   <div>
@@ -1141,7 +1141,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
               
               <div className="overflow-y-auto space-y-3 pr-2 flex-1">
                   {rankings.map((r, i) => (
-                      <div key={r.id} className={`bg-stone-800 p-3 rounded-2xl border ${i === 0 ? 'border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]' : i === 1 ? 'border-stone-300' : i === 2 ? 'border-amber-700' : 'border-stone-700'} flex items-center gap-3`}>
+                      <div key={`garden-rank-${r.id || i}-${i}`} className={`bg-stone-800 p-3 rounded-2xl border ${i === 0 ? 'border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]' : i === 1 ? 'border-stone-300' : i === 2 ? 'border-amber-700' : 'border-stone-700'} flex items-center gap-3`}>
                           <div className={`font-black text-xl w-6 text-center ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-stone-300' : i === 2 ? 'text-amber-600' : 'text-stone-500'}`}>{i + 1}</div>
                           <img src={r.profilePic || 'https://api.dicebear.com/7.x/bottts/svg?seed=1'} className="w-10 h-10 rounded-xl bg-stone-900" />
                           <div className="flex-1 overflow-hidden">
@@ -1245,7 +1245,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
                   <div className="flex flex-wrap gap-2 mb-3">
                     {[1, 2, 5, 10, 50, 100].map(m => (
                       <button 
-                        key={m} 
+                        key={`garden-speed-mult-${m}`} 
                         onClick={() => setTempMultiplier(m)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
                           tempMultiplier === m 
@@ -1380,7 +1380,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
                         const invEntries = Object.entries(inventory).filter(([_, qty]) => Number(qty) > 0);
                         const item = invEntries[slotIdx];
                         return (
-                            <div key={slotIdx} className="w-16 h-16 bg-stone-900 border-2 border-stone-700 rounded-2xl flex items-center justify-center relative shadow-inner shrink-0">
+                            <div key={`seed-inv-slot-${slotIdx}`} className="w-16 h-16 bg-stone-900 border-2 border-stone-700 rounded-2xl flex items-center justify-center relative shadow-inner shrink-0">
                                 {item ? (
                                     <>
                                         <span className="text-3xl">{SEEDS[item[0] as keyof typeof SEEDS].icon}</span>
@@ -1409,7 +1409,7 @@ export function GardenGame({ user, userData, onBack, onBadgeUnlock }: any) {
                         const petUid = equippedPets[slotIdx];
                         const pet = pets.find(p => p.uid === petUid);
                         return (
-                            <div key={slotIdx} onMouseEnter={sound.hover} onClick={() => pet && equipPet(petUid)} className="w-16 h-16 bg-stone-900 border-2 border-purple-900/50 rounded-2xl flex items-center justify-center relative shadow-inner shrink-0 cursor-pointer hover:border-purple-500 transition-colors">
+                            <div key={`pet-equipped-slot-${slotIdx}`} onMouseEnter={sound.hover} onClick={() => pet && equipPet(petUid)} className="w-16 h-16 bg-stone-900 border-2 border-purple-900/50 rounded-2xl flex items-center justify-center relative shadow-inner shrink-0 cursor-pointer hover:border-purple-500 transition-colors">
                                 {pet ? (
                                     <>
                                         <span className="text-3xl">{pet.icon}</span>

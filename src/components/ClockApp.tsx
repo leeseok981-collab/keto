@@ -230,7 +230,7 @@ export const ClockApp: React.FC<ClockAppProps> = ({ onClose }) => {
                             <div className="grid grid-cols-4 gap-2">
                                 {[60, 180, 300, 600].map(s => (
                                     <button
-                                        key={s}
+                                        key={`timer-preset-${s}`}
                                         onClick={() => {
                                             sound.click();
                                             setTimerInputSec(s);

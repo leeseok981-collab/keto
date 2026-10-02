@@ -1,0 +1,55 @@
+{
+  "textures": [
+    {
+      "id": "ui_frame",
+      "name": "Cyber UI Frame",
+      "path": "/assets/Texture/ui_frame.svg",
+      "category": "ui"
+    },
+    {
+      "id": "lane_glow",
+      "name": "4-Lane Glow Receptor",
+      "path": "/assets/Texture/lane_glow.svg",
+      "category": "rhythm"
+    },
+    {
+      "id": "note_tap",
+      "name": "Standard Tap Note Texture",
+      "path": "/assets/Texture/note_tap.svg",
+      "category": "rhythm"
+    }
+  ],
+  "ui_data_files": [
+    {
+      "id": "ui_strings_ko",
+      "name": "Korean UI Localization Strings",
+      "path": "/assets/Texture/ui_strings_ko.json"
+    },
+    {
+      "id": "ui_lanes",
+      "name": "4-Lane System & Color Schemas",
+      "path": "/assets/Texture/ui_lanes.json"
+    },
+    {
+      "id": "ui_judgments",
+      "name": "Judgment Windows & Hit Multipliers",
+      "path": "/assets/Texture/ui_judgments.json"
+    },
+    {
+      "id": "rhythm_songs_catalog",
+      "name": "Rhythm Game Songs Catalog",
+      "path": "/assets/Texture/rhythm_songs_catalog.json"
+    },
+    {
+      "id": "desktop_ui",
+      "name": "Desktop UI Application Registry",
+      "path": "/assets/Texture/desktop_ui.json"
+    },
+    {
+      "id": "mouse_cursor_presets",
+      "name": "Custom Mouse Cursor Presets",
+      "path": "/assets/Texture/mouse_cursor_presets.json"
+    }
+  ],
+  "version": "2.0.0"
+}
