@@ -11,8 +11,12 @@ import {
     PlaySquare, Code, Apple, Layout, Scissors, Palette, MousePointer, Sliders,
     Camera, Bot, Plus, Settings, Lock, CornerDownLeft, GraduationCap,
     Compass, Activity, Flame, Fish, Trees, Utensils, BookOpen, Tv, Smartphone,
-    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box, Disc, Wand2
+    Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box, Disc, Wand2,
+    Sun, Shirt
 } from 'lucide-react';
+import { WeatherApp } from './components/apps/weather/WeatherApp';
+import { AIAutoVideoEditor } from './components/videoEditor/AIAutoVideoEditor';
+import { TameAIStudio } from './components/tameAI/TameAIStudio';
 import { KetoBankApp } from './components/KetoBankApp';
 import { CailusAppWindow } from './components/CailusAppWindow';
 import { SecondaryMonitorView } from './components/SecondaryMonitorView';
@@ -244,6 +248,27 @@ export const getSystemCoreApps = (theme: 'windows' | 'mac', lang: SupportedLangu
             updatedAt: now
         },
         {
+            id: 'app-weather',
+            name: '날씨',
+            type: 'app',
+            appType: 'weather',
+            updatedAt: now
+        },
+        {
+            id: 'app-video-editor',
+            name: 'AI 쇼츠 자동 편집기',
+            type: 'app',
+            appType: 'video-editor',
+            updatedAt: now
+        },
+        {
+            id: 'app-tame-ai',
+            name: '타메 AI 스튜디오',
+            type: 'app',
+            appType: 'tame-ai',
+            updatedAt: now
+        },
+        {
             id: 'app-trash',
             name: t('os.trash', '휴지통'),
             type: 'app',
@@ -311,6 +336,20 @@ export const getDefaultDesktopApps = (
             type: 'app',
             appType: 'ketoBank',
             updatedAt: now
+        },
+        {
+            id: 'app-video-editor',
+            name: 'AI 쇼츠 자동 편집기',
+            type: 'app',
+            appType: 'video-editor',
+            updatedAt: now
+        },
+        {
+            id: 'app-tame-ai',
+            name: '타메 AI 스튜디오',
+            type: 'app',
+            appType: 'tame-ai',
+            updatedAt: now
         }
     ];
 };
@@ -365,6 +404,8 @@ interface DesktopOSProps {
     onOpenSpeedKeyboard2?: () => void;
     onOpenCustomAuth?: () => void;
     onLogout?: () => void;
+    onOpenVideoEditor?: () => void;
+    onOpenTameAIStudio?: () => void;
 }
 
 export const DesktopOS: React.FC<DesktopOSProps> = ({
@@ -377,7 +418,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     onGsiLogin,
     onOpenSpeedKeyboard2,
     onOpenCustomAuth,
-    onLogout
+    onLogout,
+    onOpenVideoEditor,
+    onOpenTameAIStudio
 }) => {
     // Desktop Theme: 'windows' | 'mac'
     const [theme, setTheme] = useState<'windows' | 'mac'>(() => {
@@ -397,12 +440,31 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             if (saved) {
                 const parsed: DesktopItem[] = JSON.parse(saved);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed.filter(item => 
+                    const filtered = parsed.filter(item => 
                         item.appType !== 'speedkeyboard' && 
                         item.appType !== 'speedkeyboard2' && 
                         item.id !== 'app-speedkeyboard' && 
                         item.id !== 'app-speedkeyboard2'
                     );
+                    if (!filtered.some(i => i.appType === 'video-editor' || i.id === 'app-video-editor')) {
+                        filtered.push({
+                            id: 'app-video-editor',
+                            name: 'AI 쇼츠 자동 편집기',
+                            type: 'app',
+                            appType: 'video-editor',
+                            updatedAt: '2026-09-25'
+                        });
+                    }
+                    if (!filtered.some(i => i.appType === 'tame-ai' || i.id === 'app-tame-ai')) {
+                        filtered.push({
+                            id: 'app-tame-ai',
+                            name: '타메 AI 스튜디오',
+                            type: 'app',
+                            appType: 'tame-ai',
+                            updatedAt: '2026-10-04'
+                        });
+                    }
+                    return filtered;
                 }
             }
         } catch (e) {
@@ -418,6 +480,35 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             item.id !== 'app-speedkeyboard2'
         );
     });
+
+    // Ensure core desktop apps exist on mount
+    useEffect(() => {
+        setItems(prev => {
+            let updated = [...prev];
+            let changed = false;
+            if (!updated.some(i => i.appType === 'video-editor' || i.id === 'app-video-editor')) {
+                updated.push({
+                    id: 'app-video-editor',
+                    name: 'AI 쇼츠 자동 편집기',
+                    type: 'app',
+                    appType: 'video-editor',
+                    updatedAt: '2026-10-05'
+                });
+                changed = true;
+            }
+            if (!updated.some(i => i.appType === 'tame-ai' || i.id === 'app-tame-ai')) {
+                updated.push({
+                    id: 'app-tame-ai',
+                    name: '타메 AI 스튜디오',
+                    type: 'app',
+                    appType: 'tame-ai',
+                    updatedAt: '2026-10-05'
+                });
+                changed = true;
+            }
+            return changed ? updated : prev;
+        });
+    }, []);
 
     // Save items to localStorage whenever they change (filtering standalone speedkeyboard program)
     useEffect(() => {
@@ -555,6 +646,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showTaskManager, setShowTaskManager] = useState(false);
     const [showClock, setShowClock] = useState(false);
     const [showPower, setShowPower] = useState(false);
+    const [showWeather, setShowWeather] = useState(false);
+    const [showVideoEditor, setShowVideoEditor] = useState(false);
+    const [showTameAIStudio, setShowTameAIStudio] = useState(false);
 
     // Official Game Center & Games Window States
     const [showGameCenter, setShowGameCenter] = useState(false);
@@ -891,15 +985,6 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const desktopAreaRef = useRef<HTMLDivElement>(null);
     const itemElementsRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-    // Save items to localStorage whenever they change
-    useEffect(() => {
-        try {
-            localStorage.setItem('desktop_os_items_v5', JSON.stringify(items));
-        } catch (e) {
-            console.error(e);
-        }
-    }, [items]);
-
     // Live Clock (Background date sync every 30s, UI rendering handled by isolated LiveTaskbarClock)
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 30000);
@@ -1031,6 +1116,17 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'photos') { sound.click(); setShowPhotos(true); setFocusedWindow('photos'); }
             else if (item.appType === 'taskmgr') { sound.click(); setShowTaskManager(true); setFocusedWindow('taskmgr'); }
             else if (item.appType === 'clock') { sound.click(); setShowClock(true); setFocusedWindow('clock'); }
+            else if (item.appType === 'weather' || item.id === 'app-weather') { sound.click(); setShowWeather(true); setFocusedWindow('weather'); }
+            else if (item.appType === 'video-editor' || item.id === 'app-video-editor') {
+                sound.click();
+                setShowVideoEditor(true);
+                setFocusedWindow('video-editor');
+            }
+            else if (item.appType === 'tame-ai' || item.id === 'app-tame-ai') {
+                sound.click();
+                setShowTameAIStudio(true);
+                setFocusedWindow('tame-ai');
+            }
             else if (item.appType === 'power') { sound.click(); setShowPower(true); setFocusedWindow('power'); }
             else if (item.appType === 'explorer') {
                 sound.click();
@@ -1480,6 +1576,13 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             setShowTaskManager(true);
         } else if (appType === 'clock') {
             setShowClock(true);
+        } else if (appType === 'weather') {
+            setShowWeather(true);
+        } else if (appType === 'video-editor') {
+            setShowVideoEditor(true);
+            setFocusedWindow('video-editor');
+        } else if (appType === 'tame-ai') {
+            setShowTameAIStudio(true);
         } else if (appType === 'power') {
             setShowPower(true);
         } else if (appType === 'calculator') {
@@ -2439,6 +2542,21 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Clock className="w-7 h-7 text-slate-900 drop-shadow" />
                                     </div>
                                 )}
+                                {(item.appType === 'weather' || item.id === 'app-weather') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 flex items-center justify-center shadow-lg border border-sky-300/40 ring-2 ring-sky-400/20 group-hover:scale-105 transition-transform">
+                                        <Sun className="w-7 h-7 text-white drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'video-editor' || item.id === 'app-video-editor') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-600 to-indigo-600 flex items-center justify-center shadow-xl border border-cyan-300/50 ring-2 ring-cyan-400/30 group-hover:scale-110 transition-transform">
+                                        <Sparkles className="w-7 h-7 text-slate-950 fill-cyan-200 drop-shadow" />
+                                    </div>
+                                )}
+                                {(item.appType === 'tame-ai' || item.id === 'app-tame-ai') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-xl border border-indigo-400/50 ring-2 ring-indigo-400/30 group-hover:scale-110 transition-transform">
+                                        <Sparkles className="w-7 h-7 text-white fill-cyan-300 drop-shadow" />
+                                    </div>
+                                )}
                                 {(item.appType === 'power' || item.id === 'app-power') && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 via-rose-600 to-slate-900 flex items-center justify-center shadow-lg border border-rose-300/40 group-hover:scale-105 transition-transform">
                                         <Power className="w-7 h-7 text-white drop-shadow" />
@@ -3283,6 +3401,9 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                             { id: 'app-screenshot', name: theme === 'mac' ? t('os.screenshot', '스크린샷') : t('os.captureTool', '캡처 도구'), appType: 'screenshot', icon: <Scissors className="w-4 h-4 text-rose-400" />, desc: '화면 캡처, 영역 선택, 주석 및 저장' },
                             { id: 'app-taskmgr', name: theme === 'mac' ? t('os.activityMonitor', '활성 상태 보기') : t('os.taskManager', '작업 관리자'), appType: 'taskmgr', icon: <Activity className="w-4 h-4 text-cyan-400" />, desc: '프로세스 모니터링 및 강제 종료' },
                             { id: 'app-clock', name: t('os.clock', '시계'), appType: 'clock', icon: <Clock className="w-4 h-4 text-amber-400" />, desc: '세계 시각, 스톱워치 및 타이머' },
+                            { id: 'app-weather', name: '날씨 (Weather & OOTD)', appType: 'weather', icon: <Sun className="w-4 h-4 text-amber-400" />, desc: '실시간 날씨 예보 및 기온별 옷차림 추천' },
+                            { id: 'app-video-editor', name: 'AI 쇼츠 자동 편집기', appType: 'video-editor', icon: <Sparkles className="w-4 h-4 text-cyan-400" />, desc: 'AI 하이라이트 분석 및 9:16 자동 편집' },
+                            { id: 'app-tame-ai', name: '타메 AI 스튜디오', appType: 'tame-ai', icon: <Sparkles className="w-4 h-4 text-indigo-400" />, desc: '8대 특화 AI 모델 & 블로그·태그·프롬프트·링크 생성기' },
                             { id: 'app-trash', name: t('os.trash', '휴지통'), appType: 'trash', icon: <Trash2 className="w-4 h-4 text-slate-300" />, desc: `${trashItems.length}개 항목 보관` },
                             { id: 'app-power', name: t('os.power', '전원'), appType: 'power', icon: <Power className="w-4 h-4 text-rose-400" />, desc: '종료, 다시 시작, 화면 잠금' },
                             { id: 'app-keto-bank', name: 'KETO Bank', appType: 'ketoBank', icon: <Wallet className="w-4 h-4 text-blue-400" />, desc: '가상 원화 지갑, 실시간 채굴 수입, 적금 및 이벤트' },
@@ -4122,6 +4243,61 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     defaultHeight="520px"
                 >
                     <ClockApp onClose={() => closeAppToDesktop(() => setShowClock(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* ☀️ 날씨 (Weather & OOTD 옷 추천) */}
+            {showWeather && (
+                <OSWindowFrame
+                    title="날씨 및 옷차림 추천 (Weather & OOTD)"
+                    icon={<Sun className="w-4 h-4 text-amber-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowWeather(false))}
+                    theme={theme}
+                    defaultWidth="780px"
+                    defaultHeight="620px"
+                >
+                    <WeatherApp onClose={() => closeAppToDesktop(() => setShowWeather(false))} />
+                </OSWindowFrame>
+            )}
+
+            {/* 🎬 AI 쇼츠 자동 편집기 (AI Shorts Studio) */}
+            {showVideoEditor && (
+                <OSWindowFrame
+                    title="AI 쇼츠 자동 편집기 (AI Shorts Studio)"
+                    icon={<Sparkles className="w-4 h-4 text-cyan-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowVideoEditor(false))}
+                    theme={theme}
+                    defaultWidth="1120px"
+                    defaultHeight="740px"
+                >
+                    <AIAutoVideoEditor onSwitchToDesktopOS={() => setShowVideoEditor(false)} />
+                </OSWindowFrame>
+            )}
+
+            {/* ✨ 타메 AI 스튜디오 (Tame AI Studio) */}
+            {showTameAIStudio && (
+                <OSWindowFrame
+                    title="타메 AI 스튜디오 (Tame AI Studio Pro)"
+                    icon={<Sparkles className="w-4 h-4 text-indigo-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowTameAIStudio(false))}
+                    theme={theme}
+                    defaultWidth="1160px"
+                    defaultHeight="760px"
+                >
+                    <TameAIStudio
+                        onClose={() => setShowTameAIStudio(false)}
+                        onSaveToDesktopNote={(title, content) => {
+                            const newItem: DesktopItem = {
+                                id: `text-tame-${Date.now()}`,
+                                name: `${title}.txt`,
+                                type: 'text',
+                                content: content,
+                                updatedAt: new Date().toLocaleDateString()
+                            };
+                            setItems(prev => [...prev, newItem]);
+                            sound.buy();
+                        }}
+                    />
                 </OSWindowFrame>
             )}
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Settings, MousePointer, Palette, Moon, User, Monitor, 
-    Volume2, Bell, Lock, Cpu, Globe, HelpCircle, Upload, History, X 
+    Volume2, Bell, Lock, Cpu, Globe, HelpCircle, Upload, History, X,
+    Smartphone, Clock
 } from 'lucide-react';
 import { sound, setMasterVolume, getMasterVolume } from '../utils/sound';
 import { CursorSettings, CURSOR_PRESETS, DEFAULT_CURSOR_SETTINGS } from './MouseSettingsModal';
@@ -19,8 +20,12 @@ import { SettingsDisplayView } from './settings/SettingsDisplayView';
 import { SettingsAccountView } from './settings/SettingsAccountView';
 import { SettingsNotificationView } from './settings/SettingsNotificationView';
 import { SettingsLanguageView } from './settings/SettingsLanguageView';
+import { SettingsDeviceView } from './settings/SettingsDeviceView';
+import { SettingsTimeView } from './settings/SettingsTimeView';
 
 export type SettingsCategory = 
+    | 'device'
+    | 'time'
     | 'mouse' 
     | 'wallpaper' 
     | 'theme' 
@@ -146,6 +151,8 @@ export const SettingsApp: React.FC<SettingsAppProps> = ({
     // Categories in the exact order requested by user:
     // mouse, wallpaper, theme, account, display, sound, notification, lockscreen, language, system, help, file_import, patchnotes
     const categories = [
+        { id: 'device', label: '기기 설정 (PC/폰/패드)', icon: Smartphone, desc: '컴퓨터, 스마트폰(아이폰/갤럭시), 패드(아이패드/안드로이드) 환경 전환' },
+        { id: 'time', label: '날짜 및 시간', icon: Clock, desc: '12/24시간제, 초 표시, 수동 시간 설정 및 타임존' },
         { id: 'mouse', label: '마우스', icon: MousePointer, desc: '커서 디자인, 감도 및 트레일 효과' },
         { id: 'wallpaper', label: '배경화면', icon: Palette, desc: '바탕화면 배경 및 색상 변경' },
         { id: 'theme', label: '테마', icon: Moon, desc: 'Windows / macOS 인터페이스 스타일' },
@@ -245,6 +252,14 @@ export const SettingsApp: React.FC<SettingsAppProps> = ({
 
                 {/* Main Content Area */}
                 <div className="flex-1 bg-slate-950/70 overflow-y-auto p-6 md:p-8">
+                    {currentCategory === 'device' && (
+                        <SettingsDeviceView />
+                    )}
+
+                    {currentCategory === 'time' && (
+                        <SettingsTimeView />
+                    )}
+
                     {currentCategory === 'mouse' && (
                         <SettingsMouseView
                             cursorSettings={cursorSettings}

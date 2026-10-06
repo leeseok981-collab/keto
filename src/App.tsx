@@ -14,9 +14,14 @@ import { playKeySound, GlobalMessageOverlay, RhythmGame, SpacebarGame, BossFight
 import { ChannelView } from './ChannelSystem';
 import { LoadingScreen } from './components/LoadingScreen';
 import { DesktopOS } from './DesktopOS';
+import { useDeviceDetect } from './hooks/useDeviceDetect';
+import { DesktopContainer } from './components/desktop/DesktopContainer';
+import { MobileContainer } from './components/mobile/MobileContainer';
+import { TabletContainer } from './components/tablet/TabletContainer';
 import { GameWindowShell } from './components/GameWindowShell';
 import { CustomAuthModal, CustomUser } from './components/CustomAuthModal';
 import { SecondaryMonitorView } from './components/SecondaryMonitorView';
+import { AIAutoVideoEditor } from './components/videoEditor/AIAutoVideoEditor';
 
 export const BADGES = [
     { id: 'first_farm', name: '첫 농사', desc: '씨앗을 처음 심었습니다!', icon: '🌱', bg: 'bg-green-600' },
@@ -464,7 +469,16 @@ export default function App() {
     } catch {}
     return null;
   });
+  const { effectiveCategory } = useDeviceDetect();
   const [inDesktop, setInDesktop] = useState(true);
+  const [isAIStudioMode, setIsAIStudioMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('keto_preferred_mode');
+      return saved === 'desktop' ? false : true;
+    } catch {
+      return true;
+    }
+  });
   const [isGameFullscreen, setIsGameFullscreen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -1216,71 +1230,107 @@ export default function App() {
   
 
   if (inDesktop) {
+    const handleLogout = () => {
+      setUser(null);
+      setCustomUser(null);
+      localStorage.removeItem('keto_custom_user');
+      localStorage.removeItem('keto_current_user_pwd');
+      sessionStorage.removeItem('desktop_is_unlocked');
+      setShowCustomAuthModal(true);
+    };
+
     return (
       <>
-        <DesktopOS
-          user={user}
-          customUser={customUser}
-          onLogin={handleGoogleLogin}
-          isLoggingIn={isLoggingIn || authLoading}
-          onOpenCustomAuth={() => setShowCustomAuthModal(true)}
-          onLogout={() => {
-            setUser(null);
-            setCustomUser(null);
-            localStorage.removeItem('keto_custom_user');
-            localStorage.removeItem('keto_current_user_pwd');
-            sessionStorage.removeItem('desktop_is_unlocked');
-            setShowCustomAuthModal(true);
-          }}
-          onLaunch={() => {
-            let activeUser = user || customUser;
-            if (!activeUser) {
-              try {
-                const saved = localStorage.getItem('keto_custom_user');
-                if (saved) {
-                  const parsed = JSON.parse(saved);
-                  if (parsed && parsed.username) {
-                    const customUserObj = {
-                      uid: parsed.username,
-                      email: parsed.username + '@keto.app',
-                      displayName: parsed.username,
-                      photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${parsed.username}`,
-                      isAnonymous: false
-                    } as any;
-                    setCustomUser(parsed);
-                    setUser(customUserObj);
-                    activeUser = customUserObj;
-                    loadUserData(parsed.username);
-                  }
-                }
-              } catch (e) {
-                console.error(e);
+        {effectiveCategory === 'phone' ? (
+          <MobileContainer
+            user={user}
+            customUser={customUser}
+            onLogout={handleLogout}
+            onLaunchSpeedKeyboard={() => {
+              if (!user && !customUser) {
+                setShowCustomAuthModal(true);
+                return;
               }
-            }
+              setInDesktop(false);
+              setAppMode('speed_keyboard_2');
+            }}
+          />
+        ) : effectiveCategory === 'tablet' ? (
+          <TabletContainer
+            user={user}
+            customUser={customUser}
+            onLogout={handleLogout}
+            onLaunchSpeedKeyboard={() => {
+              if (!user && !customUser) {
+                setShowCustomAuthModal(true);
+                return;
+              }
+              setInDesktop(false);
+              setAppMode('speed_keyboard_2');
+            }}
+          />
+        ) : (
+          <DesktopContainer
+            user={user}
+            customUser={customUser}
+            onLogin={handleGoogleLogin}
+            isLoggingIn={isLoggingIn || authLoading}
+            onOpenCustomAuth={() => setShowCustomAuthModal(true)}
+            onLogout={handleLogout}
+            onLaunch={() => {
+              let activeUser = user || customUser;
+              if (!activeUser) {
+                try {
+                  const saved = localStorage.getItem('keto_custom_user');
+                  if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && parsed.username) {
+                      const customUserObj = {
+                        uid: parsed.username,
+                        email: parsed.username + '@keto.app',
+                        displayName: parsed.username,
+                        photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${parsed.username}`,
+                        isAnonymous: false
+                      } as any;
+                      setCustomUser(parsed);
+                      setUser(customUserObj);
+                      activeUser = customUserObj;
+                      loadUserData(parsed.username);
+                    }
+                  }
+                } catch (e) {
+                  console.error(e);
+                }
+              }
 
-            if (!activeUser) {
-              setShowCustomAuthModal(true);
-              return;
-            }
-            if (appMode === 'loading') {
-              setAppMode('lobby');
-            }
-            setProfileSetup(false);
-            setInDesktop(false);
-          }}
-          onOpenSpeedKeyboard2={() => {
-            if (!user && !customUser) {
-              setShowCustomAuthModal(true);
-              return;
-            }
-            setInDesktop(false);
-            setAppMode('speed_keyboard_2');
-          }}
-          onOpenNotepad={() => {
-            launchRealWindowsNotepad();
-          }}
-          onGsiLogin={handleGSILogin}
-        />
+              if (!activeUser) {
+                setShowCustomAuthModal(true);
+                return;
+              }
+              if (appMode === 'loading') {
+                setAppMode('lobby');
+              }
+              setProfileSetup(false);
+              setInDesktop(false);
+            }}
+            onOpenSpeedKeyboard2={() => {
+              if (!user && !customUser) {
+                setShowCustomAuthModal(true);
+                return;
+              }
+              setInDesktop(false);
+              setAppMode('speed_keyboard_2');
+            }}
+            onOpenNotepad={() => {
+              launchRealWindowsNotepad();
+            }}
+            onGsiLogin={handleGSILogin}
+            onOpenVideoEditor={() => {
+              localStorage.setItem('keto_preferred_mode', 'video_editor');
+              setIsAIStudioMode(true);
+            }}
+          />
+        )}
         <CustomAuthModal
           isOpen={showCustomAuthModal}
           onSuccess={(u) => {
