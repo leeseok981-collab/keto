@@ -103,7 +103,39 @@
       "duration_ms": 226810,
       "description": "🔥 역대급 기대작 초 카구야 공주의 폭발적인 에너지와 질주감 넘치는 OST 명곡 (공식 가사 MV)",
       "cover_gradient": "from-orange-500 via-rose-600 to-purple-900",
-      "stars": { "easy": 3, "normal": 5, "hard": 6 }
+      "stars": { "easy": 3, "normal": 5, "hard": 6, "expert": 8, "ultra": 9 }
+    },
+    {
+      "id": "prettyherb-evil-servant",
+      "title": "악의 하인 (悪の召使)",
+      "artist": "쁘띠허브 (PrettyHerb Cover)",
+      "media_type": "video",
+      "media_src": "/assets/악의 하인 (悪の召使) (커버송,Cover) Korean.ver [PrettyHerb 쁘띠허브].mp4",
+      "fallback_src": "/assets/evil_servant_prettyherb.mp4",
+      "bpm": 130,
+      "duration_ms": 234000,
+      "description": "👑 [BOSS STAGE] 압도적 난이도의 보스곡! 치면 즉사하는 검은 저주 노트와 피안개 방해 이펙트. 클리어 시 황금 왕실 스킨 해금!",
+      "cover_gradient": "from-red-950 via-rose-900 to-amber-700",
+      "isBoss": true,
+      "bossType": "evil_servant",
+      "rewardSkin": "royal_servant",
+      "stars": { "easy": 4, "normal": 6, "hard": 8, "expert": 9, "ultra": 10 }
+    },
+    {
+      "id": "konton-boogie",
+      "title": "混沌ブギ (혼돈 부기 / Konton Boogie)",
+      "artist": "jon-YAKITORY, 初音ミク",
+      "media_type": "video",
+      "media_src": "/assets/混沌ブギ jon-YAKITORY, 初音ミク -Konton Boogie jon-YAKITORY, Hatsune Miku-.mp4",
+      "fallback_src": "/assets/konton_boogie.mp4",
+      "bpm": 145,
+      "duration_ms": 180000,
+      "description": "⚡ [SPEED RUSH] 곡이 진행될수록 점점 빨라지는 광기의 카오스 댄스 트랙! 클리어 시 혼돈 글리치 스킨 해금!",
+      "cover_gradient": "from-fuchsia-950 via-purple-900 to-emerald-600",
+      "isSpeedUp": true,
+      "speedUpType": "accelerate",
+      "rewardSkin": "chaos_boogie",
+      "stars": { "easy": 3, "normal": 5, "hard": 7, "expert": 8, "ultra": 10 }
     }
   ]
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Wifi, Battery, Sparkles, Sun, CloudRain, Music, Calculator, 
   Settings, Folder, FileText, Globe, ShoppingBag, Gamepad2, 
@@ -10,6 +10,7 @@ import { DynamicIsland } from './DynamicIsland';
 import { WeatherApp } from '../../apps/weather/WeatherApp';
 import { useSystemTime } from '../../../hooks/useSystemTime';
 import { useDeviceDetect } from '../../../hooks/useDeviceDetect';
+import { sound } from '../../../utils/sound';
 
 // App imports
 import { KetoBankApp } from '../../KetoBankApp';
@@ -23,6 +24,8 @@ import { MobileSettingsView } from '../MobileSettingsView';
 import { GameCenterApp } from '../../GameCenterApp';
 import { AIAutoVideoEditor } from '../../videoEditor/AIAutoVideoEditor';
 import { TameAIStudio } from '../../tameAI/TameAIStudio';
+import { AICreatorApp } from '../../aiCreator/AICreatorApp';
+import { CookieUniverse } from '../../games/CookieUniverse';
 
 interface IPhoneOSProps {
   user: any;
@@ -38,12 +41,17 @@ export function IPhoneOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
   const [isLocked, setIsLocked] = useState(false);
   const [activeApp, setActiveApp] = useState<string | null>(null);
   const [showControlCenter, setShowControlCenter] = useState(false);
+  const [showAppDrawer, setShowAppDrawer] = useState(false);
+  const [appDrawerSearch, setAppDrawerSearch] = useState('');
+  const touchStartY = useRef<number>(0);
   const [nowPlaying, setNowPlaying] = useState<{ title: string; artist: string } | null>({
     title: '베텔기우스 (ベテルギウス)',
     artist: 'Yuuri'
   });
 
   const apps = [
+    { id: 'cookie-universe', name: '쿠키 유니버스', icon: '🍪', bg: 'from-amber-500 via-orange-600 to-amber-700', badge: 'NEW' },
+    { id: 'aicreator', name: 'AI 제작기', icon: '🧠', bg: 'from-cyan-500 via-indigo-600 to-fuchsia-600', badge: 'PRO' },
     { id: 'weather', name: '날씨', icon: '☀️', bg: 'from-sky-400 to-blue-600', badge: 'OOTD' },
     { id: 'rhythm', name: '리듬스탑', icon: '🎵', bg: 'from-pink-500 to-rose-600', badge: 'HOT' },
     { id: 'bank', name: 'KETO 뱅크', icon: '💳', bg: 'from-indigo-500 to-purple-600' },
@@ -98,8 +106,20 @@ export function IPhoneOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
         title="제어센터 열기"
       />
 
-      {/* Main Home Screen Area */}
-      <div className="relative flex-1 overflow-y-auto px-5 pt-3 pb-24 z-10 flex flex-col justify-between">
+      {/* Main Home Screen Area with Swipe Up Detection */}
+      <div 
+        className="relative flex-1 overflow-y-auto px-5 pt-3 pb-24 z-10 flex flex-col justify-between"
+        onTouchStart={(e) => {
+          touchStartY.current = e.touches[0].clientY;
+        }}
+        onTouchEnd={(e) => {
+          const deltaY = touchStartY.current - e.changedTouches[0].clientY;
+          if (deltaY > 40) {
+            setShowAppDrawer(true);
+            sound.click();
+          }
+        }}
+      >
         <div className="space-y-4">
           
           {/* iOS Widgets Row */}
@@ -152,7 +172,7 @@ export function IPhoneOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
                     setActiveApp(app.id);
                   }
                 }}
-                className="flex flex-col items-center gap-1.5 group active:scale-90 transition-transform"
+                className="flex flex-col items-center gap-1.5 group active:scale-90 transition-transform cursor-pointer"
               >
                 <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${app.bg} shadow-lg shadow-black/40 flex items-center justify-center text-2xl border border-white/20 group-hover:scale-105 transition`}>
                   {app.icon}
@@ -169,10 +189,19 @@ export function IPhoneOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
             ))}
           </div>
 
+          {/* Swipe Up for App Drawer Prompt Pill */}
+          <div 
+            onClick={() => { setShowAppDrawer(true); sound.click(); }}
+            className="w-full py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center gap-1.5 text-[10px] font-bold text-sky-200 cursor-pointer transition animate-bounce"
+          >
+            <ArrowUp className="w-3 h-3 text-sky-400" />
+            <span>화면을 위로 올려 전체 앱 목록 열기</span>
+          </div>
+
         </div>
 
         {/* Page Dots & OS Switcher Badge */}
-        <div className="flex flex-col items-center gap-2 pt-4">
+        <div className="flex flex-col items-center gap-2 pt-2">
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-white" />
             <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
@@ -292,6 +321,12 @@ export function IPhoneOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
             {activeApp === 'tame-ai' && (
               <TameAIStudio onClose={() => setActiveApp(null)} isMobileApp={true} />
             )}
+            {activeApp === 'aicreator' && (
+              <AICreatorApp onClose={() => setActiveApp(null)} customUser={customUser} />
+            )}
+            {activeApp === 'cookie-universe' && (
+              <CookieUniverse onClose={() => setActiveApp(null)} customUser={customUser} />
+            )}
             {activeApp === 'settings' && (
               <MobileSettingsView 
                 onClose={() => setActiveApp(null)} 
@@ -309,6 +344,75 @@ export function IPhoneOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
           >
             <div className="w-36 h-1 rounded-full bg-white/70" />
           </div>
+        </div>
+      )}
+
+      {/* 📱 Full App Drawer (화면을 위로 올리면 열리는 전체 앱 서랍) */}
+      {showAppDrawer && (
+        <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-2xl p-5 flex flex-col justify-between animate-fade-in select-none">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📱</span>
+                <div>
+                  <h3 className="text-sm font-black text-white">전체 앱 보관함 (App Library)</h3>
+                  <p className="text-[10px] text-slate-400">설치된 모든 프로그램 및 게임 목록</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAppDrawer(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <input
+              type="text"
+              value={appDrawerSearch}
+              onChange={(e) => setAppDrawerSearch(e.target.value)}
+              placeholder="앱 검색..."
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none focus:border-cyan-400"
+            />
+
+            {/* App Grid in Drawer */}
+            <div className="grid grid-cols-4 gap-y-5 gap-x-3 max-h-[60vh] overflow-y-auto custom-scrollbar pt-2">
+              {apps.filter(a => a.name.toLowerCase().includes(appDrawerSearch.toLowerCase())).map((app) => (
+                <button
+                  key={app.id}
+                  onClick={() => {
+                    setShowAppDrawer(false);
+                    if (app.id === 'speedkeyboard' && onLaunchSpeedKeyboard) {
+                      onLaunchSpeedKeyboard();
+                    } else {
+                      setActiveApp(app.id);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1.5 active:scale-90 transition cursor-pointer"
+                >
+                  <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${app.bg} shadow-lg flex items-center justify-center text-2xl border border-white/20`}>
+                    {app.icon}
+                    {app.badge && (
+                      <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black border border-white/30 shadow">
+                        {app.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] font-medium text-white/90 text-center truncate w-full">
+                    {app.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAppDrawer(false)}
+            className="w-full py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+          >
+            닫기 (홈 화면으로)
+          </button>
         </div>
       )}
 

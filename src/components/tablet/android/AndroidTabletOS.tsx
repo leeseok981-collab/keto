@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Wifi, Battery, Sun, Music, Calculator, Settings, 
   Globe, Clock, ChevronLeft, X, Shirt, Grid, LayoutGrid
@@ -6,6 +6,7 @@ import {
 import { WeatherApp } from '../../apps/weather/WeatherApp';
 import { useSystemTime } from '../../../hooks/useSystemTime';
 import { useDeviceDetect } from '../../../hooks/useDeviceDetect';
+import { sound } from '../../../utils/sound';
 
 // App imports
 import { KetoBankApp } from '../../KetoBankApp';
@@ -19,6 +20,8 @@ import { MobileSettingsView } from '../../mobile/MobileSettingsView';
 import { GameCenterApp } from '../../GameCenterApp';
 import { AIAutoVideoEditor } from '../../videoEditor/AIAutoVideoEditor';
 import { TameAIStudio } from '../../tameAI/TameAIStudio';
+import { AICreatorApp } from '../../aiCreator/AICreatorApp';
+import { CookieUniverse } from '../../games/CookieUniverse';
 
 interface AndroidTabletOSProps {
   user: any;
@@ -32,8 +35,13 @@ export function AndroidTabletOS({ user, customUser, onLogout, onLaunchSpeedKeybo
   const { setTabletOS, setCategory } = useDeviceDetect();
 
   const [activeApp, setActiveApp] = useState<string | null>(null);
+  const [showAppDrawer, setShowAppDrawer] = useState(false);
+  const [appDrawerSearch, setAppDrawerSearch] = useState('');
+  const touchStartY = useRef<number>(0);
 
   const apps = [
+    { id: 'cookie-universe', name: '쿠키 유니버스', icon: '🍪', color: 'bg-gradient-to-tr from-amber-600 to-orange-500', badge: 'NEW' },
+    { id: 'aicreator', name: 'AI 제작기', icon: '🧠', color: 'bg-gradient-to-tr from-cyan-600 via-indigo-600 to-purple-600', badge: 'PRO' },
     { id: 'weather', name: '날씨', icon: '☀️', color: 'bg-sky-500', badge: 'OOTD' },
     { id: 'rhythm', name: '리듬스탑', icon: '🎵', color: 'bg-rose-500', badge: 'MV' },
     { id: 'bank', name: 'KETO 뱅크', icon: '💳', color: 'bg-blue-600' },
@@ -64,7 +72,19 @@ export function AndroidTabletOS({ user, customUser, onLogout, onLaunchSpeedKeybo
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto px-8 py-5 z-10 flex flex-col justify-between">
+      <div 
+        className="flex-1 overflow-y-auto px-8 py-5 z-10 flex flex-col justify-between"
+        onTouchStart={(e) => {
+          touchStartY.current = e.touches[0].clientY;
+        }}
+        onTouchEnd={(e) => {
+          const deltaY = touchStartY.current - e.changedTouches[0].clientY;
+          if (deltaY > 40) {
+            setShowAppDrawer(true);
+            sound.click();
+          }
+        }}
+      >
         <div className="space-y-6 max-w-5xl mx-auto w-full">
           
           {/* Galaxy Tab Large Weather & Clock Widget */}
@@ -147,7 +167,11 @@ export function AndroidTabletOS({ user, customUser, onLogout, onLaunchSpeedKeybo
       <div className="relative w-full h-12 bg-neutral-900/95 border-t border-neutral-700/80 px-4 flex items-center justify-between z-30 text-slate-300">
         <div className="flex items-center gap-2">
           {/* App Drawer Launcher */}
-          <button className="w-8 h-8 rounded-xl bg-neutral-800 flex items-center justify-center text-slate-300 hover:text-white">
+          <button 
+            onClick={() => { setShowAppDrawer(true); sound.click(); }}
+            className="w-8 h-8 rounded-xl bg-neutral-800 flex items-center justify-center text-slate-300 hover:text-white"
+            title="앱 서랍 열기"
+          >
             <LayoutGrid className="w-4 h-4" />
           </button>
 
@@ -265,6 +289,12 @@ export function AndroidTabletOS({ user, customUser, onLogout, onLaunchSpeedKeybo
             {activeApp === 'tame-ai' && (
               <TameAIStudio onClose={() => setActiveApp(null)} isMobileApp={false} />
             )}
+            {activeApp === 'aicreator' && (
+              <AICreatorApp onClose={() => setActiveApp(null)} customUser={customUser} />
+            )}
+            {activeApp === 'cookie-universe' && (
+              <CookieUniverse onClose={() => setActiveApp(null)} customUser={customUser} />
+            )}
             {activeApp === 'settings' && (
               <MobileSettingsView 
                 onClose={() => setActiveApp(null)} 
@@ -274,6 +304,75 @@ export function AndroidTabletOS({ user, customUser, onLogout, onLaunchSpeedKeybo
               />
             )}
           </div>
+        </div>
+      )}
+
+      {/* 📱 Galaxy Tab App Drawer (화면을 위로 올리거나 앱 버튼 누르면 열림) */}
+      {showAppDrawer && (
+        <div className="absolute inset-0 z-50 bg-neutral-950/95 backdrop-blur-2xl p-8 flex flex-col justify-between animate-fade-in select-none">
+          <div className="space-y-6 max-w-4xl mx-auto w-full">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">✨</span>
+                <div>
+                  <h3 className="text-lg font-black text-white">Galaxy Tab 앱스 (App Drawer)</h3>
+                  <p className="text-xs text-slate-400">설치된 모든 애플리케이션 및 시스템 도구</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAppDrawer(false)}
+                className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <input
+              type="text"
+              value={appDrawerSearch}
+              onChange={(e) => setAppDrawerSearch(e.target.value)}
+              placeholder="앱 검색..."
+              className="w-full bg-neutral-900 border border-neutral-700/80 rounded-2xl px-5 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-400"
+            />
+
+            {/* App Grid in Drawer */}
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-6 max-h-[60vh] overflow-y-auto custom-scrollbar pt-2">
+              {apps.filter(a => a.name.toLowerCase().includes(appDrawerSearch.toLowerCase())).map((app) => (
+                <button
+                  key={app.id}
+                  onClick={() => {
+                    setShowAppDrawer(false);
+                    if (app.id === 'speedkeyboard' && onLaunchSpeedKeyboard) {
+                      onLaunchSpeedKeyboard();
+                    } else {
+                      setActiveApp(app.id);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-2 active:scale-90 transition cursor-pointer group"
+                >
+                  <div className={`relative w-16 h-16 rounded-2xl ${app.color} shadow-lg flex items-center justify-center text-3xl border border-white/20 group-hover:scale-105 transition`}>
+                    {app.icon}
+                    {app.badge && (
+                      <span className="absolute -top-1.5 -right-1.5 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black border border-white/30 shadow">
+                        {app.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-white/90 text-center truncate w-full">
+                    {app.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAppDrawer(false)}
+            className="w-full max-w-4xl mx-auto py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-sm font-bold transition"
+          >
+            닫기 (홈 화면으로)
+          </button>
         </div>
       )}
     </div>

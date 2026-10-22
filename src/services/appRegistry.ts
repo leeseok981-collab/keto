@@ -36,6 +36,22 @@ export interface AppPackage {
 // Full Catalog of packages available in Catore (캐토어)
 export const OFFICIAL_APP_CATALOG: AppPackage[] = [
     {
+        id: 'pkg-ai-creator',
+        name: 'AI 제작기 (AI Studio Maker)',
+        version: '1.0.0',
+        description: '이미지·링크·대화 학습으로 나만의 커스텀 AI 모델을 무제한 제작하고 코딩 실행, 이미지 생성, 모델 다운로드(.aimodel)까지 지원하는 차세대 AI 개발 스튜디오!',
+        icon: 'bot',
+        category: 'productivity',
+        permissions: ['ai.chat', 'ai.code', 'ai.image', 'storage.export'],
+        size: '22.0 MB',
+        publisher: 'KETO AI Research Studio',
+        rating: 5.0,
+        downloads: '4.9M',
+        isDefault: true,
+        appType: 'aicreator',
+        featured: true
+    },
+    {
         id: 'pkg-video-editor',
         name: 'AI 쇼츠 자동 편집기',
         version: '1.0.0',
@@ -220,6 +236,40 @@ export const OFFICIAL_APP_CATALOG: AppPackage[] = [
         downloads: '620K',
         isDefault: false,
         appType: 'paint'
+    },
+    {
+        id: 'pkg-cookie-infinite',
+        name: '쿠키 인피니트 (Cookie Universe)',
+        version: '1.0.0',
+        description: '스팀(Steam) 명작 쿠키 클리커의 심층 경제 시스템(12단계 생산 시설, 연구소 시너지, 황금 쿠키 버프, 프레스티지 환생 & 천상의 칩, 뉴스 티커, 밀크 물리, 오프라인 수익)을 집대성한 우주급 제과 제국 클리커 게임!',
+        icon: 'cookie',
+        category: 'game',
+        permissions: ['game.loop', 'storage.save', 'audio.synth'],
+        size: '18.5 MB',
+        publisher: 'Cosmic Bakery Studio',
+        rating: 5.0,
+        downloads: '1.5M',
+        price: 150000,
+        isDefault: false,
+        appType: 'cookie-universe',
+        featured: true
+    },
+    {
+        id: 'pkg-minigame-heaven',
+        name: '미니게임 천국 (MiniGame Paradise)',
+        version: '1.0.0',
+        description: '추억의 국민 레전드 캐주얼 아케이드! 달려달려, 넘어넘어, 뚫어뚫어, 터치터치 등 다채로운 미니게임과 귀여운 동물 친구들의 향연.',
+        icon: 'gamepad',
+        category: 'game',
+        permissions: ['game.loop', 'storage.save', 'audio.synth'],
+        size: '14.2 MB',
+        publisher: 'Com2uS Style Studio',
+        rating: 4.9,
+        downloads: '2.8M',
+        price: 0,
+        isDefault: false,
+        appType: 'minigame-heaven',
+        featured: true
     },
     {
         id: 'pkg-game-dungeoncore',

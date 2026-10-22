@@ -12,7 +12,7 @@ import {
     Camera, Bot, Plus, Settings, Lock, CornerDownLeft, GraduationCap,
     Compass, Activity, Flame, Fish, Trees, Utensils, BookOpen, Tv, Smartphone,
     Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box, Disc, Wand2,
-    Sun, Shirt
+    Sun, Shirt, Cookie, Globe
 } from 'lucide-react';
 import { WeatherApp } from './components/apps/weather/WeatherApp';
 import { AIAutoVideoEditor } from './components/videoEditor/AIAutoVideoEditor';
@@ -77,7 +77,7 @@ import BlogSystem from './BlogSystem';
 import { ChannelView } from './ChannelSystem';
 import { KETOPhone } from './components/KETOPhone';
 import { SAMPLE_TRACKS_100, Track } from './data/musicTracks';
-import { loadVFSNodes, saveVFSNodes, VFSNode, vfsToDesktopItems } from './utils/vfs';
+import { loadVFSNodes, saveVFSNodes, VFSNode, vfsToDesktopItems, createOrInitializeUserSystemFolder } from './utils/vfs';
 
 import { GameCenterApp } from './components/GameCenterApp';
 import { PixelSurvivor } from './components/games/PixelSurvivor';
@@ -88,9 +88,14 @@ import { BlockPuzzle } from './components/games/BlockPuzzle';
 import { RhythmBeat } from './components/games/RhythmBeat';
 import { RhythmStop } from './components/games/RhythmStop';
 import { CagicApp } from './components/CagicApp';
+import { AICreatorApp } from './components/aiCreator/AICreatorApp';
 import { SpaceDefender } from './components/games/SpaceDefender';
 import { MahjongGame } from './components/games/MahjongGame';
 import { MazenComingSoon } from './components/mazen/MazenComingSoon';
+import { CookieUniverse } from './components/games/CookieUniverse';
+import { MiniGameHeaven } from './components/games/MiniGameHeaven';
+import { ComingSoonSiteModal } from './components/ComingSoonSiteModal';
+import { MobileAppDrawer } from './components/MobileAppDrawer';
 
 export type DesktopItemType = 'app' | 'text' | 'file' | 'video' | 'image' | 'audio' | 'game' | 'zip' | 'folder';
 
@@ -101,6 +106,8 @@ export interface DesktopItem {
     appType?: string;
     content?: string;
     fileUrl?: string;
+    targetSite?: string;
+    isComingSoon?: boolean;
     size?: string;
     folderId?: string; // If placed inside a folder
     path?: string; // VFS path
@@ -350,6 +357,15 @@ export const getDefaultDesktopApps = (
             type: 'app',
             appType: 'tame-ai',
             updatedAt: now
+        },
+        {
+            id: 'app-coming-soon-site',
+            name: '특정 사이트 (Coming Soon)',
+            type: 'app',
+            appType: 'coming-soon-site',
+            targetSite: 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app',
+            isComingSoon: true,
+            updatedAt: now
         }
     ];
 };
@@ -503,6 +519,18 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     type: 'app',
                     appType: 'tame-ai',
                     updatedAt: '2026-10-05'
+                });
+                changed = true;
+            }
+            if (!updated.some(i => i.appType === 'coming-soon-site' || i.id === 'app-coming-soon-site')) {
+                updated.push({
+                    id: 'app-coming-soon-site',
+                    name: '특정 사이트 (Coming Soon)',
+                    type: 'app',
+                    appType: 'coming-soon-site',
+                    targetSite: 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app',
+                    isComingSoon: true,
+                    updatedAt: '2026-10-17'
                 });
                 changed = true;
             }
@@ -663,6 +691,12 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showMagen, setShowMagen] = useState(false);
     const [showAIPixelStudio, setShowAIPixelStudio] = useState(false);
     const [showCagic, setShowCagic] = useState(false);
+    const [showAICreator, setShowAICreator] = useState(false);
+    const [showCookieUniverse, setShowCookieUniverse] = useState(false);
+    const [showMiniGameHeaven, setShowMiniGameHeaven] = useState(false);
+    const [comingSoonSiteData, setComingSoonSiteData] = useState<{ appName: string; targetUrl: string } | null>(null);
+    const [showMobileAppDrawer, setShowMobileAppDrawer] = useState(false);
+    const touchStartPosRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
     // Helper to close any app window and cleanly return to the desktop background
     const closeAppToDesktop = (closeStateFn: () => void) => {
@@ -964,7 +998,33 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
     // Virtual File System Nodes State
-    const [vfsNodes, setVFSNodes] = useState<VFSNode[]>(() => loadVFSNodes());
+    const [vfsNodes, setVFSNodes] = useState<VFSNode[]>(() => {
+        const username = customUser?.username || (() => {
+            try {
+                const saved = localStorage.getItem('keto_custom_user');
+                return saved ? JSON.parse(saved)?.username : 'User';
+            } catch { return 'User'; }
+        })();
+        return loadVFSNodes(username);
+    });
+
+    // 🌟 [회원 계정 로그인/가입 시 사용자 전용 시스템 & 게임 폴더 동기화]
+    useEffect(() => {
+        const username = customUser?.username || (() => {
+            try {
+                const saved = localStorage.getItem('keto_custom_user');
+                return saved ? JSON.parse(saved)?.username : 'User';
+            } catch { return 'User'; }
+        })();
+
+        try {
+            const userNodes = createOrInitializeUserSystemFolder(username);
+            setVFSNodes(userNodes);
+        } catch (e) {
+            console.warn('VFS reload on user change error:', e);
+            setVFSNodes(loadVFSNodes(username));
+        }
+    }, [customUser?.username]);
 
     // Calendar state
     const [calendarDate, setCalendarDate] = useState(new Date());
@@ -1152,6 +1212,8 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'magen' || item.appType === 'mahjong' || item.id === 'app-magen' || item.id === 'app-mahjong') { sound.click(); setShowMagen(true); setFocusedWindow('magen'); }
             else if (item.appType === 'pixelstudio' || item.id === 'app-pixelstudio') { sound.click(); setShowAIPixelStudio(true); setFocusedWindow('pixelstudio'); }
             else if (item.appType === 'cagic' || item.id === 'app-cagic') { sound.click(); setShowCagic(true); setFocusedWindow('cagic'); }
+            else if (item.appType === 'aicreator' || item.appType === 'ai-creator' || item.id === 'app-aicreator') { sound.click(); setShowAICreator(true); setFocusedWindow('aicreator'); }
+            else if (item.appType === 'cookie-universe' || item.appType === 'cookie-infinite' || item.id === 'app-cookieuniverse' || item.id === 'app-cookie-infinite') { sound.click(); setShowCookieUniverse(true); setFocusedWindow('cookie-universe'); }
             else if (item.appType === 'speedkeyboard2' || item.appType === 'speedkeyboard') { sound.click(); onLaunch(); }
             else if (item.appType === 'rhythmstop' || item.id === 'app-rhythmstop') { sound.click(); setShowRhythmStop(true); setFocusedWindow('rhythmstop'); }
             else if (item.appType === 'pixelsurvivor') { sound.click(); setShowPixelSurvivor(true); setFocusedWindow('pixelsurvivor'); }
@@ -1161,10 +1223,43 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             else if (item.appType === 'blockpuzzle') { sound.click(); setShowBlockPuzzle(true); setFocusedWindow('blockpuzzle'); }
             else if (item.appType === 'rhythmbeat') { sound.click(); setShowRhythmBeat(true); setFocusedWindow('rhythmbeat'); }
             else if (item.appType === 'spacedefender') { sound.click(); setShowSpaceDefender(true); setFocusedWindow('spacedefender'); }
-            else { sound.click(); onLaunch(); }
+            else if (item.appType === 'minigame-heaven' || item.appType === 'minigame' || item.id === 'app-minigame-heaven') {
+                sound.click();
+                setShowMiniGameHeaven(true);
+                setFocusedWindow('minigame-heaven');
+            }
+            else if (item.appType === 'coming-soon-site' || item.appType === 'comingsoon' || item.targetSite || item.isComingSoon || item.fileUrl?.startsWith('http')) {
+                sound.click();
+                setComingSoonSiteData({
+                    appName: item.name,
+                    targetUrl: item.targetSite || item.fileUrl || 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app'
+                });
+                setFocusedWindow('comingsoon');
+            }
+            else {
+                sound.click();
+                // 바탕화면 앱/프로그램 클릭 시 기본적으로 특정 사이트 연결 커밍순 윈도우 실행
+                setComingSoonSiteData({
+                    appName: item.name,
+                    targetUrl: item.targetSite || item.fileUrl || 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app'
+                });
+                setFocusedWindow('comingsoon');
+            }
         } else if (item.type === 'game') {
             sound.click();
-            onLaunch();
+            if (item.appType === 'minigame-heaven') {
+                setShowMiniGameHeaven(true);
+                setFocusedWindow('minigame-heaven');
+            } else if (item.appType === 'cookie-universe') {
+                setShowCookieUniverse(true);
+                setFocusedWindow('cookie-universe');
+            } else {
+                setComingSoonSiteData({
+                    appName: item.name,
+                    targetUrl: item.targetSite || 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app'
+                });
+                setFocusedWindow('comingsoon');
+            }
         } else if (item.type === 'folder') {
             handleOpenFolder(item);
         } else if (item.type === 'text') {
@@ -1619,6 +1714,12 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         } else if (appType === 'cagic') {
             setShowCagic(true);
             setFocusedWindow('cagic');
+        } else if (appType === 'aicreator' || appType === 'ai-creator') {
+            setShowAICreator(true);
+            setFocusedWindow('aicreator');
+        } else if (appType === 'cookie-universe' || appType === 'cookie-infinite') {
+            setShowCookieUniverse(true);
+            setFocusedWindow('cookie-universe');
         } else if (appType === 'speedkeyboard' || appType === 'speedkeyboard2') {
             onLaunch();
         } else if (appType === 'pixelsurvivor') {
@@ -1646,6 +1747,15 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         } else if (appType === 'mouse') {
             setSettingsCategory('mouse');
             setShowSettingsApp(true);
+        } else if (appType === 'minigame-heaven' || appType === 'minigame') {
+            setShowMiniGameHeaven(true);
+            setFocusedWindow('minigame-heaven');
+        } else if (appType === 'coming-soon-site' || appType === 'comingsoon') {
+            setComingSoonSiteData({
+                appName: '특정 사이트 바로가기',
+                targetUrl: 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app'
+            });
+            setFocusedWindow('comingsoon');
         }
     };
 
@@ -2257,6 +2367,42 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             onFocus: () => setFocusedWindow('pixelstudio')
         });
     }
+    if (showAICreator) {
+        runningApps.push({
+            id: 'aicreator',
+            name: 'AI 제작기',
+            icon: <Bot className="w-3.5 h-3.5 text-cyan-400" />,
+            onClose: () => closeAppToDesktop(() => setShowAICreator(false)),
+            onFocus: () => setFocusedWindow('aicreator')
+        });
+    }
+    if (showCookieUniverse) {
+        runningApps.push({
+            id: 'cookie-universe',
+            name: '쿠키 인피니트',
+            icon: <Cookie className="w-3.5 h-3.5 text-amber-400" />,
+            onClose: () => closeAppToDesktop(() => setShowCookieUniverse(false)),
+            onFocus: () => setFocusedWindow('cookie-universe')
+        });
+    }
+    if (showMiniGameHeaven) {
+        runningApps.push({
+            id: 'minigame-heaven',
+            name: '미니게임 천국',
+            icon: <Gamepad2 className="w-3.5 h-3.5 text-pink-400" />,
+            onClose: () => closeAppToDesktop(() => setShowMiniGameHeaven(false)),
+            onFocus: () => setFocusedWindow('minigame-heaven')
+        });
+    }
+    if (comingSoonSiteData) {
+        runningApps.push({
+            id: 'comingsoon',
+            name: `${comingSoonSiteData.appName} (Coming Soon)`,
+            icon: <Globe className="w-3.5 h-3.5 text-cyan-400" />,
+            onClose: () => setComingSoonSiteData(null),
+            onFocus: () => setFocusedWindow('comingsoon')
+        });
+    }
 
     const isSplitDualMonitor = !!systemSettings.dualMonitorEnabled && (systemSettings.dualMonitorMode === 'split' || !systemSettings.dualMonitorMode);
 
@@ -2277,6 +2423,32 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 }`}
                 onContextMenu={(e) => handleContextMenu(e)}
                 onMouseDown={handleDesktopMouseDown}
+                onTouchStart={(e) => {
+                    const target = e.target as HTMLElement;
+                    const isDesktopBg = target.getAttribute('data-desktop-bg') === 'true' || target === desktopAreaRef.current;
+                    if (isDesktopBg && e.touches.length === 1) {
+                        touchStartPosRef.current = {
+                            x: e.touches[0].clientX,
+                            y: e.touches[0].clientY,
+                            time: Date.now()
+                        };
+                    } else {
+                        touchStartPosRef.current = null;
+                    }
+                }}
+                onTouchEnd={(e) => {
+                    if (touchStartPosRef.current && e.changedTouches.length === 1) {
+                        const deltaY = touchStartPosRef.current.y - e.changedTouches[0].clientY;
+                        const deltaX = Math.abs(touchStartPosRef.current.x - e.changedTouches[0].clientX);
+                        const timeDiff = Date.now() - touchStartPosRef.current.time;
+                        // Swipe up gesture (vertical drag upwards > 40px)
+                        if (deltaY > 40 && deltaY > deltaX && timeDiff < 800) {
+                            sound.click();
+                            setShowMobileAppDrawer(true);
+                        }
+                    }
+                    touchStartPosRef.current = null;
+                }}
             >
             {/* Hidden Input for Windows PC File Import */}
             <input 
@@ -2369,6 +2541,22 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 <span>➕</span>
                 <span>바탕 메뉴</span>
             </button>
+
+            {/* 📱 모바일/패드 제스처 안내 (바탕화면 위로 쓸어올리면 앱 리스트 오픈) */}
+            <div 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    sound.click();
+                    setShowMobileAppDrawer(true);
+                }}
+                className="sm:hidden fixed bottom-14 left-1/2 -translate-x-1/2 z-30 cursor-pointer flex flex-col items-center gap-0.5 px-3.5 py-1 bg-slate-900/85 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 rounded-full shadow-2xl backdrop-blur-md active:scale-95 transition-all select-none"
+                title="화면을 위로 밀어 전체 앱 목록 열기"
+            >
+                <div className="w-8 h-1 bg-cyan-400 rounded-full animate-pulse" />
+                <span className="text-[10px] font-black tracking-tight text-cyan-300 flex items-center gap-1">
+                    ⌃ 위로 밀어 앱 서랍 열기
+                </span>
+            </div>
 
             {/* Desktop Icons Grid & Drop Zone */}
             <div 
@@ -2642,6 +2830,16 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Wand2 className="w-7 h-7 text-white drop-shadow" />
                                     </div>
                                 )}
+                                {(item.appType === 'aicreator' || item.id === 'app-aicreator') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-fuchsia-600 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
+                                        <Bot className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
+                                    </div>
+                                )}
+                                {(item.appType === 'cookie-universe' || item.appType === 'cookie-infinite' || item.id === 'app-cookieuniverse' || item.id === 'app-cookie-infinite') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 via-orange-500 to-yellow-400 flex items-center justify-center shadow-lg border border-amber-300/40 group-hover:scale-105 transition-transform">
+                                        <Cookie className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
+                                    </div>
+                                )}
                                 {item.appType === 'spacedefender' && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-900 flex items-center justify-center shadow-lg border border-blue-300/40 group-hover:scale-105 transition-transform">
                                         <Navigation className="w-7 h-7 text-white drop-shadow" />
@@ -2727,8 +2925,18 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                         <Box className="w-7 h-7 text-emerald-300 drop-shadow" />
                                     </div>
                                 )}
+                                {(item.appType === 'minigame-heaven' || item.appType === 'minigame' || item.id === 'app-minigame-heaven') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 via-amber-500 to-cyan-500 flex items-center justify-center shadow-xl border-2 border-pink-300/60 ring-2 ring-pink-400/30 group-hover:scale-110 transition-transform">
+                                        <Gamepad2 className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(244,114,182,0.8)]" />
+                                    </div>
+                                )}
+                                {(item.appType === 'coming-soon-site' || item.appType === 'comingsoon' || item.isComingSoon || item.targetSite) && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-pink-500 flex items-center justify-center shadow-xl border-2 border-cyan-300/60 ring-2 ring-cyan-400/30 group-hover:scale-110 transition-transform">
+                                        <Globe className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                                    </div>
+                                )}
                                 {item.type === 'app' && 
-                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings','cailus','mahjong','magen','pixelstudio'].includes(item.appType || '') && (
+                                 !['notepad','calculator','catchon','catore','cacking','browser','photos','calendar','terminal','screenshot','taskmgr','clock','power','explorer','catto','catvas','ailearning','aichat','paint','music','phone','bluetower','survivor','fishing','garden','eatclicker','blog','channel','trash','settings','cailus','mahjong','magen','pixelstudio','minigame-heaven','minigame','coming-soon-site','comingsoon'].includes(item.appType || '') && !item.isComingSoon && !item.targetSite && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg border border-cyan-300/40 group-hover:scale-105 transition-transform">
                                         <Sparkles className="w-7 h-7 text-white drop-shadow" />
                                     </div>
@@ -2883,6 +3091,21 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                     <ImageIcon className="w-3.5 h-3.5 text-cyan-400" /> 바탕화면 배경으로 지정
                                 </button>
                             )}
+                            {/* 특정 사이트 연결 설정 (커밍순) */}
+                            <button 
+                                onClick={() => {
+                                    const currentSite = contextMenu.targetItem?.targetSite || 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app';
+                                    const newUrl = prompt('이 앱/프로그램 클릭 시 이동할 특정 사이트 주소를 입력하세요:', currentSite);
+                                    if (newUrl && newUrl.trim()) {
+                                        sound.buy();
+                                        setItems(prev => prev.map(i => i.id === contextMenu.targetItem!.id ? { ...i, targetSite: newUrl.trim(), isComingSoon: true } : i));
+                                    }
+                                    setContextMenu(null);
+                                }}
+                                className="w-full px-3 py-2 text-left hover:bg-cyan-600 hover:text-white flex items-center gap-2 transition-colors cursor-pointer text-cyan-300 font-bold"
+                            >
+                                <Globe className="w-3.5 h-3.5 text-cyan-400" /> 특정 사이트 연결 설정 (커밍순)
+                            </button>
                             <div className="h-px bg-slate-800 my-1"></div>
                             {isPermanentItem(contextMenu.targetItem) ? (
                                 <div className="px-3 py-2 text-left text-slate-400 flex items-center gap-2 text-xs bg-slate-950/60 select-none cursor-not-allowed">
@@ -2917,6 +3140,30 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 <span>바탕화면</span>
                                 <span className="text-cyan-400 font-mono">CatchOn OS</span>
                             </div>
+
+                            {/* 특정 사이트 바로가기 생성 (Coming Soon) */}
+                            <button 
+                                onClick={() => {
+                                    sound.click();
+                                    const name = prompt('바로가기 프로그램 이름을 입력하세요:', '새 웹 프로그램') || '새 웹 프로그램';
+                                    const site = prompt('이동할 특정 사이트 URL을 입력하세요:', 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app') || 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app';
+                                    const newShortcut: DesktopItem = {
+                                        id: `shortcut-${Date.now()}`,
+                                        name: name,
+                                        type: 'app',
+                                        appType: 'coming-soon-site',
+                                        targetSite: site,
+                                        isComingSoon: true,
+                                        updatedAt: new Date().toLocaleDateString()
+                                    };
+                                    setItems(prev => [...prev, newShortcut]);
+                                    sound.buy();
+                                    setContextMenu(null);
+                                }}
+                                className="w-full px-3 py-2 text-left hover:bg-cyan-600 hover:text-white flex items-center gap-2 transition-colors cursor-pointer text-cyan-300 font-bold bg-cyan-950/40 border-b border-slate-800"
+                            >
+                                <Globe className="w-3.5 h-3.5 text-cyan-400" /> 특정 사이트 바로가기 생성 (Coming Soon)
+                            </button>
 
                             {/* 바탕화면 이미지 설정 */}
                             <button 
@@ -4492,6 +4739,40 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 </OSWindowFrame>
             )}
 
+            {/* 🧠 AI 제작기 (AI Studio Maker) — 커스텀 AI 모델 제작 & 학습 & 코딩/이미지 스튜디오 */}
+            {showAICreator && (
+                <OSWindowFrame
+                    title="AI 제작기 (AI Studio Maker) — 커스텀 AI 훈련 & 생성 스튜디오"
+                    icon={<Bot className="w-4 h-4 text-cyan-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowAICreator(false))}
+                    theme={theme}
+                    defaultWidth="1100px"
+                    defaultHeight="720px"
+                >
+                    <AICreatorApp 
+                        onClose={() => closeAppToDesktop(() => setShowAICreator(false))}
+                        customUser={customUser}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 🍪 쿠키 유니버스 (Cookie Universe: Cosmic Bakery) — 스팀 원작 기반 심층 제과 클리커 */}
+            {showCookieUniverse && (
+                <OSWindowFrame
+                    title="쿠키 유니버스 (Cookie Universe: Cosmic Bakery) — 제과 제국 클리커"
+                    icon={<Cookie className="w-4 h-4 text-amber-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowCookieUniverse(false))}
+                    theme={theme}
+                    defaultWidth="1180px"
+                    defaultHeight="760px"
+                >
+                    <CookieUniverse 
+                        onClose={() => closeAppToDesktop(() => setShowCookieUniverse(false))}
+                        customUser={customUser}
+                    />
+                </OSWindowFrame>
+            )}
+
             {/* 🚀 스페이스 디펜더 */}
             {showSpaceDefender && (
                 <OSWindowFrame
@@ -4534,6 +4815,46 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                         onClose={() => closeAppToDesktop(() => setShowCailusApp(false))}
                         onLaunchExternalApp={(appType) => {
                             handleLaunchAppFromSearch(appType);
+                        }}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 🎪 미니게임 천국 (MiniGame Paradise) — 원조 국민 캐주얼 아케이드 */}
+            {showMiniGameHeaven && (
+                <OSWindowFrame
+                    title="미니게임 천국 (MiniGame Paradise) — 국민 아케이드"
+                    icon={<Gamepad2 className="w-4 h-4 text-pink-400" />}
+                    onClose={() => closeAppToDesktop(() => setShowMiniGameHeaven(false))}
+                    theme={theme}
+                    defaultWidth="920px"
+                    defaultHeight="680px"
+                >
+                    <MiniGameHeaven 
+                        onClose={() => closeAppToDesktop(() => setShowMiniGameHeaven(false))}
+                        customUser={customUser}
+                    />
+                </OSWindowFrame>
+            )}
+
+            {/* 🌐 특정 사이트 바로가기 (Coming Soon) */}
+            {comingSoonSiteData && (
+                <OSWindowFrame
+                    title={`${comingSoonSiteData.appName} — 특정 사이트 연결 (Coming Soon)`}
+                    icon={<Globe className="w-4 h-4 text-cyan-400" />}
+                    onClose={() => setComingSoonSiteData(null)}
+                    theme={theme}
+                    defaultWidth="760px"
+                    defaultHeight="620px"
+                >
+                    <ComingSoonSiteModal
+                        appName={comingSoonSiteData.appName}
+                        targetUrl={comingSoonSiteData.targetUrl}
+                        onClose={() => setComingSoonSiteData(null)}
+                        onOpenInInternalBrowser={(url) => {
+                            setComingSoonSiteData(null);
+                            setShowBrowser(true);
+                            setFocusedWindow('browser');
                         }}
                     />
                 </OSWindowFrame>
@@ -4682,6 +5003,14 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                     />
                 </OSWindowFrame>
             )}
+
+            {/* 📱 모바일/패드 스와이프 업 전체 앱 서랍 (App Drawer) */}
+            <MobileAppDrawer 
+                isOpen={showMobileAppDrawer}
+                onClose={() => setShowMobileAppDrawer(false)}
+                onLaunchItem={(item) => handleItemDoubleClick(item)}
+                desktopItems={items}
+            />
 
             {/* 💡 시스템 도움말 & AI 질의응답 센터 */}
             <SystemHelpModal 

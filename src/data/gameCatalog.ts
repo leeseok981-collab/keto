@@ -240,5 +240,45 @@ export const GAME_CATALOG: GameInfo[] = [
             { action: '이동', key: 'WASD / 방향키 / 마우스' },
             { action: '공격', key: 'Space / Auto' }
         ]
+    },
+    {
+        id: 'cookie-universe',
+        pkgId: 'pkg-cookie-infinite',
+        appType: 'cookie-universe',
+        name: '쿠키 인피니트 (Cookie Universe)',
+        genre: 'Cosmic Idle Clicker & Simulator',
+        description: '스팀(Steam)의 명작 클리커 게임 쿠키 클리커(Cookie Clicker)의 심층 시스템(12개 건물, 연구소 시너지, 황금 쿠키 버프, 프레스티지 환생 및 천상의 칩, 뉴스 티커, 업적 및 밀크 물리, 오프라인 수익)을 완벽 구현한 초대형 제과 제국 클리커 게임!',
+        size: '18.5 MB',
+        version: '1.0.0',
+        iconName: 'cookie',
+        publisher: 'Cosmic Bakery Studio',
+        rating: 5.0,
+        downloads: '1.5M',
+        bannerGradient: 'from-amber-600 via-orange-600 to-indigo-950',
+        controlsGuide: [
+            { action: '쿠키 굽기 클릭', key: '마우스 좌클릭 / 화면 터치' },
+            { action: '황금 쿠키 획득', key: '황금 쿠키 출현 시 클릭' },
+            { action: '일괄 시설 구매', key: '1x / 10x / 100x 스위처 선택' }
+        ]
+    },
+    {
+        id: 'minigame-heaven',
+        pkgId: 'pkg-minigame-heaven',
+        appType: 'minigame-heaven',
+        name: '미니게임 천국 (MiniGame Paradise)',
+        genre: 'Classic Arcade & Casual',
+        description: '국민 레전드 캐주얼 아케이드! 달려달려, 넘어넘어, 뚫어뚫어, 터치터치 등 다채로운 미니게임과 귀여운 동물 친구들의 향연.',
+        size: '14.2 MB',
+        version: '1.0.0',
+        iconName: 'gamepad',
+        publisher: 'Com2uS Style Studio',
+        rating: 4.9,
+        downloads: '2.8M',
+        bannerGradient: 'from-pink-500 via-amber-500 to-cyan-600',
+        controlsGuide: [
+            { action: '점프 / 행동', key: 'Space / W / 화면 터치' },
+            { action: '좌우 이동', key: 'A, D / 좌우 방향키' },
+            { action: '목표 터치', key: '마우스 좌클릭 / 화면 탭' }
+        ]
     }
 ];

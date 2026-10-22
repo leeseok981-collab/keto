@@ -4,6 +4,7 @@ import { User, Lock, Key, LogIn, UserPlus, AlertCircle, CheckCircle2 } from 'luc
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { sound } from '../utils/sound';
+import { createOrInitializeUserSystemFolder } from '../utils/vfs';
 
 export interface CustomUser {
   username: string;
@@ -109,10 +110,17 @@ export const CustomAuthModal: React.FC<CustomAuthModalProps> = ({ onSuccess, onC
       localStorage.setItem('keto_custom_user', JSON.stringify(customUser));
       localStorage.setItem('keto_current_user_pwd', password);
 
+      // 🌟 [회원가입 시 전용 시스템 & 게임 폴더 자동 생성 및 데이터 보존]
+      try {
+        createOrInitializeUserSystemFolder(cleanUsername);
+      } catch (sysErr) {
+        console.warn('User system folder creation warning:', sysErr);
+      }
+
       if (isAdmin) {
-        setSuccessMsg('👑 [어드민321] 관리자 계정이 생성되었습니다! 어드민 기능이 부여됩니다.');
+        setSuccessMsg(`👑 [어드민321] 관리자 계정이 생성되었습니다! 전용 시스템 및 게임 폴더(C:/Users/${cleanUsername}/Games)가 배정되었습니다.`);
       } else {
-        setSuccessMsg('✨ 계정이 성공적으로 생성되었습니다!');
+        setSuccessMsg(`✨ 계정이 성공적으로 생성되었습니다! 전용 시스템 및 게임 폴더(C:/Users/${cleanUsername}/Games)가 생성되었습니다.`);
       }
 
       setTimeout(() => {
@@ -166,10 +174,17 @@ export const CustomAuthModal: React.FC<CustomAuthModalProps> = ({ onSuccess, onC
       localStorage.setItem('keto_custom_user', JSON.stringify(customUser));
       localStorage.setItem('keto_current_user_pwd', password);
 
+      // 🌟 [로그인 시 전용 시스템 & 게임 폴더 확인 및 로드]
+      try {
+        createOrInitializeUserSystemFolder(cleanUsername);
+      } catch (sysErr) {
+        console.warn('User system folder sync warning:', sysErr);
+      }
+
       if (isAdmin) {
-        setSuccessMsg('👑 어드민321 로그인 성공! 어드민 권한이 활성화되었습니다.');
+        setSuccessMsg('👑 어드민321 로그인 성공! 어드민 권한 및 시스템 폴더가 활성화되었습니다.');
       } else {
-        setSuccessMsg('🎉 로그인 성공! 게임을 불러옵니다.');
+        setSuccessMsg(`🎉 로그인 성공! ${cleanUsername}님의 전용 시스템 및 게임 폴더가 동기화되었습니다.`);
       }
 
       setTimeout(() => {

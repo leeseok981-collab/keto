@@ -7,13 +7,17 @@ interface LoadingScreenProps {
 }
 
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
-    const TOTAL_DURATION = 7500; // 7.5초
+    const TOTAL_DURATION = 1200; // 1.2초로 대폭 단축하여 초고속 진입
     const [elapsed, setElapsed] = useState(0);
     const onCompleteRef = useRef(onComplete);
 
     useEffect(() => {
         onCompleteRef.current = onComplete;
     }, [onComplete]);
+
+    const handleSkip = () => {
+        onCompleteRef.current();
+    };
 
     useEffect(() => {
         const startTime = Date.now();
@@ -27,33 +31,34 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
             } else {
                 setElapsed(currentElapsed);
             }
-        }, 30);
+        }, 16);
 
         return () => clearInterval(interval);
     }, []); // Empty dependency array prevents reset!
 
     const progress = Math.min(100, Math.floor((elapsed / TOTAL_DURATION) * 100));
 
-    // Phase checkpoints (in ms):
-    // Phase 1: 0 ~ 1430ms -> "캐트" 텍스트
-    // Phase 2: 1430ms ~ 2800ms -> 1.43초 텍스트 회전하며 "keto"로 변환
-    // Phase 3: 2800ms ~ 4500ms -> "k", "e", "t", "o" 분리 & 색상 변화 후 가운데로 융합
-    // Phase 4: 4500ms ~ 7500ms -> 가운데 융합되어 캐트 고양이 아이콘 등장 + 오른쪽으로 "캐트" 텍스트 슬라이드 등장
-    const isPhase1 = elapsed < 1430;
-    const isPhase2 = elapsed >= 1430 && elapsed < 2800;
-    const isPhase3 = elapsed >= 2800 && elapsed < 4500;
-    const isPhase4 = elapsed >= 4500;
+    // Fast Phase checkpoints (in ms):
+    // Phase 1: 0 ~ 240ms -> "캐트" 텍스트
+    // Phase 2: 240ms ~ 480ms -> 텍스트 회전하며 "keto"로 변환
+    // Phase 3: 480ms ~ 750ms -> "k", "e", "t", "o" 분리 & 색상 변화 후 가운데로 융합
+    // Phase 4: 750ms ~ 1200ms -> 가운데 융합되어 캐트 고양이 아이콘 등장 + "캐트" 텍스트 슬라이드
+    const isPhase1 = elapsed < 240;
+    const isPhase2 = elapsed >= 240 && elapsed < 480;
+    const isPhase3 = elapsed >= 480 && elapsed < 750;
+    const isPhase4 = elapsed >= 750;
 
     // Phase 3 internal progress (0 to 1) for scatter and converge
-    const phase3Progress = Math.max(0, Math.min(1, (elapsed - 2800) / 1700));
-    // When phase3Progress <= 0.5: scattering outwards (0 -> 1)
-    // When phase3Progress > 0.5: converging into center (1 -> 0)
+    const phase3Progress = Math.max(0, Math.min(1, (elapsed - 480) / 270));
     const scatterFactor = phase3Progress < 0.5 
         ? phase3Progress * 2 
         : (1 - phase3Progress) * 2;
 
     return (
-        <div className="fixed inset-0 z-50 bg-[#070b14] text-white flex flex-col items-center justify-center overflow-hidden select-none">
+        <div 
+            onClick={handleSkip}
+            className="fixed inset-0 z-50 bg-[#070b14] text-white flex flex-col items-center justify-center overflow-hidden select-none cursor-pointer"
+        >
             {/* Background Ambient Glow & Grid */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(56,189,248,0.15),rgba(255,255,255,0))] pointer-events-none" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.08),transparent_60%)] pointer-events-none" />
@@ -190,9 +195,9 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
                 <div className="flex justify-between items-center text-xs font-bold text-slate-400">
                     <span className="flex items-center gap-2 text-cyan-300">
                         <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                        {elapsed < 1430 ? "초기화 엔진 구동 중..." :
-                         elapsed < 2800 ? "양자 암호화 전환 중..." :
-                         elapsed < 4500 ? "네트워크 데이터 융합 중..." :
+                        {elapsed < 240 ? "초고속 엔진 초기화 중..." :
+                         elapsed < 480 ? "네트워크 데이터 동기화 중..." :
+                         elapsed < 750 ? "그래픽 셰이더 가속 완료..." :
                          "캐트 세계에 접속 중..."}
                     </span>
                     <span className="text-cyan-400 font-mono font-black text-sm">{progress}%</span>
@@ -213,8 +218,18 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
                     </div>
                 </div>
 
-                <div className="text-center text-[11px] text-slate-500 font-medium mt-1">
-                    {TOTAL_DURATION / 1000}초 간 안전한 리소스 최적화 로딩이 진행됩니다
+                <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium mt-1">
+                    <span>초고속 부팅 완료 ({TOTAL_DURATION / 1000}초)</span>
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleSkip();
+                        }}
+                        className="text-cyan-400 hover:text-cyan-300 font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                        <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
+                        클릭하여 즉시 시작
+                    </button>
                 </div>
             </div>
         </div>

@@ -348,6 +348,8 @@ export const FolderExplorer: React.FC<FolderExplorerProps> = ({
 
     const sidebarItems = theme === 'mac' ? [
         { name: '홈', path: `/Users/${cleanUser}`, icon: Home },
+        { name: '🎮 게임 저장소 (Games)', path: `/Users/${cleanUser}/Games`, icon: Gamepad2 },
+        { name: '⚙️ 시스템 (System)', path: `/Users/${cleanUser}/System`, icon: Settings },
         { name: '데스크탑', path: `/Users/${cleanUser}/Desktop`, icon: Monitor },
         { name: '문서', path: `/Users/${cleanUser}/Documents`, icon: FileText },
         { name: '다운로드', path: `/Users/${cleanUser}/Downloads`, icon: Download },
@@ -357,7 +359,9 @@ export const FolderExplorer: React.FC<FolderExplorerProps> = ({
         { name: '컴퓨터', path: '/', icon: HardDrive },
         { name: 'Macintosh HD', path: '/', icon: HardDrive }
     ] : [
-        { name: '홈', path: `C:/Users/${cleanUser}`, icon: Home },
+        { name: `홈 (${cleanUser})`, path: `C:/Users/${cleanUser}`, icon: Home },
+        { name: '🎮 게임 데이터 (Games)', path: `C:/Users/${cleanUser}/Games`, icon: Gamepad2 },
+        { name: '⚙️ 시스템 (System)', path: `C:/Users/${cleanUser}/System`, icon: Settings },
         { name: '바탕화면', path: `C:/Users/${cleanUser}/Desktop`, icon: Monitor },
         { name: '문서', path: `C:/Users/${cleanUser}/Documents`, icon: FileText },
         { name: '다운로드', path: `C:/Users/${cleanUser}/Downloads`, icon: Download },

@@ -1,4 +1,5 @@
 import { walletService } from './walletService';
+import { syncGameDataToUserFolder, loadGameDataFromUserFolder } from '../utils/vfs';
 // Handles persistent IndexedDB saves, play statistics, XP, virtual coins ($G), achievements, and custom keybindings.
 
 export interface GameSaveData {
@@ -129,6 +130,13 @@ export const ALL_GAME_ACHIEVEMENTS: Omit<Achievement, 'unlocked'>[] = [
 export class GameAPI {
     // 1. Save game state
     static async saveGame(gameId: string, saveData: any): Promise<void> {
+        const username = (() => {
+            try {
+                const saved = localStorage.getItem('keto_custom_user');
+                return saved ? JSON.parse(saved)?.username : 'User';
+            } catch { return 'User'; }
+        })();
+
         try {
             const db = await getDB();
             const tx = db.transaction('saves', 'readwrite');
@@ -142,10 +150,22 @@ export class GameAPI {
             console.error('saveGame IndexedDB error, falling back to localStorage:', e);
             localStorage.setItem(`gc_save_${gameId}`, JSON.stringify(saveData));
         }
+
+        // 🌟 유저 전용 시스템 게임 폴더 (C:/Users/{username}/Games/{gameId}/save_data.json)에 자동 보존
+        try {
+            syncGameDataToUserFolder(username, gameId, saveData);
+        } catch {}
     }
 
     // 2. Load game state
     static async loadGame<T = any>(gameId: string): Promise<T | null> {
+        const username = (() => {
+            try {
+                const saved = localStorage.getItem('keto_custom_user');
+                return saved ? JSON.parse(saved)?.username : 'User';
+            } catch { return 'User'; }
+        })();
+
         try {
             const db = await getDB();
             return new Promise((resolve) => {
@@ -155,16 +175,28 @@ export class GameAPI {
                     if (req.result && req.result.saveState) {
                         resolve(req.result.saveState as T);
                     } else {
+                        const fromVfs = loadGameDataFromUserFolder<T>(username, gameId);
+                        if (fromVfs) {
+                            resolve(fromVfs);
+                            return;
+                        }
                         const fallback = localStorage.getItem(`gc_save_${gameId}`);
                         resolve(fallback ? JSON.parse(fallback) : null);
                     }
                 };
                 req.onerror = () => {
+                    const fromVfs = loadGameDataFromUserFolder<T>(username, gameId);
+                    if (fromVfs) {
+                        resolve(fromVfs);
+                        return;
+                    }
                     const fallback = localStorage.getItem(`gc_save_${gameId}`);
                     resolve(fallback ? JSON.parse(fallback) : null);
                 };
             });
         } catch (e) {
+            const fromVfs = loadGameDataFromUserFolder<T>(username, gameId);
+            if (fromVfs) return fromVfs;
             const fallback = localStorage.getItem(`gc_save_${gameId}`);
             return fallback ? JSON.parse(fallback) : null;
         }

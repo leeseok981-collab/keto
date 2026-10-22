@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Wifi, Battery, Search, Mic, Camera, Shirt, Sun, 
   Settings, ChevronLeft, X, Sliders, Volume2, Moon, 
@@ -7,6 +7,7 @@ import {
 import { WeatherApp } from '../../apps/weather/WeatherApp';
 import { useSystemTime } from '../../../hooks/useSystemTime';
 import { useDeviceDetect } from '../../../hooks/useDeviceDetect';
+import { sound } from '../../../utils/sound';
 
 // App imports
 import { KetoBankApp } from '../../KetoBankApp';
@@ -20,6 +21,8 @@ import { MobileSettingsView } from '../MobileSettingsView';
 import { GameCenterApp } from '../../GameCenterApp';
 import { AIAutoVideoEditor } from '../../videoEditor/AIAutoVideoEditor';
 import { TameAIStudio } from '../../tameAI/TameAIStudio';
+import { AICreatorApp } from '../../aiCreator/AICreatorApp';
+import { CookieUniverse } from '../../games/CookieUniverse';
 
 interface GalaxyOSProps {
   user: any;
@@ -35,9 +38,14 @@ export function GalaxyOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
   const [activeApp, setActiveApp] = useState<string | null>(null);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
   const [showEdgePanel, setShowEdgePanel] = useState(false);
+  const [showAppDrawer, setShowAppDrawer] = useState(false);
+  const [appDrawerSearch, setAppDrawerSearch] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const touchStartY = React.useRef<number>(0);
 
   const apps = [
+    { id: 'cookie-universe', name: '쿠키 유니버스', icon: '🍪', color: 'bg-gradient-to-tr from-amber-600 to-orange-500', badge: 'NEW' },
+    { id: 'aicreator', name: 'AI 제작기', icon: '🧠', color: 'bg-gradient-to-tr from-cyan-600 via-indigo-600 to-purple-600', badge: 'PRO' },
     { id: 'weather', name: '날씨', icon: '☀️', color: 'bg-sky-500', badge: 'OOTD' },
     { id: 'rhythm', name: '리듬스탑', icon: '🎵', color: 'bg-rose-500', badge: 'MV' },
     { id: 'bank', name: 'KETO 뱅크', icon: '💳', color: 'bg-blue-600' },
@@ -80,7 +88,19 @@ export function GalaxyOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
       />
 
       {/* Main Home Screen Content */}
-      <div className="relative flex-1 overflow-y-auto px-5 pt-3 pb-20 z-10 flex flex-col justify-between">
+      <div 
+        className="relative flex-1 overflow-y-auto px-5 pt-3 pb-20 z-10 flex flex-col justify-between"
+        onTouchStart={(e) => {
+          touchStartY.current = e.touches[0].clientY;
+        }}
+        onTouchEnd={(e) => {
+          const deltaY = touchStartY.current - e.changedTouches[0].clientY;
+          if (deltaY > 40) {
+            setShowAppDrawer(true);
+            sound.click();
+          }
+        }}
+      >
         <div className="space-y-4">
           
           {/* Samsung Weather & Clock Combined Widget */}
@@ -134,7 +154,7 @@ export function GalaxyOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
                     setActiveApp(app.id);
                   }
                 }}
-                className="flex flex-col items-center gap-1.5 active:scale-90 transition-transform"
+                className="flex flex-col items-center gap-1.5 active:scale-90 transition-transform cursor-pointer"
               >
                 <div className={`relative w-14 h-14 rounded-2xl ${app.color} shadow-lg shadow-black/40 flex items-center justify-center text-2xl border border-white/15`}>
                   {app.icon}
@@ -151,10 +171,18 @@ export function GalaxyOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
             ))}
           </div>
 
+          {/* Swipe Up for App Drawer Prompt */}
+          <div 
+            onClick={() => { setShowAppDrawer(true); sound.click(); }}
+            className="w-full py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center gap-1.5 text-[10px] font-bold text-sky-300 cursor-pointer transition animate-bounce"
+          >
+            <span>▲ 화면을 위로 올려 모든 앱 열기 (One UI 앱스)</span>
+          </div>
+
         </div>
 
         {/* Quick Switcher Controls at bottom */}
-        <div className="flex items-center justify-center gap-2 pt-4">
+        <div className="flex items-center justify-center gap-2 pt-2">
           <button
             onClick={() => setPhoneOS('iphone')}
             className="text-[10px] px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 transition"
@@ -282,6 +310,12 @@ export function GalaxyOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
             {activeApp === 'tame-ai' && (
               <TameAIStudio onClose={() => setActiveApp(null)} isMobileApp={true} />
             )}
+            {activeApp === 'aicreator' && (
+              <AICreatorApp onClose={() => setActiveApp(null)} customUser={customUser} />
+            )}
+            {activeApp === 'cookie-universe' && (
+              <CookieUniverse onClose={() => setActiveApp(null)} customUser={customUser} />
+            )}
             {activeApp === 'settings' && (
               <MobileSettingsView 
                 onClose={() => setActiveApp(null)} 
@@ -291,6 +325,75 @@ export function GalaxyOS({ user, customUser, onLogout, onLaunchSpeedKeyboard }: 
               />
             )}
           </div>
+        </div>
+      )}
+
+      {/* 📱 Galaxy One UI App Drawer (화면 위로 스와이프 시 열리는 앱스 화면) */}
+      {showAppDrawer && (
+        <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-2xl p-5 flex flex-col justify-between animate-fade-in select-none">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">✨</span>
+                <div>
+                  <h3 className="text-sm font-black text-white">Galaxy Apps (전체 앱)</h3>
+                  <p className="text-[10px] text-slate-400">설치된 모든 애플리케이션</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAppDrawer(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <input
+              type="text"
+              value={appDrawerSearch}
+              onChange={(e) => setAppDrawerSearch(e.target.value)}
+              placeholder="앱 검색..."
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none focus:border-cyan-400"
+            />
+
+            {/* App Grid in Drawer */}
+            <div className="grid grid-cols-4 gap-y-5 gap-x-3 max-h-[60vh] overflow-y-auto custom-scrollbar pt-2">
+              {apps.filter(a => a.name.toLowerCase().includes(appDrawerSearch.toLowerCase())).map((app) => (
+                <button
+                  key={app.id}
+                  onClick={() => {
+                    setShowAppDrawer(false);
+                    if (app.id === 'speedkeyboard' && onLaunchSpeedKeyboard) {
+                      onLaunchSpeedKeyboard();
+                    } else {
+                      setActiveApp(app.id);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1.5 active:scale-90 transition cursor-pointer"
+                >
+                  <div className={`relative w-14 h-14 rounded-2xl ${app.color} shadow-lg flex items-center justify-center text-2xl border border-white/20`}>
+                    {app.icon}
+                    {app.badge && (
+                      <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-black border border-white/30 shadow">
+                        {app.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] font-medium text-white/90 text-center truncate w-full">
+                    {app.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAppDrawer(false)}
+            className="w-full py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+          >
+            닫기 (홈 화면으로)
+          </button>
         </div>
       )}
 
