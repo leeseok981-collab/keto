@@ -272,6 +272,23 @@ export const OFFICIAL_APP_CATALOG: AppPackage[] = [
         featured: true
     },
     {
+        id: 'pkg-nakisecape-njk',
+        name: 'Nakisecape NJK (독자 가상 컴퓨터)',
+        version: '0.1.4',
+        description: 'Seelen UI Web-First 감성의 차세대 독립 가상 컴퓨터. 상단바 없는 완전 몰입형 풀스크린 데스크톱, Deep Navy(#080D21) & Neon Cyan(#65EDFF) & Neon Violet(#A78BFA) 컬러, NakiDrive 가상 파일 시스템, NakiTerminal CLI, NakiEditor, NJK Settings 완벽 탑재.',
+        icon: 'nakisecape',
+        category: 'system',
+        permissions: ['system.virtual', 'storage.vfs', 'audio.synth'],
+        size: '24.8 MB',
+        publisher: 'Nakisecape NJK Project',
+        rating: 5.0,
+        downloads: '3.8M',
+        price: 0,
+        isDefault: false,
+        appType: 'nakisecape-njk',
+        featured: true
+    },
+    {
         id: 'pkg-game-dungeoncore',
         name: '던전 코어',
         version: '1.0.0',

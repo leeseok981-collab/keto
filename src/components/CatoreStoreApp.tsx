@@ -4,7 +4,7 @@ import {
     Sparkles, ShieldCheck, Star, RefreshCw, Layers, Award,
     Filter, ArrowUpRight, AlertCircle, Terminal, Palette,
     GraduationCap, Bot, Paintbrush, Music, Cat, Smartphone,
-    Shield, Swords, Fish, Flower, Utensils, Newspaper, Tv, X, Plus, Wallet, Box, Disc, Wand2, Cookie, Gamepad2
+    Shield, Swords, Fish, Flower, Utensils, Newspaper, Tv, X, Plus, Wallet, Box, Disc, Wand2, Cookie, Gamepad2, Cpu
 } from 'lucide-react';
 import { AppPackage, AppCategory, OFFICIAL_APP_CATALOG, appRegistry } from '../services/appRegistry';
 import { UnifiedPurchaseModal, PurchaseItem } from './UnifiedPurchaseModal';
@@ -154,6 +154,8 @@ export const CatoreStoreApp: React.FC<CatoreStoreAppProps> = ({
             case 'wand': return <Wand2 className={`${className} text-purple-400`} />;
             case 'cookie': return <Cookie className={`${className} text-amber-500`} />;
             case 'gamepad': return <Gamepad2 className={`${className} text-pink-400`} />;
+            case 'nakisecape':
+            case 'cpu': return <Cpu className={`${className} text-cyan-400`} />;
             default: return <Layers className={`${className} text-cyan-400`} />;
         }
     };

@@ -12,7 +12,7 @@ import {
     Camera, Bot, Plus, Settings, Lock, CornerDownLeft, GraduationCap,
     Compass, Activity, Flame, Fish, Trees, Utensils, BookOpen, Tv, Smartphone,
     Zap, Swords, Shield, Grid, Navigation, Wallet, Crown, Box, Disc, Wand2,
-    Sun, Shirt, Cookie, Globe
+    Sun, Shirt, Cookie, Globe, Cpu
 } from 'lucide-react';
 import { WeatherApp } from './components/apps/weather/WeatherApp';
 import { AIAutoVideoEditor } from './components/videoEditor/AIAutoVideoEditor';
@@ -96,6 +96,7 @@ import { CookieUniverse } from './components/games/CookieUniverse';
 import { MiniGameHeaven } from './components/games/MiniGameHeaven';
 import { ComingSoonSiteModal } from './components/ComingSoonSiteModal';
 import { MobileAppDrawer } from './components/MobileAppDrawer';
+import { NakisecapeNJK } from './components/nakisecape/NakisecapeNJK';
 
 export type DesktopItemType = 'app' | 'text' | 'file' | 'video' | 'image' | 'audio' | 'game' | 'zip' | 'folder';
 
@@ -365,6 +366,13 @@ export const getDefaultDesktopApps = (
             appType: 'coming-soon-site',
             targetSite: 'https://ais-pre-uqtk5xcwryvrhlwm2zscyj-381457261042.asia-northeast1.run.app',
             isComingSoon: true,
+            updatedAt: now
+        },
+        {
+            id: 'app-nakisecape-njk',
+            name: 'Nakisecape NJK',
+            type: 'app',
+            appType: 'nakisecape-njk',
             updatedAt: now
         }
     ];
@@ -694,6 +702,7 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
     const [showAICreator, setShowAICreator] = useState(false);
     const [showCookieUniverse, setShowCookieUniverse] = useState(false);
     const [showMiniGameHeaven, setShowMiniGameHeaven] = useState(false);
+    const [showNakisecapeNJK, setShowNakisecapeNJK] = useState(false);
     const [comingSoonSiteData, setComingSoonSiteData] = useState<{ appName: string; targetUrl: string } | null>(null);
     const [showMobileAppDrawer, setShowMobileAppDrawer] = useState(false);
     const touchStartPosRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -1228,6 +1237,10 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                 setShowMiniGameHeaven(true);
                 setFocusedWindow('minigame-heaven');
             }
+            else if (item.appType === 'nakisecape-njk' || item.appType === 'nakisecape' || item.id === 'app-nakisecape-njk') {
+                sound.click();
+                setShowNakisecapeNJK(true);
+            }
             else if (item.appType === 'coming-soon-site' || item.appType === 'comingsoon' || item.targetSite || item.isComingSoon || item.fileUrl?.startsWith('http')) {
                 sound.click();
                 setComingSoonSiteData({
@@ -1750,6 +1763,8 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
         } else if (appType === 'minigame-heaven' || appType === 'minigame') {
             setShowMiniGameHeaven(true);
             setFocusedWindow('minigame-heaven');
+        } else if (appType === 'nakisecape-njk' || appType === 'nakisecape') {
+            setShowNakisecapeNJK(true);
         } else if (appType === 'coming-soon-site' || appType === 'comingsoon') {
             setComingSoonSiteData({
                 appName: '특정 사이트 바로가기',
@@ -2394,6 +2409,15 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
             onFocus: () => setFocusedWindow('minigame-heaven')
         });
     }
+    if (showNakisecapeNJK) {
+        runningApps.push({
+            id: 'nakisecape-njk',
+            name: 'Nakisecape NJK',
+            icon: <Cpu className="w-3.5 h-3.5 text-cyan-400" />,
+            onClose: () => setShowNakisecapeNJK(false),
+            onFocus: () => setShowNakisecapeNJK(true)
+        });
+    }
     if (comingSoonSiteData) {
         runningApps.push({
             id: 'comingsoon',
@@ -2933,6 +2957,11 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                                 {(item.appType === 'coming-soon-site' || item.appType === 'comingsoon' || item.isComingSoon || item.targetSite) && (
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-pink-500 flex items-center justify-center shadow-xl border-2 border-cyan-300/60 ring-2 ring-cyan-400/30 group-hover:scale-110 transition-transform">
                                         <Globe className="w-7 h-7 text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                                    </div>
+                                )}
+                                {(item.appType === 'nakisecape-njk' || item.appType === 'nakisecape' || item.id === 'app-nakisecape-njk') && (
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#080D21] via-indigo-950 to-[#080D21] flex items-center justify-center shadow-2xl border-2 border-cyan-400/80 ring-2 ring-purple-500/40 group-hover:scale-110 transition-transform">
+                                        <span className="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 drop-shadow">NJK</span>
                                     </div>
                                 )}
                                 {item.type === 'app' && 
@@ -4858,6 +4887,14 @@ export const DesktopOS: React.FC<DesktopOSProps> = ({
                         }}
                     />
                 </OSWindowFrame>
+            )}
+
+            {/* 🚀 Nakisecape NJK — 상단바 없는 완전 몰입형 풀스크린 가상 컴퓨터 (Seelen UI Web-First Virtual Computer) */}
+            {showNakisecapeNJK && (
+                <NakisecapeNJK
+                    onClose={() => setShowNakisecapeNJK(false)}
+                    customUser={customUser}
+                />
             )}
 
             {/* 🎮 Cyber Effects Overlays (Matrix, Glitch, BSOD) */}

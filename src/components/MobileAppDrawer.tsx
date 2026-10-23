@@ -51,6 +51,13 @@ export const MobileAppDrawer: React.FC<MobileAppDrawerProps> = ({
         const type = item.appType || '';
         const id = item.id || '';
 
+        if (type === 'nakisecape-njk' || type === 'nakisecape' || id === 'app-nakisecape-njk') {
+            return (
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#080D21] via-indigo-950 to-[#080D21] flex items-center justify-center shadow-lg border-2 border-cyan-400/80 ring-2 ring-purple-500/40">
+                    <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300">NJK</span>
+                </div>
+            );
+        }
         if (type === 'aicreator' || type === 'ai-creator' || id === 'app-aicreator') {
             return (
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-fuchsia-600 flex items-center justify-center shadow-lg border border-cyan-400/40">
